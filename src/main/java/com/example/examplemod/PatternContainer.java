@@ -4,15 +4,15 @@ import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
 
+import appeng.api.networking.crafting.ICraftingPatternDetails;
+import appeng.api.storage.data.IAEItemStack;
 import appeng.core.AppEng;
 import appeng.items.misc.ItemEncodedPattern;
+import gregtech.api.cover.ICoverable;
 import gregtech.api.gui.GuiTextures;
 import gregtech.api.gui.Widget;
 import gregtech.api.gui.resources.TextureArea;
 import gregtech.api.gui.widgets.LabelWidget;
-import gregtech.api.gui.widgets.ServerWidgetGroup;
-import gregtech.api.gui.widgets.SlotWidget;
-import gregtech.api.util.IDirtyNotifiable;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
@@ -22,15 +22,22 @@ import net.minecraftforge.items.ItemStackHandler;
 public class PatternContainer implements INBTSerializable<NBTTagCompound>{
 	private final ItemStackHandler patternInventory;
 	private final TextureArea patternSlotOverlay;
+	private final ICoverable coverHolder;
+	private AE2PatternSlotWidget patternSlot;
+	private boolean isPatternAvailable;
+	private ICraftingPatternDetails patternInformation;
+	private IAEItemStack[] inputItems;
+	private IAEItemStack[] outputItems;
+	protected Consumer<Boolean> patternChangeCallback;
 	
-	public PatternContainer(IDirtyNotifiable dirtyNotifiable) {
+	public PatternContainer(ICoverable coverHolder) {
+		this(coverHolder, null);
+	}
+	
+	public PatternContainer(ICoverable coverHolder, Consumer<Boolean> patternChangeCallback) {
 		this.patternInventory = new ItemStackHandler(1) {
             @Override
-            public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
-            	if(slot != 0) {
-            		return false;
-            	}
-            	
+            public boolean isItemValid(int slot, @Nonnull ItemStack stack) {            	
             	return stack.getItem() instanceof ItemEncodedPattern;
             }
 
@@ -40,62 +47,149 @@ public class PatternContainer implements INBTSerializable<NBTTagCompound>{
             }
 
             @Override
-            protected void onLoad() {
-            	
-            }
-
-            @Override
             protected void onContentsChanged(int slot) {
             	super.onContentsChanged(slot);
-            	dirtyNotifiable.markAsDirty();
+            	
+            	ItemStack patternStack = patternInventory.getStackInSlot(0);
+            	//Pattern slot will be null before UI is opened for the first time after world load
+            	if(patternStack != null) {
+            		if(patternStack.isEmpty()) {
+            			onPatternRemoved();
+            		} else {
+            			onPatternInserted();
+            		}
+            	}
+            	
+            	coverHolder.markDirty();
             }
         };
         
-        patternSlotOverlay = new TextureArea(new ResourceLocation(AppEng.MOD_ID, "textures/guis/states.png"), (15.0/16.0), (7.0/16.0), (1.0/16.0), (1.0/16.0));
+        
+        this.patternSlotOverlay = new TextureArea(new ResourceLocation(AppEng.MOD_ID, "textures/guis/states.png"), (15.0/16.0), (7.0/16.0), (1.0/16.0), (1.0/16.0));
+        this.coverHolder = coverHolder;
+        this.patternChangeCallback = patternChangeCallback;
 	}
 	
-//	protected void onPatternSlotChange(boolean notify) {
-//        ItemStack filterStack = patternInventory.getStackInSlot(0);
-//        ItemFilter newItemFilter = FilterTypeRegistry.getItemFilterForStack(filterStack);
-//        ItemFilter currentItemFilter = filterWrapper.getItemFilter();
-//        if(newItemFilter == null) {
-//            if(currentItemFilter != null) {
-//                filterWrapper.setItemFilter(null);
-//                filterWrapper.setBlacklistFilter(false);
-//                if (notify) filterWrapper.onFilterInstanceChange();
-//            }
-//        } else if (currentItemFilter == null ||
-//            newItemFilter.getClass() != currentItemFilter.getClass()) {
-//            filterWrapper.setItemFilter(newItemFilter);
-//            if (notify) filterWrapper.onFilterInstanceChange();
-//        }
-//    }
+	protected void onPatternInserted() {
+		setPatternAvailable(true);		
+		patternInformation = getPattern().getPatternForItem(getPatternStack(), coverHolder.getWorld());
+		
+		if(patternSlot != null)
+			patternSlot.setBackgroundTexture(GuiTextures.SLOT);
+		
+		if(patternChangeCallback != null)
+			patternChangeCallback.accept(true);
+	}
+	
+	
+	protected void onPatternRemoved() {
+		setPatternAvailable(false);
+		
+		if(patternSlot != null)
+			patternSlot.setBackgroundTexture(GuiTextures.SLOT, patternSlotOverlay);
+		
+		if(patternChangeCallback != null)
+			patternChangeCallback.accept(true);
+	}
+	
+	public boolean isPatternAvailable() {
+		return isPatternAvailable;
+	}
+	
+	protected void setPatternAvailable(boolean available) {
+		isPatternAvailable = available;
+		
+		if(available == false) {
+			patternInformation = null;
+			inputItems = null;
+			outputItems = null;
+		}
+	}
+	
+	public ItemStackHandler getPatternInventory() {
+        return patternInventory;
+    }
+	
+	public ItemStack getPatternStack() {
+		return getPatternInventory().getStackInSlot(0);
+	}
+	
+	public ItemEncodedPattern getPattern() {		
+		if(!isPatternAvailable) {
+			return null;
+		}
+		
+		ItemStack patternStack = getPatternStack();		
+		return (ItemEncodedPattern) patternStack.getItem();
+	}
+	
+	public ICraftingPatternDetails getPatternDetails() {
+		if(!isPatternAvailable) {
+			return null;
+		}
+		
+		if(patternInformation == null) {
+			ItemEncodedPattern pattern = getPattern();
+			if(pattern == null)
+				return null;
+			
+			patternInformation = pattern.getPatternForItem(getPatternStack(), coverHolder.getWorld());
+		}
+		
+		return patternInformation;
+	}
+	
+	public IAEItemStack[] getInputItems() {
+		if(!isPatternAvailable) {
+			return null;
+		}
+		
+		if(inputItems == null) {
+			inputItems = getPatternDetails().getCondensedInputs();
+		}
+		
+		return inputItems;
+	}
+	
+	public IAEItemStack[] getOutputItems() {
+		if(!isPatternAvailable) {
+			return null;
+		}
+		
+		if(outputItems == null) {
+			ICraftingPatternDetails patternDetails = getPatternDetails();
+			if(patternDetails == null)
+				return new IAEItemStack[0];
+			
+			outputItems = patternDetails.getOutputs();
+		}
+		
+		return outputItems;
+	}
 	
 	public void initUI(int y, Consumer<Widget> widgetGroup) {
-        widgetGroup.accept(new LabelWidget(10, y, "cover.stocker.pattern.title"));
-        widgetGroup.accept(new SlotWidget(patternInventory, 0, 10, y + 15)
-            .setBackgroundTexture(GuiTextures.SLOT, patternSlotOverlay));
-
-//        ServerWidgetGroup stackSizeGroup = new ServerWidgetGroup(this::showGlobalTransferLimitSlider);
-//        stackSizeGroup.addWidget(new ClickButtonWidget(91, 70, 20, 20, "-1", data -> adjustTransferStackSize(data.isShiftClick ? -10 : -1)));
-//        stackSizeGroup.addWidget(new ClickButtonWidget(146, 70, 20, 20, "+1", data -> adjustTransferStackSize(data.isShiftClick ? +10 : +1)));
-//        stackSizeGroup.addWidget(new ImageWidget(111, 70, 35, 20, GuiTextures.DISPLAY));
-//        stackSizeGroup.addWidget(new SimpleTextWidget(128, 80, "", 0xFFFFFF, () -> Integer.toString(transferStackSize)));
-//        widgetGroup.accept(stackSizeGroup);
-
-//        this.filterWrapper.initUI(y + 38, widgetGroup);
+        widgetGroup.accept(new LabelWidget(11, y, "cover.stocker.pattern.title"));
+        this.patternSlot = new AE2PatternSlotWidget(patternInventory, 0, 11, y + 15);
+        //patternSlot.setYPosition(y + 15);
+        widgetGroup.accept(patternSlot.setBackgroundTexture(GuiTextures.SLOT, patternSlotOverlay));
     }
 	
 	@Override
     public NBTTagCompound serializeNBT() {
         NBTTagCompound tagCompound = new NBTTagCompound();
         tagCompound.setTag("PatternInventory", patternInventory.serializeNBT());
-        
+        tagCompound.setBoolean("PatternAvailable", isPatternAvailable);
         return tagCompound;
     }
 	
 	 @Override
     public void deserializeNBT(NBTTagCompound tagCompound) {
-        this.patternInventory.deserializeNBT(tagCompound.getCompoundTag("PatternInventory"));
+		if(tagCompound.hasKey("PatternInventory")) {
+		 	this.patternInventory.deserializeNBT(tagCompound.getCompoundTag("PatternInventory"));
+		}
+		
+		if(tagCompound.hasKey("PatternAvailable")) {
+			this.setPatternAvailable(tagCompound.getBoolean("PatternAvailable"));
+		}
     }
 }

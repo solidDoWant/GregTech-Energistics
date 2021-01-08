@@ -1,0 +1,8 @@
+{
+  "parent": "appliedenergistics2:part/display_off",
+  "textures": {
+    "lightsBright": "examplemod:parts/stocker.terminal_bright",
+    "lightsMedium": "examplemod:parts/stocker.terminal_medium",
+    "lightsDark": "examplemod:parts/stocker.terminal_dark"
+  }
+}

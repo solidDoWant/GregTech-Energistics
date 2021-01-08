@@ -1,4 +1,27 @@
-metaitem.ae2.stocker.lv.name=AE2 stocker (LV)
+metaitem.ae2.stocker.lv.name=AE2 stocker cover (LV)
 metaitem.ae2.stocker.lv.tooltip=Tooltip not set TODO
 cover.stocker.title=AE2 Stocker Cover Settings (%s)
 cover.stocker.pattern.title=AE2 Crafting Pattern
+cover.stocker.stock_count=%s items
+cover.stocker.status=Status: %s
+cover.stocker.status.running=Running
+cover.stocker.status.other_disabled=Disabled by other cover
+cover.stocker.status.pattern_not_inserted=Missing pattern
+cover.stocker.status.grid_disconnected=Connection problem
+cover.stocker.status.fully_stocked=Fully stocked
+cover.stocker.status.missing_inputs=Missing inputs
+cover.stocker.status.missing_input_space=Missing input space
+cover.stocker.status.missing_output_space=Missing output space
+cover.stocker.fluids.enable=AE2 fluids enabled
+cover.stocker.fluids.disable=AE2 fluids disabled
+
+metaitem.machine.status.name=Machine status cover
+metaitem.machine.status.tooltip=Outputs redstone based on status
+cover.machine.status.title=Machine Status Cover Settings
+cover.machine.status.normal=Normal
+cover.machine.status.inverted=Inverted
+gui.examplemod.terminal.stocker=Stocker Terminal
+gui.examplemod.terminal.inventory=Inventory
+
+metaitem.fluid.encoder.title=Fluid encoder
+metaitem.fluid.encoder.amount=%s mb

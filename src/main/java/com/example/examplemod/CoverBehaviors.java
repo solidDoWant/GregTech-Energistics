@@ -13,13 +13,17 @@ import net.minecraft.util.ResourceLocation;
 
 public class CoverBehaviors {
 	public static void init() {
-        ExampleMod.logger.info("Registering cover behaviors...");
-        registerBehavior(40, new ResourceLocation(ExampleMod.MODID, "ae2.interface.lv"), MetaItems.AE2_INTERFACE_LV, (tile, side) -> new CoverAE2Stocker(tile, side, GTValues.LV, 8));
-    }
+		ExampleMod.logger.info("Registering cover behaviors...");
+		registerBehavior(40, new ResourceLocation(ExampleMod.MODID, "ae2.interface.lv"), MetaItems.AE2_STOCKER_LV,
+				(tile, side) -> new CoverAE2Stocker(tile, side, GTValues.LV, Integer.MAX_VALUE/2));
+		registerBehavior(41, new ResourceLocation(ExampleMod.MODID, "machine.status"), MetaItems.MACHINE_STATUS,
+				CoverMachineStatus::new);
+	}
 
-    public static void registerBehavior(int coverNetworkId, ResourceLocation coverId, MetaItem<?>.MetaValueItem placerItem, BiFunction<ICoverable, EnumFacing, CoverBehavior> behaviorCreator) {
-        CoverDefinition coverDefinition = new CoverDefinition(coverId, behaviorCreator, placerItem.getStackForm());
-        CoverDefinition.registerCover(coverNetworkId, coverDefinition);
-        placerItem.addStats(new CoverPlaceBehavior(coverDefinition));
-    }
+	public static void registerBehavior(int coverNetworkId, ResourceLocation coverId,
+			MetaItem<?>.MetaValueItem placerItem, BiFunction<ICoverable, EnumFacing, CoverBehavior> behaviorCreator) {
+		CoverDefinition coverDefinition = new CoverDefinition(coverId, behaviorCreator, placerItem.getStackForm());
+		CoverDefinition.registerCover(coverNetworkId, coverDefinition);
+		placerItem.addStats(new CoverPlaceBehavior(coverDefinition));
+	}
 }
