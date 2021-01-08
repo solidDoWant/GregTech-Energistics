@@ -282,7 +282,7 @@ public class StockerTerminalContainer extends AEBaseContainer {
 
 		public SideDetails(final IItemHandler itemHandler, final CoverAE2Stocker cover) {
 			this(itemHandler, cover.getStockCount(), cover.isGridConnected() ? cover.getOutputLeastAvailableCount() : 0,
-					cover.getPartialStatus());
+					cover.getCurrentStatus());
 		}
 
 		public void update(long stockAmount, long availableAmount, CoverStatus status) {
@@ -292,7 +292,7 @@ public class StockerTerminalContainer extends AEBaseContainer {
 		}
 
 		public void update(CoverAE2Stocker cover) {
-			update(cover.getStockCount(), cover.isGridConnected() ? cover.getOutputLeastAvailableCount() : 0, cover.getPartialStatus());
+			update(cover.getStockCount(), cover.isGridConnected() ? cover.getOutputLeastAvailableCount() : 0, cover.getCurrentStatus());
 		}
 
 		public boolean isSlotDifferent(final SideDetails otherSide, int slot) {

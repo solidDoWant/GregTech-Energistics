@@ -40,13 +40,11 @@ public class StockerTerminalPart extends AbstractPartDisplay {
             return false;
         }
 
-        if (!FMLCommonHandler.instance().getEffectiveSide().isServer()) {
-            return false;
+        if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
+            BlockPos bPos = this.getTile().getPos();
+            player.openGui(ExampleMod.instance, GuiProxy.getOrdinalFromGuiId(0) | this.getSide().ordinal(),
+                    player.getEntityWorld(), bPos.getX(), bPos.getY(), bPos.getZ());
         }
-
-        BlockPos bPos = this.getTile().getPos();
-        player.openGui(ExampleMod.instance, GuiProxy.getOrdinalFromGuiId(0) | this.getSide().ordinal(),
-				player.getEntityWorld(), bPos.getX(), bPos.getY(), bPos.getZ());
 
         return true;
     }

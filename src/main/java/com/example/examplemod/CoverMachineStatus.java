@@ -71,7 +71,7 @@ public class CoverMachineStatus extends CoverBehavior implements ITickable, Cove
 			return;
 		}
 
-		boolean isStateMatched = stockerCover.getPartialStatus() == getCheckStatus();
+		boolean isStateMatched = stockerCover.getCurrentStatus() == getCheckStatus();
 		boolean shouldOutputBeHigh = isInverted ? !isStateMatched : isStateMatched;
 		if (isOutputHigh != shouldOutputBeHigh) {
 			isOutputHigh = shouldOutputBeHigh;

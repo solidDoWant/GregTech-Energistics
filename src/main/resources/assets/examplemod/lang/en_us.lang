@@ -23,5 +23,6 @@ cover.machine.status.inverted=Inverted
 gui.examplemod.terminal.stocker=Stocker Terminal
 gui.examplemod.terminal.inventory=Inventory
 
-metaitem.fluid.encoder.title=Fluid encoder
-metaitem.fluid.encoder.amount=%s mb
+item.fluid.encoder.name=Fluid encoder
+item.fluid.encoder.amount=%s mb
+item.fluid.encoder.fluid=Fluid:

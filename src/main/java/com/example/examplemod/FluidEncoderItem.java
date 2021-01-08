@@ -1,13 +1,18 @@
 package com.example.examplemod;
 
+import appeng.api.AEApi;
 import appeng.util.ReadableNumberConverter;
 import gregtech.api.gui.GuiTextures;
 import gregtech.api.gui.ModularUI;
 import gregtech.api.gui.widgets.ClickButtonWidget;
 import gregtech.api.gui.widgets.ImageWidget;
+import gregtech.api.gui.widgets.PhantomFluidWidget;
 import gregtech.api.gui.widgets.SimpleTextWidget;
 import gregtech.api.items.gui.ItemUIFactory;
 import gregtech.api.items.gui.PlayerInventoryHolder;
+import net.minecraft.client.renderer.block.model.ModelResourceLocation;
+import net.minecraft.client.resources.I18n;
+import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -17,21 +22,50 @@ import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
+import net.minecraftforge.client.model.ModelLoader;
+import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.List;
 
-public class FluidEncoderItem extends Item implements ItemUIFactory {
+public class FluidEncoderItem extends Item implements ItemUIFactory, ICustomModel {
     public FluidEncoderItem() {
-        setRegistryName("fluid_encoder");
+        setRegistryName("fluid.encoder");
+        setUnlocalizedName("fluid.encoder");
+        setMaxStackSize(1);
+    }
+
+    @SideOnly(Side.CLIENT)
+    @Override
+    public void registerModel() {
+        ModelLoader.setCustomModelResourceLocation(this, 0,
+                new ModelResourceLocation(ExampleMod.MODID + ":fluid.encoder"));
+    }
+
+    @Override
+    public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn) {
+        FluidStack containedStack = getFluidStack(stack);
+        if(containedStack != null) {
+            tooltip.add(containedStack.getLocalizedName() + ", " +
+                    I18n.format(getUnlocalizedName() + ".amount", getFluidAmount(stack)));
+        }
     }
 
     @Nonnull
     @Override
     public ActionResult<ItemStack> onItemRightClick(World world, EntityPlayer player, @Nonnull EnumHand hand) {
         ItemStack heldItem = player.getHeldItem(hand);
+
+        if(player.isSneaking()) {
+            heldItem.setTagCompound(null);
+            return ActionResult.newResult(EnumActionResult.SUCCESS, heldItem);
+        }
+
         if (!world.isRemote) {
-            PlayerInventoryHolder holder = new PlayerInventoryHolder(player, hand);
-            holder.openUI();
+            PlayerInventoryHolder.openHandItemUI(player, hand);
         }
 
         return ActionResult.newResult(EnumActionResult.SUCCESS, heldItem);
@@ -39,24 +73,58 @@ public class FluidEncoderItem extends Item implements ItemUIFactory {
 
     @Override
     public ModularUI createUI(PlayerInventoryHolder holder, EntityPlayer entityPlayer) {
-        return ModularUI.builder(GuiTextures.BACKGROUND, 194, 60)
-                .label(9, 8, "metaitem.fluid.encoder.title")
-                .widget(new ImageWidget(59, 24, 76, 20, GuiTextures.DISPLAY))
-                .widget(new SimpleTextWidget(97, 34, "metaitem.fluid.encoder.amount", 0xFFFFFF,
+        return new ModularUIItemBuilder(GuiTextures.BACKGROUND, 178, 240)
+                .label(9, 8, getItemStackDisplayName(holder.getCurrentItem()))
+                .widget(new ImageWidget(61, 24, 56, 20, GuiTextures.DISPLAY))
+                .widget(new SimpleTextWidget(89, 34, getUnlocalizedName() + ".amount", 0xFFFFFF,
                         () -> ReadableNumberConverter.INSTANCE.toWideReadableForm(getFluidAmount(holder.getCurrentItem()))))
-                .widget(new ClickButtonWidget(9, 24, 30, 20, "-100", data -> adjustConfiguration(holder, -100, data.isShiftClick)))
-                .widget(new ClickButtonWidget(39, 24, 20, 20, "-1", data -> adjustConfiguration(holder, -1, data.isShiftClick)))
-                .widget(new ClickButtonWidget(135, 24, 20, 20, "+1", data -> adjustConfiguration(holder, +1, data.isShiftClick)))
-                .widget(new ClickButtonWidget(155, 24, 30, 20, "+100", data -> adjustConfiguration(holder, +100, data.isShiftClick)))
-                .bindPlayerInventory(entityPlayer.inventory, GuiTextures.SLOT, 8, 170)
+                .widget(new ClickButtonWidget(11, 24, 30, 20, "-100", data -> adjustConfiguration(holder, -100, data.isShiftClick)))
+                .widget(new ClickButtonWidget(41, 24, 20, 20, "-1", data -> adjustConfiguration(holder, -1, data.isShiftClick)))
+                .widget(new ClickButtonWidget(117, 24, 20, 20, "+1", data -> adjustConfiguration(holder, +1, data.isShiftClick)))
+                .widget(new ClickButtonWidget(137, 24, 30, 20, "+100", data -> adjustConfiguration(holder, +100, data.isShiftClick)))
+                .widget(new PhantomFluidWidget(44, 50, 18, 18, () -> getFluidStack(holder.getCurrentItem()), fluid -> setFluidStack(holder, fluid)))
+                .label(11, 55, getUnlocalizedName() + ".fluid")
+                .bindPlayerInventory(entityPlayer.inventory, 156)
                 .build(holder, entityPlayer);
     }
 
-    public int getFluidAmount(ItemStack stack) {
-        if (!stack.hasTagCompound())
+    public static boolean hasFluidStack(ItemStack heldItemStack) {
+        if (!heldItemStack.hasTagCompound())
+            return false;
+
+        NBTTagCompound tag = heldItemStack.getTagCompound();
+
+        return tag.hasKey("FluidStack");
+    }
+
+    public static FluidStack getFluidStack(ItemStack heldItemStack) {
+        if (!hasFluidStack(heldItemStack))
+            return null;
+
+        NBTTagCompound tag = heldItemStack.getTagCompound();
+
+        if (!tag.hasKey("FluidStack"))
+            return null;
+
+        return FluidStack.loadFluidStackFromNBT(tag.getCompoundTag("FluidStack"));
+    }
+
+    public static void setFluidStack(PlayerInventoryHolder holder, FluidStack stack) {
+        ItemStack heldItemStack = holder.getCurrentItem();
+        NBTTagCompound tag = heldItemStack.hasTagCompound() ? heldItemStack.getTagCompound() : new NBTTagCompound();
+        NBTTagCompound fluidTag = new NBTTagCompound();
+        if(stack != null)
+            stack.writeToNBT(fluidTag);
+        tag.setTag("FluidStack", fluidTag);
+        heldItemStack.setTagCompound(tag);
+        holder.markAsDirty();
+    }
+
+    public static int getFluidAmount(ItemStack heldItemStack) {
+        if (!heldItemStack.hasTagCompound())
             return 0;
 
-        NBTTagCompound tag = stack.getTagCompound();
+        NBTTagCompound tag = heldItemStack.getTagCompound();
 
         if (!tag.hasKey("Amount"))
             return 0;
@@ -64,16 +132,17 @@ public class FluidEncoderItem extends Item implements ItemUIFactory {
         return tag.getInteger("Amount");
     }
 
-    public void setFluidAmount(ItemStack stack, int fluidAmount) {
-        NBTTagCompound tag = stack.hasTagCompound() ? stack.getTagCompound() : new NBTTagCompound();
+    public static void setFluidAmount(ItemStack heldItemStack, int fluidAmount) {
+        NBTTagCompound tag = heldItemStack.hasTagCompound() ? heldItemStack.getTagCompound() : new NBTTagCompound();
         tag.setInteger("Amount", fluidAmount);
-        stack.setTagCompound(tag);
+        heldItemStack.setTagCompound(tag);
     }
 
-    protected void adjustConfiguration(PlayerInventoryHolder holder, int amount, boolean shouldScale) {
+    protected static void adjustConfiguration(PlayerInventoryHolder holder, int amount, boolean shouldScale) {
+        ItemStack currentItemStack = holder.getCurrentItem();
         int incrementAmount = shouldScale ? 10 * amount : amount;
-        setFluidAmount(holder.getCurrentItem(),
-                MathHelper.clamp(getFluidAmount(holder.getCurrentItem()) + incrementAmount, 0, Integer.MAX_VALUE));
+        setFluidAmount(currentItemStack,
+                MathHelper.clamp(getFluidAmount(currentItemStack) + incrementAmount, 0, Integer.MAX_VALUE));
         holder.markAsDirty();
     }
 }

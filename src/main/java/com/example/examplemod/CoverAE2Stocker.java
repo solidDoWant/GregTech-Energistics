@@ -2,7 +2,6 @@ package com.example.examplemod;
 
 import appeng.api.AEApi;
 import appeng.api.config.Actionable;
-import appeng.api.config.FuzzyMode;
 import appeng.api.networking.*;
 import appeng.api.networking.events.*;
 import appeng.api.networking.security.IActionHost;
@@ -43,6 +42,7 @@ import net.minecraft.block.Block;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.*;
@@ -51,14 +51,16 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.fluids.capability.IFluidHandlerItem;
 import net.minecraftforge.fluids.capability.IFluidTankProperties;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 
 import javax.annotation.Nonnull;
-import java.util.*;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -85,6 +87,9 @@ public class CoverAE2Stocker extends CoverBehavior
     protected List<IAEItemStack> patternInputItems;
     protected List<IAEFluidStack> remainingInputFluids;
     protected List<IAEItemStack> remainingInputItems;
+    protected List<IAEFluidStack> patternOutputFluids;
+    protected List<IAEItemStack> patternOutputItems;
+    protected CoverStatus currentStatus;
 
     public CoverAE2Stocker(ICoverable coverable, EnumFacing attachedSide, int tier, long maxStockCount) {
         super(coverable, attachedSide);
@@ -106,36 +111,8 @@ public class CoverAE2Stocker extends CoverBehavior
                 this.attachedSide);
     }
 
-    /***
-     * Attempts to convert the item stack to the fluids it contains.
-     *
-     * @param fluidItemStack The item stack to attempt to convert
-     * @return A Stream of the fluids the item stack contains. Null if the item
-     *         stack cannot provide fluids.
-     */
-    protected static Stream<AEFluidStack> getFluidItemStacks(IAEItemStack fluidItemStack) {
-        IFluidHandlerItem fluidHandler = getItemFluidHandler(fluidItemStack);
-
-        if (fluidHandler == null)
-            return null;
-
-        return Arrays.stream(fluidHandler.getTankProperties())
-                .map(tankProperty -> AEFluidStack.fromFluidStack(tankProperty.getContents()));
-    }
-
-    protected static IFluidHandlerItem getItemFluidHandler(IAEItemStack fluidItemStack) {
-        return fluidItemStack.asItemStackRepresentation()
-                .getCapability(CapabilityFluidHandler.FLUID_HANDLER_ITEM_CAPABILITY, null);
-    }
-
-    protected static boolean hasItemFluidHandler(IAEItemStack fluidItemStack) {
-        return fluidItemStack.asItemStackRepresentation()
-                .hasCapability(CapabilityFluidHandler.FLUID_HANDLER_ITEM_CAPABILITY, null);
-    }
-
     protected void patternChangeCallback(boolean patternInserted) {
-        updatePatternInputFluids();
-        updatePatternInputItems();
+        updatePatternCaches();
 
         if (patternInserted)
             shouldInsert = true;
@@ -149,7 +126,8 @@ public class CoverAE2Stocker extends CoverBehavior
             }
         }
 
-        return coverHolder.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, attachedSide) != null;
+        return coverHolder.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, attachedSide) != null ||
+                coverHolder.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, attachedSide) != null;
     }
 
     @Override
@@ -228,7 +206,7 @@ public class CoverAE2Stocker extends CoverBehavior
 
         // Status
         primaryGroup
-                .addWidget(new SimpleTextWidget(88, 120, "cover.stocker.status", () -> getPartialStatus().toString()));
+                .addWidget(new SimpleTextWidget(88, 120, "cover.stocker.status", () -> getCurrentStatus().toString()));
 
         ModularUI.Builder builder = ModularUI.builder(GuiTextures.BACKGROUND_EXTENDED, 176, 170 + 82)
                 .widget(primaryGroup).bindPlayerInventory(player.inventory, GuiTextures.SLOT, 8, 170);
@@ -241,56 +219,91 @@ public class CoverAE2Stocker extends CoverBehavior
 
     protected void setUseFluids(boolean useFluids) {
         this.useFluids = useFluids;
-        updatePatternInputItems();
-        updatePatternInputFluids();
+        updatePatternCaches();
         shouldInsert = true;
     }
 
+    protected void updatePatternCaches() {
+        updatePatternInputItems();
+        updatePatternInputFluids();
+        updatePatternOutputItems();
+        updatePatternOutputFluids();
+    }
+
     protected void updatePatternInputFluids() {
-        if (!shouldUseFluids() || !isPatternAvailable()) {
-            patternInputFluids = null;
-            return;
-        }
+        patternInputFluids = getFluidStacksFromItems(patternContainer.getInputItems());
+
+        remainingInputFluids = patternInputFluids == null ? null : copyAEStackList(patternInputFluids);
+    }
+
+    protected void updatePatternInputItems() {
+        patternInputItems = getNonFluidStacksFromItems(patternContainer.getInputItems());
+
+        remainingInputItems = patternInputItems == null ? null : copyAEStackList(patternInputItems);
+    }
+
+    protected void updatePatternOutputFluids() {
+        patternOutputFluids = getFluidStacksFromItems(patternContainer.getOutputItems());
+    }
+
+    protected void updatePatternOutputItems() {
+        patternOutputItems = getNonFluidStacksFromItems(patternContainer.getOutputItems());
+    }
+
+    protected LinkedList<IAEFluidStack> getFluidStacksFromItems(IAEItemStack[] aeItemStacks) {
+        if (!shouldUseFluids() || !isPatternAvailable())
+            return null;
 
         // Items that can hold fluids can hold fluids can potentially hold multiple
         // tanks/types of fluids. This makes pattern fluid requirement particularly
         // tricky.
-        LinkedList<IAEFluidStack> trackedFluidStacks = new LinkedList<>();
-        for (IAEItemStack inputItem : patternContainer.getInputItems()) {
-            Stream<AEFluidStack> inputItemFluidStacks = getFluidItemStacks(inputItem);
-
-            if (inputItemFluidStacks == null)
+        LinkedList<IAEFluidStack> foundFluids = new LinkedList<>();
+        for (IAEItemStack aeItemStack : aeItemStacks) {
+            // getDefinition is used here as there shouldn't be any modifications of the item stack anywhere it's passed.
+            ItemStack itemStack = aeItemStack.getDefinition();
+            Item item = itemStack.getItem();
+            if(!(item instanceof FluidEncoderItem))
                 continue;
 
-            inputItemFluidStacks.forEach(inputFluid -> {
-                Optional<IAEFluidStack> trackedFluid = trackedFluidStacks.stream()
-                        .filter(fluidStack -> fluidStack.fuzzyComparison(inputFluid, FuzzyMode.IGNORE_ALL)).findFirst();
-                if (trackedFluid.isPresent())
-                    trackedFluid.get().incStackSize(inputFluid.getStackSize());
-                else if (inputFluid.getStackSize() != 0)
-                    trackedFluidStacks.add(inputFluid.copy());
-            });
+            FluidStack fluidStack = FluidEncoderItem.getFluidStack(itemStack);
+            if(fluidStack == null)
+                continue;
+
+            int fluidAmount = FluidEncoderItem.getFluidAmount(itemStack);
+            if(fluidAmount == 0)
+                continue;
+
+            boolean matchFound = false;
+            for(IAEFluidStack foundFluid : foundFluids) {
+                FluidStack foundFluidStack = foundFluid.getFluidStack();
+                if((foundFluidStack.isFluidEqual(fluidStack))){
+                    foundFluidStack.amount += fluidAmount;
+                    matchFound = true;
+                    break;
+                }
+            }
+
+            if(!matchFound) {
+                FluidStack newFoundFluid = fluidStack.copy();
+                newFoundFluid.amount = fluidAmount;
+                foundFluids.add(AEFluidStack.fromFluidStack(newFoundFluid));
+            }
         }
-        patternInputFluids = trackedFluidStacks;
-        remainingInputFluids = copyInputFluids();
+
+        return foundFluids;
     }
 
-    protected void updatePatternInputItems() {
-        if (!isPatternAvailable()) {
-            patternInputItems = null;
-            remainingInputItems = null;
-            return;
-        }
+    protected LinkedList<IAEItemStack> getNonFluidStacksFromItems(IAEItemStack[] aeItemStacks) {
+        if(!isPatternAvailable())
+            return null;
 
-        Stream<IAEItemStack> inputItems = Arrays.stream(patternContainer.getInputItems())
-                .filter(inputItem -> inputItem.getStackSize() > 0);
+        Stream<IAEItemStack> items = Arrays.stream(aeItemStacks)
+                .filter(item -> item.getStackSize() > 0);
 
         if (shouldUseFluids())
-            inputItems = inputItems.filter(inputItem -> !hasItemFluidHandler(inputItem));
+            items = items.filter(item -> !(item.getItem() instanceof FluidEncoderItem));
 
-        patternInputItems = inputItems.collect(Collectors.toList());
-
-        remainingInputItems = copyInputItems();
+        return items.collect(Collectors.toCollection(LinkedList::new));
     }
 
     protected void adjustStockCount(long amount) {
@@ -299,12 +312,27 @@ public class CoverAE2Stocker extends CoverBehavior
 
     @Override
     public boolean isWorkingEnabled() {
-        return getPartialStatus() == CoverStatus.RUNNING;
+        return getCurrentStatus() == CoverStatus.RUNNING;
+        //return isInsertingEnabled() || isExtractingEnabled();
+    }
+
+    public boolean isInsertingEnabled() {
+        return shouldInsert && getCurrentStatus() == CoverStatus.RUNNING;
+    }
+
+    public boolean isExtractingEnabled() {
+        CoverStatus status = getCurrentStatus();
+        return !shouldInsert && (status == CoverStatus.RUNNING || status == CoverStatus.MISSING_INPUTS ||
+                status == CoverStatus.MISSING_INPUT_SPACE);
     }
 
     @Override
     public void setWorkingEnabled(boolean isActivationAllowed) {
         this.doesOtherAllowsWorking = isActivationAllowed;
+    }
+
+    public CoverStatus getCurrentStatus() {
+        return currentStatus;
     }
 
     protected CoverStatus getPartialStatus() {
@@ -373,28 +401,28 @@ public class CoverAE2Stocker extends CoverBehavior
         tagCompound.setTag("Pattern", this.patternContainer.serializeNBT());
         tagCompound.setBoolean("ShouldInsert", shouldInsert);
         tagCompound.setBoolean("UseFluids", useFluids);
-        NBTTagCompound remainingItems = new NBTTagCompound();
+        tagCompound.setInteger("Status", currentStatus.ordinal());
 
+        NBTTagCompound remainingItems = new NBTTagCompound();
         if (remainingInputItems != null) {
             int i = 0;
             for (IAEItemStack remainingInputItem : remainingInputItems) {
-                i++;
                 NBTTagCompound remainingItem = new NBTTagCompound();
                 remainingInputItem.writeToNBT(remainingItem);
-                remainingItem.setTag(String.valueOf(i), remainingItem);
+                remainingItems.setTag(String.valueOf(i++), remainingItem);
             }
             tagCompound.setTag("RemainingItems", remainingItems);
         }
 
+        NBTTagCompound remainingFluids = new NBTTagCompound();
         if (remainingInputFluids != null) {
             int i = 0;
-            for (IAEFluidStack remainingInputItem : remainingInputFluids) {
-                i++;
-                NBTTagCompound remainingItem = new NBTTagCompound();
-                remainingInputItem.writeToNBT(remainingItem);
-                remainingItem.setTag(String.valueOf(i), remainingItem);
+            for (IAEFluidStack remainingInputFluid : remainingInputFluids) {
+                NBTTagCompound remainingFluid = new NBTTagCompound();
+                remainingInputFluid.writeToNBT(remainingFluid);
+                remainingFluids.setTag(String.valueOf(i++), remainingFluid);
             }
-            tagCompound.setTag("RemainingFluids", remainingItems);
+            tagCompound.setTag("RemainingFluids", remainingFluids);
         }
 
         node.saveToNBT("node", tagCompound);
@@ -411,7 +439,7 @@ public class CoverAE2Stocker extends CoverBehavior
         if (tagCompound.hasKey("Pattern")) {
             NBTTagCompound patternContainer = tagCompound.getCompoundTag("Pattern");
             this.patternContainer.deserializeNBT(patternContainer);
-            patternChangeCallback(true);
+            updatePatternCaches();
         }
 
         if (tagCompound.hasKey("OtherAllowsWorking")) {
@@ -440,13 +468,16 @@ public class CoverAE2Stocker extends CoverBehavior
         }
 
         if (tagCompound.hasKey("RemainingFluids")) {
-            NBTTagCompound remainingItemsTag = tagCompound.getCompoundTag("RemainingFluids");
-            this.remainingInputFluids = remainingItemsTag.getKeySet().stream()
-                    .map(key -> AEFluidStack.fromNBT(remainingItemsTag.getCompoundTag(key)))
+            NBTTagCompound remainingFluidsTag = tagCompound.getCompoundTag("RemainingFluids");
+            this.remainingInputFluids = remainingFluidsTag.getKeySet().stream()
+                    .map(key -> AEFluidStack.fromNBT(remainingFluidsTag.getCompoundTag(key)))
                     .collect(Collectors.toList());
         } else {
             remainingInputFluids = null;
         }
+
+        if(tagCompound.hasKey("Status"))
+            currentStatus = CoverStatus.values()[tagCompound.getInteger("Status")];
     }
 
     @Override
@@ -475,6 +506,7 @@ public class CoverAE2Stocker extends CoverBehavior
         // worth of outputs
         // Therefore for only space available for insertion and extraction needs to be
         // checked
+        currentStatus = getPartialStatus();
         if (!isWorkingEnabled()) {
             getControllable().setWorkingEnabled(false);
             return;
@@ -486,75 +518,72 @@ public class CoverAE2Stocker extends CoverBehavior
         // Insert new items. This will track how much of the recipe is actually inserted so that multiple sets
         // of the same recipe aren't inserted when input space runs out.
         if (shouldInsert) {
-            boolean areRemainingItems = false;
             LinkedList<IAEItemStack> newRemainingInputItems = new LinkedList<>();
             LinkedList<IAEFluidStack> newRemainingInputFluids = new LinkedList<>();
-            if (machineItemHandler != null) {
-                for (IAEItemStack inputItem : getRemainingInputItems()) {
-                    ItemStack insertingStack = inputItem.createItemStack();
-                    for (int slot = 0; slot < machineSlotCount && !insertingStack.isEmpty(); slot++) {
-                        final ItemStack remainingStack = machineItemHandler.insertItem(slot, insertingStack, false);
-                        final int insertedCount = insertingStack.getCount() - remainingStack.getCount();
 
-                        // Can't insert into this slot for whatever reason
-                        if (insertedCount == 0)
-                            continue;
+            for (IAEItemStack inputItem : getRemainingInputItems()) {
+                ItemStack insertingStack = inputItem.createItemStack();
+                for (int slot = 0; slot < machineSlotCount; slot++) {
+                    final ItemStack remainingStack = machineItemHandler.insertItem(slot, insertingStack, false);
+                    final int insertedCount = insertingStack.getCount() - remainingStack.getCount();
 
-                        // Extract only what was inserted
-                        IAEItemStack extractionStack;
-                        if (insertedCount != inputItem.getStackSize()) {
-                            extractionStack = AEItemStack.fromItemStack(insertingStack);
-                            extractionStack.setStackSize(insertedCount);
-                        } else {
-                            // No need to make a new item stack if they're identical
-                            extractionStack = inputItem;
-                        }
-                        attachedAE2ItemInventory.extractItems(extractionStack, Actionable.MODULATE, machineActionSource);
+                    // Can't insert into this slot for whatever reason
+                    if (insertedCount == 0)
+                        continue;
 
-                        // Update the next inserting stack with whatever is left
-                        insertingStack = remainingStack;
-                        if (insertingStack.isEmpty())
-                            break;
+                    // Extract only what was inserted
+                    IAEItemStack extractionStack;
+                    if (insertedCount != inputItem.getStackSize()) {
+                        extractionStack = AEItemStack.fromItemStack(insertingStack);
+                        extractionStack.setStackSize(insertedCount);
+                    } else {
+                        // No need to make a new item stack if they're identical
+                        extractionStack = inputItem;
                     }
+                    attachedAE2ItemInventory.extractItems(extractionStack, Actionable.MODULATE, machineActionSource);
 
-                    if (!insertingStack.isEmpty())
-                        newRemainingInputItems.add(AEItemStack.fromItemStack(insertingStack));
+                    // Update the next inserting stack with whatever is left
+                    insertingStack = remainingStack;
+
+                    if (remainingStack.isEmpty())
+                        break;
                 }
+
+                // insertingStack is now remainingStack. Add the remainder to the remaining items list
+                if (!insertingStack.isEmpty())
+                    newRemainingInputItems.add(AEItemStack.fromItemStack(insertingStack));
             }
 
-            if (shouldUseFluids() && machineFluidHandler != null) {
+            if (shouldUseFluids()) {
                 for (IAEFluidStack inputFluid : getRemainingInputFluids()) {
                     FluidStack insertingStack = inputFluid.getFluidStack();
                     final int insertedCount = machineFluidHandler.fill(insertingStack, true);
 
-                    // Can't insert into this slot for whatever reason
-                    if (insertedCount == 0)
-                        return;
-
-                    // Extract only what was inserted
+                    // Create a stack to extract from AE2 grid that matches only what was inserted.
                     IAEFluidStack extractionStack;
-                    if (insertedCount != inputFluid.getStackSize()) {
+                    int remainingCount = insertingStack.amount - insertedCount;
+                    if (remainingCount != 0) {
+                        // Haven't inserted a full pattern, likely due to missing input space.
+                        // Save whatever is left over for the next round.
                         extractionStack = AEFluidStack.fromFluidStack(insertingStack);
-                        extractionStack.setStackSize(insertedCount);
+                        extractionStack.setStackSize(remainingCount);
+                        newRemainingInputFluids.add(extractionStack);
+
+                        // Can't insert into this slot for whatever reason. No need to try to extract 0 fluid from grid
+                        if(insertedCount == 0)
+                            continue;
                     } else {
                         // No need to make a new item stack if they're identical
                         extractionStack = inputFluid;
                     }
-                    attachedAE2FluidInventory.extractItems(extractionStack, Actionable.MODULATE, machineActionSource);
 
-                    // Haven't inserted a full pattern, likely due to missing input space.
-                    // Save whatever is left over for the next round.
-                    int remainingCount = insertingStack.amount - insertedCount;
-                    if (remainingCount != 0) {
-                        extractionStack.setStackSize(remainingCount);
-                        newRemainingInputFluids.add(extractionStack);
-                    }
+                    attachedAE2FluidInventory.extractItems(extractionStack, Actionable.MODULATE, machineActionSource);
                 }
             }
 
             if (newRemainingInputItems.isEmpty() && newRemainingInputFluids.isEmpty()) {
-                remainingInputItems = copyInputItems();
-                remainingInputFluids = copyInputFluids();
+                remainingInputItems = copyAEStackList(patternInputItems);
+                remainingInputFluids = copyAEStackList(patternInputFluids);
                 shouldInsert = false;
             } else {
                 remainingInputItems = newRemainingInputItems;
@@ -574,12 +603,11 @@ public class CoverAE2Stocker extends CoverBehavior
         if (!shouldInsert) {
             boolean missingOutputSpace = false;
             boolean hasRemovedSomething = false;
-            if (machineItemHandler != null) {
+            if (machineItemHandler != null)
                 for (int slot = 0; slot < machineSlotCount; slot++) {
                     ItemStack slotStack = machineItemHandler.getStackInSlot(slot);
-                    if (slotStack.isEmpty()) {
+                    if (slotStack.isEmpty())
                         continue;
-                    }
 
                     int availableCount = slotStack.getCount();
 
@@ -587,9 +615,8 @@ public class CoverAE2Stocker extends CoverBehavior
                     // be removable.
                     int amountAvailableToRemove = machineItemHandler.extractItem(slot, availableCount, true).getCount();
 
-                    if (amountAvailableToRemove == 0) {
+                    if (amountAvailableToRemove == 0)
                         continue;
-                    }
 
                     hasRemovedSomething = true;
 
@@ -607,15 +634,14 @@ public class CoverAE2Stocker extends CoverBehavior
                     if (missingSpace > 0)
                         missingOutputSpace = true;
                 }
-            }
 
-            if (shouldUseFluids() && machineFluidHandler != null) {
+            if (shouldUseFluids() && machineFluidHandler != null)
                 for (IFluidTankProperties tankProperties : machineFluidHandler.getTankProperties()) {
                     if (!tankProperties.canDrain())
                         continue;
 
                     // Test to see how much of what fluid can be removed
-                    FluidStack availableFluidStack = machineFluidHandler.drain(tankProperties.getContents(), true);
+                    FluidStack availableFluidStack = machineFluidHandler.drain(tankProperties.getContents(), false);
                     if (availableFluidStack == null)
                         continue;
 
@@ -639,7 +665,6 @@ public class CoverAE2Stocker extends CoverBehavior
                     if (missingSpace > 0)
                         missingOutputSpace = true;
                 }
-            }
 
             // Update the machine state to show that all items have been extracted
             shouldInsert = !missingOutputSpace && hasRemovedSomething;
@@ -703,13 +728,13 @@ public class CoverAE2Stocker extends CoverBehavior
     }
 
     @Override
-    public IGridNode getGridNode(AEPartLocation dir) {
+    public IGridNode getGridNode(@Nonnull AEPartLocation dir) {
         return getActionableNode();
     }
 
     @Nonnull
     @Override
-    public AECableType getCableConnectionType(AEPartLocation dir) {
+    public AECableType getCableConnectionType(@Nonnull AEPartLocation dir) {
         return AECableType.GLASS;
     }
 
@@ -748,7 +773,7 @@ public class CoverAE2Stocker extends CoverBehavior
     }
 
     @Override
-    public void onGridNotification(GridNotification notification) {
+    public void onGridNotification(@Nonnull GridNotification notification) {
     }
 
     @Override
@@ -793,27 +818,19 @@ public class CoverAE2Stocker extends CoverBehavior
         IItemList<IAEItemStack> storedItems = attachedAE2ItemInventory.getStorageList();
         IItemList<IAEFluidStack> storedFluids = attachedAE2FluidInventory.getStorageList();
 
-        for (IAEItemStack outputItem : patternContainer.getOutputItems()) {
-            boolean isFluidContainer = false;
-            if (shouldUseFluids()) {
-                Stream<AEFluidStack> fluids = getFluidItemStacks(outputItem);
-                if (fluids != null) {
-                    isFluidContainer = true;
-                    if (!fluids.allMatch(fluid -> getItemCount(fluid, storedFluids) >= stockCount)) {
-                        return false;
-                    }
-                }
-            }
-
-            if (!isFluidContainer && getItemCount(outputItem, storedItems) < stockCount) {
+        for(IAEItemStack outputItem : patternOutputItems)
+            if(getStorageCount(outputItem, storedItems) < stockCount)
                 return false;
-            }
-        }
+
+        if(shouldUseFluids())
+            for(IAEFluidStack outputFluid : patternOutputFluids)
+                if(getStorageCount(outputFluid, storedFluids) < stockCount)
+                    return false;
 
         return true;
     }
 
-    protected <T extends IAEStack<T>> long getItemCount(T item, IItemList<T> storedItems) {
+    protected <T extends IAEStack<T>> long getStorageCount(T item, IItemList<T> storedItems) {
         T testStack = item.copy();
         testStack.setStackSize(stockCount);
         // This behavior is very similar to a level emitter.
@@ -827,33 +844,24 @@ public class CoverAE2Stocker extends CoverBehavior
         IItemList<IAEItemStack> storedItems = attachedAE2ItemInventory.getStorageList();
         IItemList<IAEFluidStack> storedFluids = attachedAE2FluidInventory.getStorageList();
 
-        IAEItemStack[] outputItems = patternContainer.getOutputItems();
         LinkedList<Long> outputAvailableCounts = new LinkedList<>();
 
-        int numberOfOutputItems = outputItems == null ? 0 : outputItems.length;
-        for (int i = 0; i < numberOfOutputItems; i++) {
-            IAEItemStack outputItem = outputItems[i];
-            boolean isFluidContainer = false;
-            if (shouldUseFluids()) {
-                Stream<AEFluidStack> fluidStacks = getFluidItemStacks(outputItem);
+        for(IAEItemStack outputItem : patternOutputItems) {
+            outputAvailableCounts.add(getStorageCount(outputItem, storedItems));
+        }
 
-                if (fluidStacks != null) {
-                    isFluidContainer = true;
-                    fluidStacks.forEach(fluid -> outputAvailableCounts.add(getItemCount(fluid, storedFluids)));
-                }
+        if(shouldUseFluids()) {
+            for(IAEFluidStack outputFluid : patternOutputFluids) {
+                outputAvailableCounts.add(getStorageCount(outputFluid, storedFluids));
             }
-
-            if (isFluidContainer)
-                continue;
-
-            outputAvailableCounts.add(getItemCount(outputItem, storedItems));
         }
 
         return outputAvailableCounts;
     }
 
     public long getOutputLeastAvailableCount() {
-        return getOutputAvailableCounts().stream().reduce((x, y) -> x < y ? x : y).orElse(0L);
+        return (isGridConnected() && isPatternAvailable()) ?
+                getOutputAvailableCounts().stream().reduce((x, y) -> x < y ? x : y).orElse(0L) : 0;
     }
 
     /// Check if all items in a pattern are available to insert.
@@ -864,17 +872,14 @@ public class CoverAE2Stocker extends CoverBehavior
     /// isn't a way to tell
     /// if the machine is still running from a cover.
     protected boolean areAllInputsAvailable() {
-        for (IAEItemStack inputItem : getRemainingInputItems()) {
+        for (IAEItemStack inputItem : getRemainingInputItems())
             if (!isItemAvailableForExtraction(inputItem))
                 return false;
-        }
 
-        if (shouldUseFluids()) {
-            for (IAEFluidStack inputFluid : getRemainingInputFluids()) {
+        if (shouldUseFluids())
+            for (IAEFluidStack inputFluid : getRemainingInputFluids())
                 if (!areAllFluidsAvailableForExtraction(inputFluid))
                     return false;
-            }
-        }
 
         return true;
     }
@@ -898,36 +903,15 @@ public class CoverAE2Stocker extends CoverBehavior
     /// but two non-compatible item stacks
     /// need to be inserted into it, this will pass despite being a conflict.
     protected boolean isInputSpaceAvailable() {
-        int machineSlotCount = machineItemHandler == null ? 0 : machineItemHandler.getSlots();
+        // If items need to be inserted but the machine can't handle items, fail
+        if(!patternInputItems.isEmpty() && machineItemHandler == null)
+            return false;
 
-        for (IAEItemStack inputItem : patternContainer.getInputItems()) {
-            boolean isFluidContainer = false;
-            if (shouldUseFluids()) {
-                Stream<AEFluidStack> fluidStacks = getFluidItemStacks(inputItem);
-                if (fluidStacks != null) {
-                    isFluidContainer = true;
-
-                    fluidStacks.map(AEFluidStack::getFluidStack).allMatch(fluid -> {
-                        // If fluids need to be inserted but the machine can't handle fluids, automatic
-                        // failure
-                        if (fluid.amount > 0 && machineFluidHandler == null)
-                            return false;
-
-                        return fluid.amount == machineFluidHandler.fill(fluid, false);
-                    });
-                }
-            }
-
-            if (isFluidContainer)
-                continue;
-
-            if (machineItemHandler == null)
-                return false;
-
-            int targetInsertingCount = (int) inputItem.getStackSize();
+        for(IAEItemStack iaeItemStack : patternInputItems) {
+            int targetInsertingCount = (int) iaeItemStack.getStackSize();
             int neededSpace = targetInsertingCount;
-            for (int slot = 0; slot < machineSlotCount; slot++) {
-                int missingSpace = machineItemHandler.insertItem(slot, inputItem.createItemStack(), true).getCount();
+            for (int slot = 0; slot < machineItemHandler.getSlots(); slot++) {
+                int missingSpace = machineItemHandler.insertItem(slot, iaeItemStack.createItemStack(), true).getCount();
                 int spaceAvailableToInsert = targetInsertingCount - missingSpace;
                 neededSpace -= spaceAvailableToInsert;
 
@@ -943,6 +927,19 @@ public class CoverAE2Stocker extends CoverBehavior
             }
         }
 
+        if(shouldUseFluids()){
+            // If fluids need to be inserted but the machine can't handle fluids, fail
+            if (!patternInputFluids.isEmpty() && machineFluidHandler == null)
+                return false;
+
+            for(IAEFluidStack aeFluidStack : patternInputFluids) {
+                FluidStack fluidStack = aeFluidStack.getFluidStack();
+                // If a full set of fluid inputs couldn't be inserted, fail
+                if(fluidStack.amount != machineFluidHandler.fill(fluidStack, false))
+                    return false;
+            }
+        }
+
         return true;
     }
 
@@ -951,36 +948,22 @@ public class CoverAE2Stocker extends CoverBehavior
     /// There is a corner case here with multiple output stacks the first inserted
     /// stack will fill up all remaining space
     protected boolean isOutputSpaceAvailable() {
-        for (IAEItemStack outputItem : patternContainer.getOutputItems()) {
-            boolean isFluidContainer = false;
-            if (shouldUseFluids()) {
-                Stream<AEFluidStack> fluidStacks = getFluidItemStacks(outputItem);
-
-                if (fluidStacks != null) {
-                    isFluidContainer = true;
-
-                    if (!fluidStacks.allMatch(fluid -> {
-                        IAEFluidStack remainingItems = attachedAE2FluidInventory.injectItems(fluid, Actionable.SIMULATE,
-                                machineActionSource);
-
-                        long remainingCount = remainingItems == null ? 0 : remainingItems.getStackSize();
-                        return remainingCount <= 0;
-                    }))
-                        return false;
-                }
-            }
-
-            if (isFluidContainer)
-                continue;
-
+        for(IAEItemStack outputItem : patternOutputItems) {
             IAEItemStack remainingItems = attachedAE2ItemInventory.injectItems(outputItem, Actionable.SIMULATE,
                     machineActionSource);
-            long remainingCount = remainingItems == null ? 0 : remainingItems.getStackSize();
 
-            if (remainingCount > 0) {
+            if (remainingItems != null && remainingItems.getStackSize() > 0)
                 return false;
-            }
         }
+
+        if(shouldUseFluids())
+            for(IAEFluidStack outputFluid : patternOutputFluids) {
+                IAEFluidStack remainingFluid = attachedAE2FluidInventory.injectItems(outputFluid, Actionable.SIMULATE,
+                        machineActionSource);
+
+                if (remainingFluid != null && remainingFluid.getStackSize() > 0)
+                    return false;
+            }
 
         return true;
     }
@@ -1010,16 +993,12 @@ public class CoverAE2Stocker extends CoverBehavior
         return remainingInputItems;
     }
 
-    protected List<IAEItemStack> copyInputItems() {
-        return patternInputItems.stream().map(IAEItemStack::copy).collect(Collectors.toList());
-    }
-
     protected List<IAEFluidStack> getRemainingInputFluids() {
         return remainingInputFluids;
     }
 
-    protected List<IAEFluidStack> copyInputFluids() {
-        return patternInputFluids.stream().map(IAEFluidStack::copy).collect(Collectors.toList());
+    protected <T extends IAEStack<T>> List<T> copyAEStackList(List<T> sourceList){
+        return sourceList == null ? null : sourceList.stream().map(T::copy).collect(Collectors.toCollection(LinkedList::new));
     }
 
     enum CoverStatus implements IStringSerializable {
