@@ -1,7 +1,7 @@
 metaitem.ae2.stocker.lv.name=AE2 stocker cover (LV)
 metaitem.ae2.stocker.lv.tooltip=Tooltip not set TODO
 cover.stocker.title=AE2 Stocker Cover Settings (%s)
-cover.stocker.pattern.title=AE2 Crafting Pattern
+cover.stocker.pattern.title=Crafting pattern
 cover.stocker.stock_count=%s items
 cover.stocker.status=Status: %s
 cover.stocker.status.running=Running
@@ -14,6 +14,7 @@ cover.stocker.status.missing_input_space=Missing input space
 cover.stocker.status.missing_output_space=Missing output space
 cover.stocker.fluids.enable=AE2 fluids enabled
 cover.stocker.fluids.disable=AE2 fluids disabled
+cover.stocker.upgrade.label=Crafting card
 
 metaitem.machine.status.name=Machine status cover
 metaitem.machine.status.tooltip=Outputs redstone based on status

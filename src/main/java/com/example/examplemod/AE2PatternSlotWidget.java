@@ -2,24 +2,24 @@ package com.example.examplemod;
 
 import javax.annotation.Nonnull;
 
+import appeng.core.AppEng;
 import appeng.items.misc.ItemEncodedPattern;
 import appeng.util.Platform;
+import gregtech.api.gui.GuiTextures;
+import gregtech.api.gui.resources.TextureArea;
 import gregtech.api.gui.widgets.SlotWidget;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.IItemHandlerModifiable;
 
-public class AE2PatternSlotWidget extends SlotWidget {
-	
-	public AE2PatternSlotWidget(IItemHandlerModifiable itemHandler, int slotIndex, int xPosition, int yPosition,
-			boolean canTakeItems, boolean canPutItems) {
-		super(itemHandler, slotIndex, xPosition, yPosition, canTakeItems, canPutItems);
-		this.slotReference = new AE2WidgetSlotDelegate(itemHandler, slotIndex, xPosition, yPosition);
-	}
-
+public class AE2PatternSlotWidget extends BackgroundSlotWidget {
 	public AE2PatternSlotWidget(IItemHandlerModifiable itemHandler, int slotIndex, int xPosition, int yPosition) {
-		this(itemHandler, slotIndex, xPosition, yPosition, true, true);
+		super(itemHandler, slotIndex, xPosition, yPosition, true, true);
+		this.slotReference = new AE2WidgetSlotDelegate(itemHandler, slotIndex, xPosition, yPosition);
+		setBackgroundTexture(GuiTextures.SLOT, new TextureArea(new ResourceLocation(AppEng.MOD_ID,
+				"textures/guis/states.png"), (15.0/16.0), (7.0/16.0), (1.0/16.0), (1.0/16.0)));
 	}
 
 	public void setXPosition(final int xPos) {

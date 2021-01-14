@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
+import appeng.core.AppEng;
 import com.example.examplemod.CoverAE2Stocker.CoverStatus;
 import com.google.common.collect.HashMultimap;
 
@@ -22,6 +23,7 @@ import appeng.client.me.ClientDCInternalInv;
 import appeng.client.me.SlotDisconnected;
 import appeng.util.Platform;
 import appeng.util.ReadableNumberConverter;
+import gregtech.api.gui.resources.TextureArea;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.InventoryPlayer;
@@ -29,6 +31,7 @@ import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.util.ResourceLocation;
 
 public class StockerTerminalGuiContainer extends AEBaseGui {
 	protected final int offsetX = 9;

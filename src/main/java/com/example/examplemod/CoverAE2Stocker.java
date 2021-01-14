@@ -2,7 +2,11 @@ package com.example.examplemod;
 
 import appeng.api.AEApi;
 import appeng.api.config.Actionable;
+import appeng.api.config.Upgrades;
 import appeng.api.networking.*;
+import appeng.api.networking.crafting.ICraftingGrid;
+import appeng.api.networking.crafting.ICraftingLink;
+import appeng.api.networking.crafting.ICraftingRequester;
 import appeng.api.networking.events.*;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
@@ -27,6 +31,7 @@ import codechicken.lib.render.CCRenderState;
 import codechicken.lib.render.pipeline.IVertexOperation;
 import codechicken.lib.vec.Cuboid6;
 import codechicken.lib.vec.Matrix4;
+import com.google.common.collect.ImmutableSet;
 import gregtech.api.GTValues;
 import gregtech.api.capability.GregtechTileCapabilities;
 import gregtech.api.capability.IControllable;
@@ -57,15 +62,12 @@ import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 
 import javax.annotation.Nonnull;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CoverAE2Stocker extends CoverBehavior
-        implements CoverWithUI, ITickable, IControllable, IGridBlock, IGridHost, IActionHost {
+        implements CoverWithUI, ITickable, IControllable, IGridBlock, IGridHost, IActionHost, ICraftingRequester {
 
     public final int tier;
     public final long maxItemsStocked;
@@ -90,6 +92,9 @@ public class CoverAE2Stocker extends CoverBehavior
     protected List<IAEFluidStack> patternOutputFluids;
     protected List<IAEItemStack> patternOutputItems;
     protected CoverStatus currentStatus;
+    protected CraftingTracker craftingTracker;
+    protected List<IAEItemStack> missingInputItems;
+    protected AE2UpgradeSlotWidget upgradeSlotWidget;
 
     public CoverAE2Stocker(ICoverable coverable, EnumFacing attachedSide, int tier, long maxStockCount) {
         super(coverable, attachedSide);
@@ -97,6 +102,8 @@ public class CoverAE2Stocker extends CoverBehavior
         this.maxItemsStocked = maxStockCount;
         this.stockCount = this.maxItemsStocked;
         this.patternContainer = new PatternContainer(coverable, this::patternChangeCallback);
+        this.upgradeSlotWidget = new AE2UpgradeSlotWidget(Upgrades.CRAFTING);
+        this.upgradeSlotWidget.setContentsChangedCallback(wasInserted -> coverable.markDirty());
 
         if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
             node = AEApi.instance().grid().createGridNode(this);
@@ -109,6 +116,8 @@ public class CoverAE2Stocker extends CoverBehavior
                 this.attachedSide);
         this.machineFluidHandler = coverHolder.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY,
                 this.attachedSide);
+
+        this.craftingTracker = new CraftingTracker(this, machineActionSource);
     }
 
     protected void patternChangeCallback(boolean patternInserted) {
@@ -116,6 +125,8 @@ public class CoverAE2Stocker extends CoverBehavior
 
         if (patternInserted)
             shouldInsert = true;
+        else
+            craftingTracker.cancelAll();
     }
 
     @Override
@@ -198,7 +209,12 @@ public class CoverAE2Stocker extends CoverBehavior
                 () -> ReadableNumberConverter.INSTANCE.toWideReadableForm(stockCount)));
 
         // Pattern
-        this.patternContainer.initUI(48, primaryGroup::addWidget);
+        this.patternContainer.initUI(45, primaryGroup::addWidget);
+
+        // Upgrade
+        primaryGroup.addWidget(new LabelWidget(32, 68, "cover.stocker.upgrade.label"));
+        this.upgradeSlotWidget.initUI(11, 63, primaryGroup::addWidget);
+//        primaryGroup.addWidget(new AE2UpgradeSlotWidget(0, 11, 63).setContentsChangedCallback(slot -> {}));
 
         // Fluids
         primaryGroup.addWidget(new CycleButtonWidget(10, 86, 156, 20, this::shouldUseFluids, this::setUseFluids,
@@ -273,20 +289,15 @@ public class CoverAE2Stocker extends CoverBehavior
             if(fluidAmount == 0)
                 continue;
 
-            boolean matchFound = false;
-            for(IAEFluidStack foundFluid : foundFluids) {
-                FluidStack foundFluidStack = foundFluid.getFluidStack();
-                if((foundFluidStack.isFluidEqual(fluidStack))){
-                    foundFluidStack.amount += fluidAmount;
-                    matchFound = true;
-                    break;
-                }
-            }
+            Optional<IAEFluidStack> matchedFluid = foundFluids.stream()
+                    .filter(foundFluid -> foundFluid.getFluidStack().isFluidEqual(fluidStack)).findAny();
 
-            if(!matchFound) {
-                FluidStack newFoundFluid = fluidStack.copy();
-                newFoundFluid.amount = fluidAmount;
-                foundFluids.add(AEFluidStack.fromFluidStack(newFoundFluid));
+            if(matchedFluid.isPresent())
+                matchedFluid.get().incStackSize(fluidAmount);
+            else {
+                IAEFluidStack unMatchedFluid = AEFluidStack.fromFluidStack(fluidStack);
+                unMatchedFluid.setStackSize(fluidAmount);
+                foundFluids.add(unMatchedFluid);
             }
         }
 
@@ -303,7 +314,19 @@ public class CoverAE2Stocker extends CoverBehavior
         if (shouldUseFluids())
             items = items.filter(item -> !(item.getItem() instanceof FluidEncoderItem));
 
-        return items.collect(Collectors.toCollection(LinkedList::new));
+        LinkedList<IAEItemStack> reducedItems = new LinkedList<>();
+
+        items.forEach(item -> {
+            Optional<IAEItemStack> existingItem = reducedItems.stream()
+                    .filter(reducedItem -> reducedItem.getDefinition().isItemEqual(item.getDefinition())).findAny();
+
+            if(existingItem.isPresent())
+                existingItem.get().incStackSize(item.getStackSize());
+            else
+                reducedItems.add(item);
+        });
+
+        return reducedItems;
     }
 
     protected void adjustStockCount(long amount) {
@@ -313,17 +336,6 @@ public class CoverAE2Stocker extends CoverBehavior
     @Override
     public boolean isWorkingEnabled() {
         return getCurrentStatus() == CoverStatus.RUNNING;
-        //return isInsertingEnabled() || isExtractingEnabled();
-    }
-
-    public boolean isInsertingEnabled() {
-        return shouldInsert && getCurrentStatus() == CoverStatus.RUNNING;
-    }
-
-    public boolean isExtractingEnabled() {
-        CoverStatus status = getCurrentStatus();
-        return !shouldInsert && (status == CoverStatus.RUNNING || status == CoverStatus.MISSING_INPUTS ||
-                status == CoverStatus.MISSING_INPUT_SPACE);
     }
 
     @Override
@@ -402,6 +414,7 @@ public class CoverAE2Stocker extends CoverBehavior
         tagCompound.setBoolean("ShouldInsert", shouldInsert);
         tagCompound.setBoolean("UseFluids", useFluids);
         tagCompound.setInteger("Status", currentStatus.ordinal());
+        tagCompound.setTag("UpgradeSlot", this.upgradeSlotWidget.serializeNBT());
 
         NBTTagCompound remainingItems = new NBTTagCompound();
         if (remainingInputItems != null) {
@@ -426,6 +439,7 @@ public class CoverAE2Stocker extends CoverBehavior
         }
 
         node.saveToNBT("node", tagCompound);
+        craftingTracker.writeToNBT(tagCompound);
     }
 
     @Override
@@ -478,6 +492,11 @@ public class CoverAE2Stocker extends CoverBehavior
 
         if(tagCompound.hasKey("Status"))
             currentStatus = CoverStatus.values()[tagCompound.getInteger("Status")];
+
+        if(tagCompound.hasKey("UpgradeSlot"))
+            this.upgradeSlotWidget.deserializeNBT(tagCompound.getCompoundTag("UpgradeSlot"));
+
+        craftingTracker.readFromNBT(tagCompound);
     }
 
     @Override
@@ -509,6 +528,15 @@ public class CoverAE2Stocker extends CoverBehavior
         currentStatus = getPartialStatus();
         if (!isWorkingEnabled()) {
             getControllable().setWorkingEnabled(false);
+
+            if(currentStatus == CoverStatus.MISSING_INPUTS && upgradeSlotWidget.isUpgradeInserted()){
+                IGrid grid = node.getGrid();
+                ICraftingGrid craftingGrid = grid.getCache(ICraftingGrid.class);
+                for(IAEItemStack missingInputItem : missingInputItems) {
+                    craftingTracker.handleCrafting(missingInputItem, craftingGrid, coverHolder.getWorld(), grid);
+                }
+            }
+
             return;
         }
         getControllable().setWorkingEnabled(true);
@@ -872,19 +900,38 @@ public class CoverAE2Stocker extends CoverBehavior
     /// isn't a way to tell
     /// if the machine is still running from a cover.
     protected boolean areAllInputsAvailable() {
-        for (IAEItemStack inputItem : getRemainingInputItems())
-            if (!isItemAvailableForExtraction(inputItem))
+        if(!upgradeSlotWidget.isUpgradeInserted()) {
+            for (IAEItemStack inputItem : getRemainingInputItems())
+                if (!isItemAvailableForExtraction(inputItem))
+                    return false;
+        }
+        else {
+            missingInputItems = new LinkedList<>();
+            for (IAEItemStack inputItem : getRemainingInputItems()) {
+                long availableCount = getItemAvailableCount(inputItem);
+                long requiredCount = inputItem.getStackSize();
+
+                if (availableCount >= requiredCount)
+                    continue;
+
+                IAEItemStack missingItemStack = inputItem.copy();
+                missingItemStack.setStackSize(requiredCount - availableCount);
+                missingInputItems.add(missingItemStack);
+            }
+
+            if(!missingInputItems.isEmpty())
                 return false;
+        }
 
         if (shouldUseFluids())
             for (IAEFluidStack inputFluid : getRemainingInputFluids())
-                if (!areAllFluidsAvailableForExtraction(inputFluid))
+                if (!isFluidAvailableForExtraction(inputFluid))
                     return false;
 
         return true;
     }
 
-    protected Boolean areAllFluidsAvailableForExtraction(IAEFluidStack fluid) {
+    protected boolean isFluidAvailableForExtraction(IAEFluidStack fluid) {
         IAEFluidStack availableFluid = attachedAE2FluidInventory.extractItems(fluid, Actionable.SIMULATE,
                 machineActionSource);
 
@@ -892,10 +939,14 @@ public class CoverAE2Stocker extends CoverBehavior
     }
 
     protected boolean isItemAvailableForExtraction(IAEItemStack items) {
-        IAEItemStack availableItems = attachedAE2ItemInventory.extractItems(items, Actionable.SIMULATE,
+        return getItemAvailableCount(items) == items.getStackSize();
+    }
+
+    protected long getItemAvailableCount(IAEItemStack item) {
+        IAEItemStack availableItems = attachedAE2ItemInventory.extractItems(item, Actionable.SIMULATE,
                 machineActionSource);
 
-        return availableItems != null && availableItems.equals(items);
+        return availableItems == null ? 0 : availableItems.getStackSize();
     }
 
     /// Check if there is room to insert another batch of inputs
@@ -999,6 +1050,21 @@ public class CoverAE2Stocker extends CoverBehavior
 
     protected <T extends IAEStack<T>> List<T> copyAEStackList(List<T> sourceList){
         return sourceList == null ? null : sourceList.stream().map(T::copy).collect(Collectors.toCollection(LinkedList::new));
+    }
+
+    @Override
+    public ImmutableSet<ICraftingLink> getRequestedJobs() {
+        return craftingTracker.getRequestedJobs();
+    }
+
+    @Override
+    public IAEItemStack injectCraftedItems(ICraftingLink link, IAEItemStack items, Actionable mode) {
+        return items;
+    }
+
+    @Override
+    public void jobStateChange(ICraftingLink link) {
+        craftingTracker.jobStateChange(link);
     }
 
     enum CoverStatus implements IStringSerializable {
