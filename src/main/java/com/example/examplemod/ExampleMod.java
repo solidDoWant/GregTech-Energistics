@@ -1,5 +1,6 @@
 package com.example.examplemod;
 
+import gregtech.api.util.BaseCreativeTab;
 import org.apache.logging.log4j.Logger;
 
 import appeng.api.util.AEColor;
@@ -31,9 +32,7 @@ public class ExampleMod {
 	@EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
 		logger = event.getModLog();
-		MetaItems.init();
 		proxy.preInit(event);
-		MetaTileEntities.init();
 	}
 
 	@Mod.EventHandler

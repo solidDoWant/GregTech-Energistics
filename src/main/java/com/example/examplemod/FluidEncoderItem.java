@@ -2,6 +2,7 @@ package com.example.examplemod;
 
 import appeng.api.AEApi;
 import appeng.util.ReadableNumberConverter;
+import gregtech.api.GregTechAPI;
 import gregtech.api.gui.GuiTextures;
 import gregtech.api.gui.ModularUI;
 import gregtech.api.gui.widgets.ClickButtonWidget;
@@ -33,9 +34,10 @@ import java.util.List;
 
 public class FluidEncoderItem extends Item implements ItemUIFactory, ICustomModel {
     public FluidEncoderItem() {
-        setRegistryName("fluid.encoder");
+        setRegistryName(ExampleMod.MODID, "fluid.encoder");
         setUnlocalizedName("fluid.encoder");
         setMaxStackSize(1);
+        setCreativeTab(GregTechAPI.TAB_GREGTECH);
     }
 
     @SideOnly(Side.CLIENT)

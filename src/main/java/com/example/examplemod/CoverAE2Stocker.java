@@ -35,6 +35,7 @@ import com.google.common.collect.ImmutableSet;
 import gregtech.api.GTValues;
 import gregtech.api.capability.GregtechTileCapabilities;
 import gregtech.api.capability.IControllable;
+import gregtech.api.capability.impl.FluidTankList;
 import gregtech.api.cover.CoverBehavior;
 import gregtech.api.cover.CoverWithUI;
 import gregtech.api.cover.ICoverable;
@@ -42,7 +43,12 @@ import gregtech.api.gui.GuiTextures;
 import gregtech.api.gui.ModularUI;
 import gregtech.api.gui.widgets.*;
 import gregtech.api.metatileentity.MetaTileEntity;
+import gregtech.api.metatileentity.multiblock.IMultiblockPart;
+import gregtech.api.metatileentity.multiblock.MultiblockAbility;
+import gregtech.api.metatileentity.multiblock.MultiblockControllerBase;
+import gregtech.api.metatileentity.multiblock.RecipeMapMultiblockController;
 import gregtech.api.render.Textures;
+import gregtech.common.metatileentities.electric.multiblockpart.MetaTileEntityMultiblockPart;
 import net.minecraft.block.Block;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.EntityPlayer;
@@ -54,12 +60,14 @@ import net.minecraft.util.*;
 import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.IFluidTank;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidTankProperties;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.IItemHandlerModifiable;
 
 import javax.annotation.Nonnull;
 import java.util.*;
@@ -75,8 +83,10 @@ public class CoverAE2Stocker extends CoverBehavior
     protected final IActionSource machineActionSource;
     protected final IItemStorageChannel itemChannel;
     protected final IFluidStorageChannel fluidChannel;
-    protected final IItemHandler machineItemHandler;
-    protected final IFluidHandler machineFluidHandler;
+    protected IItemHandler machineItemInputHandler;
+    protected IItemHandler machineItemExportHandler;
+    protected IFluidHandler machineFluidInputHandler;
+    protected IFluidHandler machineFluidExportHandler;
     protected boolean doesOtherAllowsWorking = true;
     protected long stockCount; // AE2 uses 'long's for most stack sizes, so we will too
     protected IGridNode node;
@@ -95,6 +105,7 @@ public class CoverAE2Stocker extends CoverBehavior
     protected CraftingTracker craftingTracker;
     protected List<IAEItemStack> missingInputItems;
     protected AE2UpgradeSlotWidget upgradeSlotWidget;
+    protected MultiblockControllerBase controller;
 
     public CoverAE2Stocker(ICoverable coverable, EnumFacing attachedSide, int tier, long maxStockCount) {
         super(coverable, attachedSide);
@@ -112,12 +123,11 @@ public class CoverAE2Stocker extends CoverBehavior
         this.machineActionSource = new MachineSource(this);
         this.itemChannel = AEApi.instance().storage().getStorageChannel(IItemStorageChannel.class);
         this.fluidChannel = AEApi.instance().storage().getStorageChannel(IFluidStorageChannel.class);
-        this.machineItemHandler = coverHolder.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY,
-                this.attachedSide);
-        this.machineFluidHandler = coverHolder.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY,
-                this.attachedSide);
-
         this.craftingTracker = new CraftingTracker(this, machineActionSource);
+
+        // In the case of non-multiblocks this only needs to be done once and can be done on instantiation
+        if(!isHolderMultiblock())
+            registerSingleBlockHandlers();
     }
 
     protected void patternChangeCallback(boolean patternInserted) {
@@ -131,21 +141,128 @@ public class CoverAE2Stocker extends CoverBehavior
 
     @Override
     public boolean canAttach() {
+        if(isHolderMultiblock()) {
+            // Cover holder is a multiblock part
+            // Unfortunately this has to check specifically for a MetaTileEntityMultiblockPart here
+            // (rather than IMultiblockPart) because this needs to get the controller from the part.
+            MetaTileEntityMultiblockPart castedHolder = (MetaTileEntityMultiblockPart ) coverHolder;
+            MultiblockControllerBase controller = castedHolder.getController();
+
+            if(controller == null)
+                return false;
+
+            if(!controller.isStructureFormed())
+                return false;
+
+            for(IMultiblockPart part : controller.getMultiblockParts())
+                if(part instanceof ICoverable)
+                    if(checkIfICoveraebleContainsCover((ICoverable) part))
+                        return false;
+
+            // Check to make sure the multiblock has at least one input and export capability
+            if(controller.getAbilities(MultiblockAbility.IMPORT_ITEMS).isEmpty() &&
+                    controller.getAbilities(MultiblockAbility.IMPORT_FLUIDS).isEmpty())
+                return false;
+
+            if(controller.getAbilities(MultiblockAbility.EXPORT_ITEMS).isEmpty() &&
+                    controller.getAbilities(MultiblockAbility.EXPORT_FLUIDS).isEmpty())
+                return false;
+
+            return true;
+        } else {
+            if(checkIfICoveraebleContainsCover(coverHolder))
+                return false;
+
+            return coverHolder.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, attachedSide) != null ||
+                    coverHolder.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, attachedSide) != null;
+        }
+    }
+
+    @Override
+    public void onAttached(ItemStack itemStack) {
+        // registerHandlers();
+    }
+
+    protected void updateMultiblockInformation() {
+        if(!isHolderMultiblock())
+            return;
+
+        MetaTileEntityMultiblockPart castedHolder = (MetaTileEntityMultiblockPart ) coverHolder;
+        controller = castedHolder.getController();
+        if(controller == null)
+            return;
+
+        if(controller instanceof RecipeMapMultiblockController)
+            registerRecipeMapMultiblockControllerHandlers();
+        else
+            registerGenericMetaTileEntityMultiblockPartHandlers();
+    }
+
+    public boolean isHolderMultiblock() {
+        return coverHolder instanceof  MetaTileEntityMultiblockPart;
+    }
+
+    protected void registerSingleBlockHandlers() {
+        machineItemInputHandler = coverHolder.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY,
+                this.attachedSide);
+        machineItemExportHandler = machineItemInputHandler;
+        machineFluidInputHandler = coverHolder.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY,
+                this.attachedSide);
+        machineFluidExportHandler = machineFluidInputHandler;
+    }
+
+    protected void registerRecipeMapMultiblockControllerHandlers() {
+        RecipeMapMultiblockController castedController = (RecipeMapMultiblockController) controller;
+
+        // Temporary fix for ItemHandlerList bug
+        List<IItemHandlerModifiable> itemInputHandlers = controller.getAbilities(MultiblockAbility.IMPORT_ITEMS);
+        if(!itemInputHandlers.isEmpty())
+            machineItemInputHandler = new ItemHandlerListFixed(itemInputHandlers);
+
+        List<IItemHandlerModifiable> itemExportHandlers = controller.getAbilities(MultiblockAbility.EXPORT_ITEMS);
+        if(!itemExportHandlers.isEmpty())
+            machineItemExportHandler = new ItemHandlerListFixed(itemExportHandlers);
+//        machineItemInputHandler = castedController.getInputInventory();
+//        machineItemExportHandler = castedController.getOutputInventory();
+
+        machineFluidInputHandler = castedController.getInputFluidInventory();
+        machineFluidExportHandler = castedController.getOutputFluidInventory();
+    }
+
+    protected void registerGenericMetaTileEntityMultiblockPartHandlers() {
+        List<IItemHandlerModifiable> itemInputHandlers = controller.getAbilities(MultiblockAbility.IMPORT_ITEMS);
+        if(!itemInputHandlers.isEmpty())
+            machineItemInputHandler = new ItemHandlerListFixed(itemInputHandlers);
+
+        List<IItemHandlerModifiable> itemExportHandlers = controller.getAbilities(MultiblockAbility.EXPORT_ITEMS);
+        if(!itemExportHandlers.isEmpty())
+            machineItemExportHandler = new ItemHandlerListFixed(itemExportHandlers);
+
+        List<IFluidTank> fluidInputHandlers = controller.getAbilities(MultiblockAbility.IMPORT_FLUIDS);
+        if(!fluidInputHandlers.isEmpty())
+            machineFluidInputHandler = new FluidTankList(false, fluidInputHandlers);
+
+        List<IFluidTank> fluidExportHandlers = controller.getAbilities(MultiblockAbility.EXPORT_FLUIDS);
+        if(!fluidExportHandlers.isEmpty())
+            machineFluidExportHandler = new FluidTankList(false, fluidExportHandlers);
+    }
+
+    public static boolean checkIfICoveraebleContainsCover(ICoverable coverHolder) {
         for (EnumFacing side : EnumFacing.VALUES) {
             if (coverHolder.getCoverAtSide(side) instanceof CoverAE2Stocker) {
-                return false;
+                return true;
             }
         }
 
-        return coverHolder.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, attachedSide) != null ||
-                coverHolder.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, attachedSide) != null;
+        return false;
     }
 
     @Override
     public void onRemoved() {
         node.destroy();
 
-        getControllable().setWorkingEnabled(true);
+        if(doesOtherAllowsWorking)
+            getControllable().setWorkingEnabled(true);
 
         NonNullList<ItemStack> drops = NonNullList.create();
         MetaTileEntity.clearInventory(drops, patternContainer.getPatternInventory());
@@ -201,9 +318,9 @@ public class CoverAE2Stocker extends CoverBehavior
         long incrementSize = maxItemsStocked / 100;
         String readableIncrementSize = ReadableNumberConverter.INSTANCE.toWideReadableForm(incrementSize);
         primaryGroup.addWidget(new ClickButtonWidget(10, 20, 40, 20, "-" + readableIncrementSize,
-                data -> adjustStockCount(data.isShiftClick ? -incrementSize : -10 * incrementSize)));
+                data -> adjustStockCount(data.isShiftClick ? -10 * incrementSize : -incrementSize)));
         primaryGroup.addWidget(new ClickButtonWidget(126, 20, 40, 20, "+" + readableIncrementSize,
-                data -> adjustStockCount(data.isShiftClick ? incrementSize : 10 * incrementSize)));
+                data -> adjustStockCount(data.isShiftClick ? 10 * incrementSize : incrementSize)));
         primaryGroup.addWidget(new ImageWidget(50, 20, 76, 20, GuiTextures.DISPLAY));
         primaryGroup.addWidget(new SimpleTextWidget(88, 30, "cover.stocker.stock_count", 0xFFFFFF,
                 () -> ReadableNumberConverter.INSTANCE.toWideReadableForm(stockCount)));
@@ -360,6 +477,8 @@ public class CoverAE2Stocker extends CoverBehavior
             return CoverStatus.FULLY_STOCKED;
         if (!areAllInputsAvailable())
             return CoverStatus.MISSING_INPUTS;
+        if(isHolderMultiblock() && (controller == null || !controller.isStructureFormed()))
+            return CoverStatus.INVALID_MULTIBLOCK;
         if (!isInputSpaceAvailable())
             return CoverStatus.MISSING_INPUT_SPACE;
         if (!isOutputSpaceAvailable())
@@ -503,15 +622,13 @@ public class CoverAE2Stocker extends CoverBehavior
     public void update() {
         // Only update on every 10th tick
         long timer = coverHolder.getTimer();
-        if (timer % 5 != 0) {
+        if (timer % 5 != 0)
             return;
-        }
 
         // Covers cannot currently tell when a neighboring block changes. This is a
         // workaround so that when a new cable is placed the cover can connect to it.
-        if (!isGridConnected() && coverHolder.getWorld() != null) {
+        if (coverHolder.getWorld() != null && !isGridConnected())
             node.updateState();
-        }
 
         // Upon checking this we should know several things and don't have to check
         // them:
@@ -525,23 +642,29 @@ public class CoverAE2Stocker extends CoverBehavior
         // worth of outputs
         // Therefore for only space available for insertion and extraction needs to be
         // checked
+        updateMultiblockInformation();
         currentStatus = getPartialStatus();
         if (!isWorkingEnabled()) {
-            getControllable().setWorkingEnabled(false);
+            if(!isHolderMultiblock() || (currentStatus != CoverStatus.MISSING_INPUT_SPACE && currentStatus != CoverStatus.MISSING_OUTPUT_SPACE))
+                setWorkingStatus(false);
+            else
+                setWorkingStatus(true);
 
             if(currentStatus == CoverStatus.MISSING_INPUTS && upgradeSlotWidget.isUpgradeInserted()){
                 IGrid grid = node.getGrid();
                 ICraftingGrid craftingGrid = grid.getCache(ICraftingGrid.class);
-                for(IAEItemStack missingInputItem : missingInputItems) {
+                for(IAEItemStack missingInputItem : missingInputItems)
                     craftingTracker.handleCrafting(missingInputItem, craftingGrid, coverHolder.getWorld(), grid);
-                }
             }
 
             return;
         }
-        getControllable().setWorkingEnabled(true);
+        setWorkingStatus(true);
 
-        int machineSlotCount = machineItemHandler == null ? 0 : machineItemHandler.getSlots();
+        if(isHolderMultiblock() && controller == null)
+            return;
+
+        //int machineSlotCount = machineItemHandler == null ? 0 : machineItemHandler.getSlots();
 
         // Insert new items. This will track how much of the recipe is actually inserted so that multiple sets
         // of the same recipe aren't inserted when input space runs out.
@@ -551,8 +674,8 @@ public class CoverAE2Stocker extends CoverBehavior
 
             for (IAEItemStack inputItem : getRemainingInputItems()) {
                 ItemStack insertingStack = inputItem.createItemStack();
-                for (int slot = 0; slot < machineSlotCount; slot++) {
-                    final ItemStack remainingStack = machineItemHandler.insertItem(slot, insertingStack, false);
+                for (int slot = 0; slot < (machineItemInputHandler == null ? 0 : machineItemInputHandler.getSlots()); slot++) {
+                    final ItemStack remainingStack = machineItemInputHandler.insertItem(slot, insertingStack, false);
                     final int insertedCount = insertingStack.getCount() - remainingStack.getCount();
 
                     // Can't insert into this slot for whatever reason
@@ -585,7 +708,7 @@ public class CoverAE2Stocker extends CoverBehavior
             if (shouldUseFluids()) {
                 for (IAEFluidStack inputFluid : getRemainingInputFluids()) {
                     FluidStack insertingStack = inputFluid.getFluidStack();
-                    final int insertedCount = machineFluidHandler.fill(insertingStack, true);
+                    final int insertedCount = machineFluidInputHandler.fill(insertingStack, true);
 
                     // Create a stack to extract from AE2 grid that matches only what was inserted.
                     IAEFluidStack extractionStack;
@@ -631,9 +754,9 @@ public class CoverAE2Stocker extends CoverBehavior
         if (!shouldInsert) {
             boolean missingOutputSpace = false;
             boolean hasRemovedSomething = false;
-            if (machineItemHandler != null)
-                for (int slot = 0; slot < machineSlotCount; slot++) {
-                    ItemStack slotStack = machineItemHandler.getStackInSlot(slot);
+            if (machineItemExportHandler != null)
+                for (int slot = 0; slot < (machineItemExportHandler == null ? 0 : machineItemExportHandler.getSlots()); slot++) {
+                    ItemStack slotStack = machineItemExportHandler.getStackInSlot(slot);
                     if (slotStack.isEmpty())
                         continue;
 
@@ -641,7 +764,7 @@ public class CoverAE2Stocker extends CoverBehavior
 
                     // Test to see how many items can be removed. Some slots (i.e. inputs) might not
                     // be removable.
-                    int amountAvailableToRemove = machineItemHandler.extractItem(slot, availableCount, true).getCount();
+                    int amountAvailableToRemove = machineItemExportHandler.extractItem(slot, availableCount, true).getCount();
 
                     if (amountAvailableToRemove == 0)
                         continue;
@@ -657,19 +780,19 @@ public class CoverAE2Stocker extends CoverBehavior
                     long missingSpace = remainingItemStack == null ? 0 : remainingItemStack.getStackSize();
                     int insertedAmount = (int) (availableCount - missingSpace);
 
-                    machineItemHandler.extractItem(slot, insertedAmount, false);
+                    machineItemExportHandler.extractItem(slot, insertedAmount, false);
 
                     if (missingSpace > 0)
                         missingOutputSpace = true;
                 }
 
-            if (shouldUseFluids() && machineFluidHandler != null)
-                for (IFluidTankProperties tankProperties : machineFluidHandler.getTankProperties()) {
+            if (shouldUseFluids() && machineFluidExportHandler != null)
+                for (IFluidTankProperties tankProperties : machineFluidExportHandler.getTankProperties()) {
                     if (!tankProperties.canDrain())
                         continue;
 
                     // Test to see how much of what fluid can be removed
-                    FluidStack availableFluidStack = machineFluidHandler.drain(tankProperties.getContents(), false);
+                    FluidStack availableFluidStack = machineFluidExportHandler.drain(tankProperties.getContents(), false);
                     if (availableFluidStack == null)
                         continue;
 
@@ -688,7 +811,7 @@ public class CoverAE2Stocker extends CoverBehavior
 
                     // Remove the amount actually inserted
                     availableFluidStack.amount = (int) (availableFluidAmount - missingSpace);
-                    machineFluidHandler.drain(availableFluidStack, true);
+                    machineFluidExportHandler.drain(availableFluidStack, true);
 
                     if (missingSpace > 0)
                         missingOutputSpace = true;
@@ -697,6 +820,12 @@ public class CoverAE2Stocker extends CoverBehavior
             // Update the machine state to show that all items have been extracted
             shouldInsert = !missingOutputSpace && hasRemovedSomething;
         }
+    }
+
+    public void setWorkingStatus(boolean shouldWork) {
+        IControllable machine = getControllable();
+        if(machine != null)
+            machine.setWorkingEnabled(shouldWork);
     }
 
     @MENetworkEventSubscribe
@@ -763,7 +892,7 @@ public class CoverAE2Stocker extends CoverBehavior
     @Nonnull
     @Override
     public AECableType getCableConnectionType(@Nonnull AEPartLocation dir) {
-        return AECableType.GLASS;
+        return AECableType.SMART;
     }
 
     @Override
@@ -811,10 +940,7 @@ public class CoverAE2Stocker extends CoverBehavior
     @Nonnull
     @Override
     public EnumSet<EnumFacing> getConnectableSides() {
-        final EnumSet<EnumFacing> sides = EnumSet.noneOf(EnumFacing.class);
-        sides.add(this.attachedSide);
-
-        return sides;
+        return EnumSet.of(this.attachedSide);
     }
 
     @Nonnull
@@ -830,6 +956,9 @@ public class CoverAE2Stocker extends CoverBehavior
     @Nonnull
     @Override
     public ItemStack getMachineRepresentation() {
+        if(isHolderMultiblock() && controller != null)
+            return controller.getStackForm();
+
         return coverHolder.getStackForm();
     }
 
@@ -955,14 +1084,14 @@ public class CoverAE2Stocker extends CoverBehavior
     /// need to be inserted into it, this will pass despite being a conflict.
     protected boolean isInputSpaceAvailable() {
         // If items need to be inserted but the machine can't handle items, fail
-        if(!patternInputItems.isEmpty() && machineItemHandler == null)
+        if(!patternInputItems.isEmpty() && machineItemInputHandler == null)
             return false;
 
         for(IAEItemStack iaeItemStack : patternInputItems) {
             int targetInsertingCount = (int) iaeItemStack.getStackSize();
             int neededSpace = targetInsertingCount;
-            for (int slot = 0; slot < machineItemHandler.getSlots(); slot++) {
-                int missingSpace = machineItemHandler.insertItem(slot, iaeItemStack.createItemStack(), true).getCount();
+            for (int slot = 0; slot < machineItemInputHandler.getSlots(); slot++) {
+                int missingSpace = machineItemInputHandler.insertItem(slot, iaeItemStack.createItemStack(), true).getCount();
                 int spaceAvailableToInsert = targetInsertingCount - missingSpace;
                 neededSpace -= spaceAvailableToInsert;
 
@@ -980,13 +1109,13 @@ public class CoverAE2Stocker extends CoverBehavior
 
         if(shouldUseFluids()){
             // If fluids need to be inserted but the machine can't handle fluids, fail
-            if (!patternInputFluids.isEmpty() && machineFluidHandler == null)
+            if (!patternInputFluids.isEmpty() && machineFluidInputHandler == null)
                 return false;
 
             for(IAEFluidStack aeFluidStack : patternInputFluids) {
                 FluidStack fluidStack = aeFluidStack.getFluidStack();
                 // If a full set of fluid inputs couldn't be inserted, fail
-                if(fluidStack.amount != machineFluidHandler.fill(fluidStack, false))
+                if(fluidStack.amount != machineFluidInputHandler.fill(fluidStack, false))
                     return false;
             }
         }
@@ -1020,10 +1149,14 @@ public class CoverAE2Stocker extends CoverBehavior
     }
 
     private IControllable getControllable() {
-        return coverHolder.getCapability(GregtechTileCapabilities.CAPABILITY_CONTROLLABLE, null);
+        ICoverable capabilityProvider = controller == null ? coverHolder : controller;
+        return capabilityProvider.getCapability(GregtechTileCapabilities.CAPABILITY_CONTROLLABLE, null);
     }
 
     public String getHolderName() {
+        if(isHolderMultiblock() && controller != null)
+            return controller.getStackForm().getUnlocalizedName();
+
         return this.coverHolder.getStackForm().getUnlocalizedName();
     }
 
@@ -1072,6 +1205,7 @@ public class CoverAE2Stocker extends CoverBehavior
         PATTERN_NOT_INSERTED("cover.stocker.status.pattern_not_inserted"),
         GRID_DISCONNECTED("cover.stocker.status.grid_disconnected"),
         FULLY_STOCKED("cover.stocker.status.fully_stocked"), MISSING_INPUTS("cover.stocker.status.missing_inputs"),
+        INVALID_MULTIBLOCK("cover.stocker.status.invalid_multiblock"),
         MISSING_INPUT_SPACE("cover.stocker.status.missing_input_space"),
         MISSING_OUTPUT_SPACE("cover.stocker.status.missing_output_space");
 

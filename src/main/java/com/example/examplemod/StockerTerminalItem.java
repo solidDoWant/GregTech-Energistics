@@ -2,6 +2,7 @@ package com.example.examplemod;
 
 import appeng.api.AEApi;
 import appeng.api.parts.IPartItem;
+import gregtech.api.GregTechAPI;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
@@ -18,7 +19,9 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 public class StockerTerminalItem extends Item implements ICustomModel, IPartItem<StockerTerminalPart> {
 
 	public StockerTerminalItem() {
-		this.setRegistryName(ExampleMod.MODID, "stocker.terminal");
+		setRegistryName(ExampleMod.MODID, "stocker.terminal");
+		setUnlocalizedName("stocker.terminal");
+		setCreativeTab(GregTechAPI.TAB_GREGTECH);
 	}
 
 	@Override

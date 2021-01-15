@@ -170,6 +170,7 @@ public class PatternContainer implements INBTSerializable<NBTTagCompound> {
 	public void initUI(int y, Consumer<Widget> widgetGroup) {
         widgetGroup.accept(new LabelWidget(32, y + 5, "cover.stocker.pattern.title"));
         this.patternSlot = new AE2PatternSlotWidget(patternInventory, 0, 11, y);
+//        patternSlot.setDisplay(true);
         widgetGroup.accept(patternSlot.setBackgroundTexture(GuiTextures.SLOT, patternSlotOverlay));
     }
 	

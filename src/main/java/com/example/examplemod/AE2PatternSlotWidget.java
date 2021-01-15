@@ -30,7 +30,13 @@ public class AE2PatternSlotWidget extends BackgroundSlotWidget {
 		this.getHandle().yPos = yPos;
 	}
 
+	public void setDisplay(boolean shouldDisplay) {
+		((AE2WidgetSlotDelegate) slotReference).setDisplay(shouldDisplay);
+	}
+
 	protected class AE2WidgetSlotDelegate extends SlotWidget.WidgetSlotDelegate {
+		protected boolean isDisplay = false;
+
 		public AE2WidgetSlotDelegate(IItemHandler itemHandler, int index, int xPosition, int yPosition) {
 			super(itemHandler, index, xPosition, yPosition);
 		}
@@ -70,7 +76,12 @@ public class AE2PatternSlotWidget extends BackgroundSlotWidget {
 				return ItemStack.EMPTY;
 			}
 
-			return this.getDisplayStack();
+			if (this.isDisplay()) {
+				this.setDisplay(false);
+				return this.getDisplayStack();
+			}
+
+			return this.getItemHandler().getStackInSlot(0);
 		}
 
 		public ItemStack getDisplayStack() {
@@ -85,6 +96,14 @@ public class AE2PatternSlotWidget extends BackgroundSlotWidget {
 				}
 			}
 			return super.getStack();
+		}
+
+		private boolean isDisplay() {
+			return this.isDisplay;
+		}
+
+		public void setDisplay(final boolean isDisplay) {
+			this.isDisplay = isDisplay;
 		}
 	}
 }

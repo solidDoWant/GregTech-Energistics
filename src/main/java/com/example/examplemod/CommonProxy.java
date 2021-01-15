@@ -1,6 +1,7 @@
 package com.example.examplemod;
 
 import net.minecraft.item.Item;
+import net.minecraft.item.crafting.IRecipe;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -19,9 +20,15 @@ public class CommonProxy {
 	
 	public void preInit(FMLPreInitializationEvent e) {
 		NetworkHandler.preInit(e);
+		MetaItems.init();
 	}
 
 	public void init(FMLInitializationEvent e) {
 		NetworkRegistry.INSTANCE.registerGuiHandler(ExampleMod.instance, new GuiProxy());
+	}
+
+	@SubscribeEvent
+	public static void registerRecipes(RegistryEvent.Register<IRecipe> event) {
+		MetaItems.registerRecipes();
 	}
 }

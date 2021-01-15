@@ -7,11 +7,23 @@ public final class MetaItems {
 	}
 
 	public static MetaItem<?>.MetaValueItem AE2_STOCKER_LV;
+	public static MetaItem<?>.MetaValueItem AE2_STOCKER_MV;
+	public static MetaItem<?>.MetaValueItem AE2_STOCKER_HV;
+	public static MetaItem<?>.MetaValueItem AE2_STOCKER_EV;
+	public static MetaItem<?>.MetaValueItem AE2_STOCKER_IV;
+	public static MetaItem<?>.MetaValueItem AE2_STOCKER_LUV;
+	public static MetaItem<?>.MetaValueItem AE2_STOCKER_ZPM;
+	public static MetaItem<?>.MetaValueItem AE2_STOCKER_UV;
 	public static MetaItem<?>.MetaValueItem MACHINE_STATUS;
-	public static MetaItem<?>.MetaValueItem STOCKER_TERMINAL;
+
+	public static GTCEMetaItem1 gtceMetaItem;
 
 	public static void init() {
-		GTCEMetaItem1 gtce = new GTCEMetaItem1();
-		gtce.setRegistryName("gtce");
+		gtceMetaItem = new GTCEMetaItem1();
+		gtceMetaItem.setRegistryName("gtce");
+	}
+
+	public static void registerRecipes() {
+		gtceMetaItem.registerRecipes();
 	}
 }
