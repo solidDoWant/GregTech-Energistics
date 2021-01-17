@@ -1,0 +1,9 @@
+{
+    "parent": "appliedenergistics2:item/part/display",
+    "textures": {
+        "front": "appliedenergistics2:items/part/crafting_terminal",
+        "front_bright": "gregtechenergistics:parts/stocker.terminal_bright",
+	    "front_medium": "gregtechenergistics:parts/stocker.terminal_medium",
+	    "front_dark": "gregtechenergistics:parts/stocker.terminal_dark"
+    }
+}

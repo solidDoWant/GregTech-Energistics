@@ -1,9 +1,0 @@
-{
-    "parent": "appliedenergistics2:item/part/display",
-    "textures": {
-        "front": "appliedenergistics2:items/part/crafting_terminal",
-        "front_bright": "examplemod:parts/stocker.terminal_bright",
-	    "front_medium": "examplemod:parts/stocker.terminal_medium",
-	    "front_dark": "examplemod:parts/stocker.terminal_dark"
-    }
-}

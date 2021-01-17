@@ -1,0 +1,46 @@
+metaitem.ae2.stocker.lv.name=AE2 stocker cover (LV)
+metaitem.ae2.stocker.lv.tooltip=1280 max stock count (as Cover)
+metaitem.ae2.stocker.mv.name=AE2 stocker cover (MV)
+metaitem.ae2.stocker.mv.tooltip=5120 max stock count (as Cover)
+metaitem.ae2.stocker.hv.name=AE2 stocker cover (HV)
+metaitem.ae2.stocker.hv.tooltip=20,480 max stock count (as Cover)
+metaitem.ae2.stocker.ev.name=AE2 stocker cover (EV)
+metaitem.ae2.stocker.ev.tooltip=81,920 max stock count (as Cover)
+metaitem.ae2.stocker.iv.name=AE2 stocker cover (IV)
+metaitem.ae2.stocker.iv.tooltip=327,680 max stock count (as Cover)
+metaitem.ae2.stocker.luv.name=AE2 stocker cover (LuV)
+metaitem.ae2.stocker.luv.tooltip=1,310,720 max stock count (as Cover)
+metaitem.ae2.stocker.zpm.name=AE2 stocker cover (ZPM)
+metaitem.ae2.stocker.zpm.tooltip=5,242,880 max stock count (as Cover)
+metaitem.ae2.stocker.uv.name=AE2 stocker cover (UV)
+metaitem.ae2.stocker.uv.tooltip=20,971,520 max stock count (as Cover)
+cover.stocker.title=AE2 Stocker Cover Settings (%s)
+cover.stocker.pattern.title=Crafting pattern
+cover.stocker.stock_count=%s items
+cover.stocker.status=Status: %s
+cover.stocker.status.running=Running
+cover.stocker.status.other_disabled=Disabled by other cover
+cover.stocker.status.pattern_not_inserted=Missing pattern
+cover.stocker.status.grid_disconnected=Connection problem
+cover.stocker.status.fully_stocked=Fully stocked
+cover.stocker.status.missing_inputs=Missing inputs
+cover.stocker.status.invalid_multiblock=Multiblock problem
+cover.stocker.status.missing_input_space=Missing input space
+cover.stocker.status.missing_output_space=Missing output space
+cover.stocker.fluids.enable=AE2 fluids enabled
+cover.stocker.fluids.disable=AE2 fluids disabled
+cover.stocker.upgrade.label=Crafting card
+
+metaitem.machine.status.name=Machine status cover
+metaitem.machine.status.tooltip=Outputs redstone based on status
+cover.machine.status.title=Machine Status Cover Settings
+cover.machine.status.normal=Normal
+cover.machine.status.inverted=Inverted
+gui.gregtechenergistics.terminal.stocker=Stocker Terminal
+gui.gregtechenergistics.terminal.inventory=Inventory
+
+metaitem.fluid.encoder.name=Fluid encoder
+metaitem.fluid.encoder.amount=%s mb
+metaitem.fluid.encoder.fluid=Fluid:
+
+item.stocker.terminal.name=Stocker terminal
