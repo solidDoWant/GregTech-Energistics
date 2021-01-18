@@ -1,6 +1,6 @@
-#GregTech Energistics
+# GregTech Energistics
 
-##Description
+## Description
 Adds GregTech Community Edition and Applied Energistics 2 items/block to add additional interoperability.
 
 
