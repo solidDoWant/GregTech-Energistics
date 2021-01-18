@@ -43,4 +43,4 @@ metaitem.fluid.encoder.name=Fluid encoder
 metaitem.fluid.encoder.amount=%s mb
 metaitem.fluid.encoder.fluid=Fluid:
 
-item.stocker.terminal.name=Stocker terminal
+metaitem.stocker.terminal.name=Stocker terminal
