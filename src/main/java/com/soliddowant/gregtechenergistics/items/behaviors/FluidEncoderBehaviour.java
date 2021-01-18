@@ -4,6 +4,7 @@ import appeng.util.Platform;
 import appeng.util.ReadableNumberConverter;
 import com.soliddowant.gregtechenergistics.gui.ModularUIItemBuilder;
 import com.soliddowant.gregtechenergistics.items.MetaItems;
+import com.soliddowant.gregtechenergistics.items.StandardModMetaItem;
 import gregtech.api.gui.GuiTextures;
 import gregtech.api.gui.ModularUI;
 import gregtech.api.gui.widgets.ClickButtonWidget;
@@ -139,11 +140,12 @@ public class FluidEncoderBehaviour implements IItemBehaviour, ItemUIFactory {
 
     public static FluidEncoderBehaviour getStackBehaviour(ItemStack stack) {
         Item item = stack.getItem();
-
-        if(!(item instanceof MetaItem<?>))
+        if(!(item instanceof StandardModMetaItem))
             return null;
 
         MetaItem<?>.MetaValueItem stackMetaValueItem = ((MetaItem<?>) item).getItem(stack);
+        if(stackMetaValueItem == null)
+            return null;
 
         for(IItemBehaviour behavior : stackMetaValueItem.getBehaviours())
             if(behavior instanceof FluidEncoderBehaviour)
