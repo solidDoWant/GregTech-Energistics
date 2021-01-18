@@ -1,21 +1,8 @@
 package com.soliddowant.gregtechenergistics;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.WeakHashMap;
-
-import appeng.api.parts.IPart;
-import appeng.api.parts.IPartHost;
-import appeng.api.util.AEPartLocation;
-import com.google.common.collect.HashMultimap;
-
 import appeng.api.AEApi;
 import appeng.api.storage.channels.IItemStorageChannel;
+import appeng.api.util.AEPartLocation;
 import appeng.client.gui.AEBaseGui;
 import appeng.client.gui.widgets.GuiScrollbar;
 import appeng.client.gui.widgets.MEGuiTextField;
@@ -23,6 +10,7 @@ import appeng.client.me.ClientDCInternalInv;
 import appeng.client.me.SlotDisconnected;
 import appeng.util.Platform;
 import appeng.util.ReadableNumberConverter;
+import com.google.common.collect.HashMultimap;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.EntityPlayer;
@@ -30,9 +18,10 @@ import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+
+import java.io.IOException;
+import java.util.*;
 
 public class StockerTerminalGuiContainer extends AEBaseGui {
 	protected final int offsetX = 9;
@@ -75,8 +64,10 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 
 	@Override
 	public void drawFG(final int offsetX, final int offsetY, final int mouseX, final int mouseY) {
-		this.fontRenderer.drawString(I18n.format("gui.gregtechenergistics.terminal.stocker"), 8, 6, 4210752);
-		this.fontRenderer.drawString(I18n.format("gui.gregtechenergistics.terminal.inventory"), 8, this.ySize - 96 + 3, 4210752);
+		this.fontRenderer.drawString(I18n.format("gui.gregtechenergistics.terminal.stocker"),
+				8, 6, 4210752);
+		this.fontRenderer.drawString(I18n.format("gui.gregtechenergistics.terminal.inventory"),
+				8, this.ySize - 96 + 3, 4210752);
 
 		final int ex = this.getScrollBar().getCurrentScroll();
 
@@ -99,13 +90,11 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 			} else if (lineObj instanceof String) {
 				String name = (String) lineObj;
 				final int rows = this.byName.get(name).size();
-				if (rows > 1) {
+				if (rows > 1)
 					name = name + " (" + rows + ')';
-				}
 
-				while (name.length() > 2 && this.fontRenderer.getStringWidth(name) > 155) {
+				while (name.length() > 2 && this.fontRenderer.getStringWidth(name) > 155)
 					name = name.substring(0, name.length() - 1);
-				}
 
 				this.fontRenderer.drawString(name, 10, 6 + offset, 4210752);
 			}
@@ -145,23 +134,20 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 			offset += 18;
 		}
 
-		if (this.searchField != null) {
+		if (this.searchField != null)
 			this.searchField.drawTextBox();
-		}
 	}
 
 	@Override
 	protected void keyTyped(final char character, final int key) throws IOException {
 		if (!this.checkHotbarKeys(key)) {
-			if (character == ' ' && this.searchField.getText().isEmpty()) {
+			if (character == ' ' && this.searchField.getText().isEmpty())
 				return;
-			}
 
-			if (this.searchField.textboxKeyTyped(character, key)) {
+			if (this.searchField.textboxKeyTyped(character, key))
 				this.refreshList();
-			} else {
+			else
 				super.keyTyped(character, key);
-			}
 		}
 	}
 
@@ -181,15 +167,14 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 
 					for (int x = 0; x < current.patternInventory.getInventory().getSlots(); x++) {
 						final String which = Integer.toString(x);
-						if (invData.hasKey(which)) {
+						if (invData.hasKey(which))
 							current.patternInventory.getInventory().setStackInSlot(x,
 									new ItemStack(invData.getCompoundTag(which)));
-						}
 					}
 
 					current.availableCount = invData.getLong("availableCount");
 					current.stockCount = invData.getLong("stockCount");
-					current.status = CoverAE2Stocker.CoverStatus.values()[invData.getInteger("status")];
+					current.status = CoverStatus.values()[invData.getInteger("status")];
 				} catch (final NumberFormatException ignored) {
 				}
 			}
@@ -209,7 +194,7 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 	 * Respects a search term if present (ignores case) and adding only matching
 	 * patterns.
 	 */
-	private void refreshList() {
+	protected void refreshList() {
 		this.byName.clear();
 
 		final String searchFilterLowerCase = this.searchField.getText().toLowerCase();
@@ -220,29 +205,23 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 		for (final StockerInformation entry : this.byId.values()) {
 			// ignore inventory if not doing a full rebuild or cache already marks it as
 			// miss.
-			if (!rebuild && !cachedSearch.contains(entry)) {
+			if (!rebuild && !cachedSearch.contains(entry))
 				continue;
-			}
 
 			boolean found = false;
 
 			// Search if the current inventory holds a pattern containing the search term.
-			if (!searchFilterLowerCase.isEmpty()) {
-				for (final ItemStack itemStack : entry.patternInventory.getInventory()) {
-					found = this.itemStackMatchesSearchTerm(itemStack, searchFilterLowerCase);
-					if (found) {
+			if (!searchFilterLowerCase.isEmpty())
+				for (final ItemStack itemStack : entry.patternInventory.getInventory())
+					if ((found = this.itemStackMatchesSearchTerm(itemStack, searchFilterLowerCase)))
 						break;
-					}
-				}
-			}
 
 			// if found, filter skipped or machine name matching the search term, add it
 			if (found || entry.patternInventory.getName().toLowerCase().contains(searchFilterLowerCase)) {
 				this.byName.put(entry.patternInventory.getName(), entry);
 				cachedSearch.add(entry);
-			} else {
+			} else
 				cachedSearch.remove(entry);
-			}
 		}
 
 		this.names.clear();
@@ -275,10 +254,9 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 	 *
 	 * @return a Set matching a superset of the search term
 	 */
-	private Set<Object> getCacheForSearchTerm(final String searchTerm) {
-		if (!this.cachedSearches.containsKey(searchTerm)) {
+	protected Set<Object> getCacheForSearchTerm(final String searchTerm) {
+		if (!this.cachedSearches.containsKey(searchTerm))
 			this.cachedSearches.put(searchTerm, new HashSet<>());
-		}
 
 		final Set<Object> cache = this.cachedSearches.get(searchTerm);
 
@@ -290,28 +268,24 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 		return cache;
 	}
 
-	private boolean itemStackMatchesSearchTerm(final ItemStack itemStack, final String searchTerm) {
-		if (itemStack.isEmpty()) {
+	protected boolean itemStackMatchesSearchTerm(final ItemStack itemStack, final String searchTerm) {
+		if (itemStack.isEmpty())
 			return false;
-		}
 
 		final NBTTagCompound encodedValue = itemStack.getTagCompound();
 
-		if (encodedValue == null) {
+		if (encodedValue == null)
 			return false;
-		}
 
 		final NBTTagList outTag = encodedValue.getTagList("out", 10);
 
 		for (int i = 0; i < outTag.tagCount(); i++) {
-
 			final ItemStack parsedItemStack = new ItemStack(outTag.getCompoundTagAt(i));
 			if (!parsedItemStack.isEmpty()) {
 				final String displayName = Platform.getItemDisplayName(AEApi.instance().storage()
 						.getStorageChannel(IItemStorageChannel.class).createStack(parsedItemStack)).toLowerCase();
-				if (displayName.contains(searchTerm)) {
+				if (displayName.contains(searchTerm))
 					return true;
-				}
 			}
 		}
 		return false;
@@ -323,11 +297,11 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 	 *
 	 * @return max amount of unique names and each inv row
 	 */
-	private int getMaxRows() {
+	protected int getMaxRows() {
 		return this.names.size() + this.byId.size();
 	}
 
-	private StockerInformation getById(final long id, NBTTagCompound tag) {
+	protected StockerInformation getById(final long id, NBTTagCompound tag) {
 		StockerInformation o = this.byId.get(id);
 
 		if (o == null) {
@@ -342,10 +316,10 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 		public ClientDCInternalInv patternInventory;
 		public long stockCount;
 		public long availableCount;
-		public CoverAE2Stocker.CoverStatus status;
+		public CoverStatus status;
 
 		public StockerInformation(ClientDCInternalInv patternInventory, long stockCount, long availableCount,
-				CoverAE2Stocker.CoverStatus status) {
+				CoverStatus status) {
 			this.patternInventory = patternInventory;
 			this.stockCount = stockCount;
 			this.availableCount = availableCount;
@@ -353,9 +327,9 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 		}
 
 		public static StockerInformation fromNBT(int size, long id, NBTTagCompound tag) {
-			return new StockerInformation(new ClientDCInternalInv(size, id, tag.getLong("sortBy"), tag.getString("un")),
-					tag.getLong("stockCount"), tag.getLong("availableCount"),
-					CoverAE2Stocker.CoverStatus.values()[tag.getInteger("status")]);
+			return new StockerInformation(new ClientDCInternalInv(size, id, tag.getLong("sortBy"),
+					tag.getString("un")), tag.getLong("stockCount"), tag.getLong("availableCount"),
+					CoverStatus.values()[tag.getInteger("status")]);
 		}
 
 		@Override

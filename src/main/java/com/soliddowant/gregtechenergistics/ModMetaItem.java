@@ -68,13 +68,14 @@ public abstract class ModMetaItem<T extends ModMetaItem<?>.ModMetaValueItem> ext
     }
 
     public class ModMetaValueItem extends MetaValueItem {
-        private IPartProvider partProvider;
-        private IModelProvider modelProvider;
+        protected IPartProvider partProvider;
+        protected IModelProvider modelProvider;
 
         protected ModMetaValueItem(int metaValue, String unlocalizedName) {
             super(metaValue, unlocalizedName);
         }
 
+        @SuppressWarnings("deprecation")
         @Override
         protected void addItemComponentsInternal(IMetaItemStats... stats) {
             super.addItemComponentsInternal(stats);

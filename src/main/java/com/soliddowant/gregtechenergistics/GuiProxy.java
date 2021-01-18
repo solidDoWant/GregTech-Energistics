@@ -18,7 +18,8 @@ public class GuiProxy implements IGuiHandler {
 		final AEPartLocation side = AEPartLocation.fromOrdinal(ordinal & 0x07);
 
 		Object container = null;
-    	switch(guiId) {
+		//noinspection SwitchStatementWithTooFewBranches
+		switch(guiId) {
 			case 0:
 				container = StockerTerminalContainer.getServerGuiContainer(side, player, world, x, y, z);
 				break;
@@ -36,6 +37,7 @@ public class GuiProxy implements IGuiHandler {
     	final AEPartLocation side = AEPartLocation.fromOrdinal(ordinal & 0x07);
 
     	Object guiContainer = null;
+		//noinspection SwitchStatementWithTooFewBranches
     	switch(guiId) {
 			case 0:
 				guiContainer = StockerTerminalGuiContainer.getClientGuiElement(side, player, world, x, y, z);
@@ -69,6 +71,6 @@ public class GuiProxy implements IGuiHandler {
 		if(!partType.isInstance(part))
 			return null;
 
-		return (T) part;
+		return partType.cast(part);
 	}
 }

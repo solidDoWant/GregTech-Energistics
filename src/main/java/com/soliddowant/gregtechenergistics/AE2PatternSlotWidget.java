@@ -1,94 +1,71 @@
 package com.soliddowant.gregtechenergistics;
 
-import javax.annotation.Nonnull;
-
-import appeng.core.AppEng;
+import appeng.api.networking.crafting.ICraftingPatternDetails;
+import appeng.api.storage.data.IAEItemStack;
 import appeng.items.misc.ItemEncodedPattern;
-import appeng.util.Platform;
-import gregtech.api.gui.GuiTextures;
-import gregtech.api.gui.resources.TextureArea;
 import gregtech.api.gui.widgets.SlotWidget;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.IItemHandlerModifiable;
+import net.minecraft.world.World;
 
-public class AE2PatternSlotWidget extends BackgroundSlotWidget {
-	public AE2PatternSlotWidget(IItemHandlerModifiable itemHandler, int slotIndex, int xPosition, int yPosition) {
-		super(itemHandler, slotIndex, xPosition, yPosition, true, true);
-		this.slotReference = new AE2WidgetSlotDelegate(itemHandler, slotIndex, xPosition, yPosition);
-		setBackgroundTexture(GuiTextures.SLOT, new TextureArea(new ResourceLocation(AppEng.MOD_ID,
-				"textures/guis/states.png"), (15.0/16.0), (7.0/16.0), (1.0/16.0), (1.0/16.0)));
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+public class AE2PatternSlotWidget extends CallbackSlotWidget {
+	protected ICraftingPatternDetails craftingDetails;
+	protected IAEItemStack[] inputItems;
+	protected IAEItemStack[] outputItems;
+	protected World world;
+
+	public AE2PatternSlotWidget(@Nonnull World world) {
+		super();
+		this.world = world;
 	}
 
-	protected class AE2WidgetSlotDelegate extends SlotWidget.WidgetSlotDelegate {
-		protected boolean isDisplay = false;
+	@Override
+	public boolean validateItemStack(@Nonnull ItemStack stack) {
+		return stack.getItem() instanceof ItemEncodedPattern;
+	}
 
-		public AE2WidgetSlotDelegate(IItemHandler itemHandler, int index, int xPosition, int yPosition) {
-			super(itemHandler, index, xPosition, yPosition);
-		}
+	protected void setData(@Nonnull ItemStack slotStack) {
+		//noinspection ConstantConditions
+		craftingDetails = getPattern().getPatternForItem(slotStack, world);
+		inputItems = craftingDetails.getCondensedInputs();
+		outputItems = craftingDetails.getOutputs();
+	}
 
-		@Override
-		public boolean isItemValid(@Nonnull ItemStack stack) {
-			return AE2PatternSlotWidget.this.canPutStack(stack) && super.isItemValid(stack);
-		}
+	protected void clearData() {
+		craftingDetails = null;
+		inputItems = null;
+		outputItems = null;
+	}
 
-		@Override
-		public boolean canTakeStack(EntityPlayer playerIn) {
-			return AE2PatternSlotWidget.this.canTakeStack(playerIn) && super.canTakeStack(playerIn);
-		}
+	@Override
+	@Nonnull
+	protected SlotWidget createSlotWidget(int x, int y) {
+		return super.createSlotWidget(x, y).setBackgroundTexture(Textures.getAE2Sprite(15, 7));
+	}
 
-		@Override
-		public void putStack(@Nonnull ItemStack stack) {
-			super.putStack(stack);
-			if (changeListener != null)
-				changeListener.run();
-		}
+	@Nullable
+	public ItemEncodedPattern getPattern() {
+		if(!hasStack())
+			return null;
 
-		@Override
-		public void onSlotChanged() {
-			AE2PatternSlotWidget.this.onSlotChanged();
-		}
+		ItemStack patternStack = getSlotStack();
+		return (ItemEncodedPattern) patternStack.getItem();
+	}
 
-		@Override
-		public boolean isEnabled() {
-			return AE2PatternSlotWidget.this.isEnabled();
-		}
+	@Nullable
+	public ICraftingPatternDetails getPatternDetails() {
+		return craftingDetails;
+	}
 
-		@Override
-		@Nonnull
-		public ItemStack getStack() {
-			if (this.getItemHandler().getSlots() <= this.getSlotIndex())
-				return ItemStack.EMPTY;
+	@Nullable
+	public IAEItemStack[] getInputItems() {
+		return inputItems;
+	}
 
-			if (this.isDisplay()) {
-				this.setDisplay(false);
-				return this.getDisplayStack();
-			}
-
-			return this.getItemHandler().getStackInSlot(0);
-		}
-
-		public ItemStack getDisplayStack() {
-			if (Platform.isClient()) {
-				final ItemStack is = super.getStack();
-				if (!is.isEmpty() && is.getItem() instanceof ItemEncodedPattern) {
-					final ItemEncodedPattern iep = (ItemEncodedPattern) is.getItem();
-					final ItemStack out = iep.getOutput(is);
-					if (!out.isEmpty())
-						return out;
-				}
-			}
-			return super.getStack();
-		}
-
-		private boolean isDisplay() {
-			return this.isDisplay;
-		}
-
-		public void setDisplay(final boolean isDisplay) {
-			this.isDisplay = isDisplay;
-		}
+	@Nullable
+	public IAEItemStack[] getOutputItems() {
+		return outputItems;
 	}
 }

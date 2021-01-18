@@ -24,7 +24,7 @@ import javax.annotation.Nonnull;
 public class CoverMachineStatus extends CoverBehavior implements ITickable, CoverWithUI {
     public boolean isOutputHigh;
     protected boolean isInverted;
-    protected CoverAE2Stocker.CoverStatus checkStatus = CoverAE2Stocker.CoverStatus.RUNNING;
+    protected CoverStatus checkStatus = CoverStatus.RUNNING;
 
     public CoverMachineStatus(ICoverable coverHolder, EnumFacing attachedSide) {
         super(coverHolder, attachedSide);
@@ -108,7 +108,7 @@ public class CoverMachineStatus extends CoverBehavior implements ITickable, Cove
             this.isInverted = tagCompound.getBoolean("IsInverted");
 
         if (tagCompound.hasKey("CheckStatus"))
-            this.checkStatus = CoverAE2Stocker.CoverStatus.values()[tagCompound.getInteger("CheckStatus")];
+            this.checkStatus = CoverStatus.values()[tagCompound.getInteger("CheckStatus")];
     }
 
     @Override
@@ -119,7 +119,7 @@ public class CoverMachineStatus extends CoverBehavior implements ITickable, Cove
         primaryGroup.addWidget(new LabelWidget(6, 5, getUITitle()));
 
         // Status to check for
-        primaryGroup.addWidget(new CycleButtonWidget(10, 45, 156, 20, CoverAE2Stocker.CoverStatus.class,
+        primaryGroup.addWidget(new CycleButtonWidget(10, 45, 156, 20, CoverStatus.class,
                 this::getCheckStatus, this::setCheckStatus));
 
         // Invert output setting
@@ -139,11 +139,11 @@ public class CoverMachineStatus extends CoverBehavior implements ITickable, Cove
         markAsDirty();
     }
 
-    public CoverAE2Stocker.CoverStatus getCheckStatus() {
+    public CoverStatus getCheckStatus() {
         return checkStatus;
     }
 
-    public void setCheckStatus(CoverAE2Stocker.CoverStatus status) {
+    public void setCheckStatus(CoverStatus status) {
         this.checkStatus = status;
         markAsDirty();
     }
