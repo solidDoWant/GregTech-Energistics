@@ -1,0 +1,1 @@
+See https://www.curseforge.com/minecraft/mc-mods/gregtech-energistics for details.
