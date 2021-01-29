@@ -536,16 +536,8 @@ public class CoverAE2Stocker extends CoverBehavior
         tagCompound.setBoolean("UseFluids", useFluids);
         tagCompound.setTag("UpgradeSlot", upgradeSlotWidget.serializeNBT());
         tagCompound.setTag("CraftingTag", craftingTracker.serializeNBT());
-
-
-        NBTTagCompound remainingItems = serializeRemainingInputItems();
-        if(!remainingItems.hasNoTags())
-            tagCompound.setTag("RemainingItems", remainingItems);
-
-        NBTTagCompound remainingInputFluids = serializeRemainingInputFluids();
-        if(!remainingItems.hasNoTags())
-            tagCompound.setTag("RemainingFluids", remainingInputFluids);
-
+        tagCompound.setTag("RemainingItems", serializeRemainingInputItems());
+        tagCompound.setTag("RemainingFluids", serializeRemainingInputFluids());
         node.saveToNBT("node", tagCompound);
     }
 
@@ -608,7 +600,7 @@ public class CoverAE2Stocker extends CoverBehavior
                     .map(key -> AEItemStack.fromNBT(remainingItemsTag.getCompoundTag(key)))
                     .collect(Collectors.toList());
         } else
-            this.remainingInputItems = null;
+            this.remainingInputItems = new LinkedList<>();
 
         if (tagCompound.hasKey("RemainingFluids")) {
             NBTTagCompound remainingFluidsTag = tagCompound.getCompoundTag("RemainingFluids");
@@ -616,7 +608,7 @@ public class CoverAE2Stocker extends CoverBehavior
                     .map(key -> AEFluidStack.fromNBT(remainingFluidsTag.getCompoundTag(key)))
                     .collect(Collectors.toList());
         } else
-            remainingInputFluids = null;
+            remainingInputFluids = new LinkedList<>();
 
         if (tagCompound.hasKey("Status"))
             currentStatus = CoverStatus.values()[tagCompound.getInteger("Status")];
