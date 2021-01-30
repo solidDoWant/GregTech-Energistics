@@ -36,6 +36,7 @@ import com.google.common.collect.ImmutableSet;
 import com.soliddowant.gregtechenergistics.capability.impl.ItemHandlerListFixed;
 import com.soliddowant.gregtechenergistics.gui.widgets.AE2PatternSlotWidget;
 import com.soliddowant.gregtechenergistics.gui.widgets.AE2UpgradeSlotWidget;
+import com.soliddowant.gregtechenergistics.gui.widgets.NestedTextWidget;
 import com.soliddowant.gregtechenergistics.helpers.CraftingTracker;
 import com.soliddowant.gregtechenergistics.items.behaviors.FluidEncoderBehaviour;
 import com.soliddowant.gregtechenergistics.render.Textures;
@@ -340,7 +341,7 @@ public class CoverAE2Stocker extends CoverBehavior
                 "cover.stocker.fluids.enable"));
 
         // Status
-        primaryGroup.addWidget(new SimpleTextWidget(88, 120, "cover.stocker.status",
+        primaryGroup.addWidget(new NestedTextWidget(88, 120, "cover.stocker.status",
                 () -> getCurrentStatus().toString()));
 
         ModularUI.Builder builder = ModularUI.extendedBuilder().widget(primaryGroup)

@@ -1,5 +1,6 @@
 package com.soliddowant.gregtechenergistics.covers;
 
+import appeng.util.Platform;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.IStringSerializable;
 
@@ -24,7 +25,11 @@ public enum CoverStatus implements IStringSerializable {
 
     @Override
     public String toString() {
-        return I18n.hasKey(displayText) ? I18n.format(displayText) : displayText;
+        // Server does not have these methods
+        if(Platform.isClient())
+            return I18n.hasKey(displayText) ? I18n.format(displayText) : displayText;
+        else
+            return displayText;
     }
 
     @Nonnull
