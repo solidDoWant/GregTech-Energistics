@@ -1,17 +1,17 @@
 package com.soliddowant.gregtechenergistics.covers;
 
-import java.util.function.BiFunction;
-
 import com.soliddowant.gregtechenergistics.GregTechEnergisticsMod;
 import com.soliddowant.gregtechenergistics.items.MetaItems;
+import com.soliddowant.gregtechenergistics.items.behaviors.PlayerCoverPlaceBehavior;
 import gregtech.api.GTValues;
 import gregtech.api.cover.CoverBehavior;
 import gregtech.api.cover.CoverDefinition;
 import gregtech.api.cover.ICoverable;
 import gregtech.api.items.metaitem.MetaItem;
-import gregtech.common.items.behaviors.CoverPlaceBehavior;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
+
+import java.util.function.BiFunction;
 
 public class CoverBehaviors {
 	public static final int startingCoverId = 40;
@@ -40,6 +40,6 @@ public class CoverBehaviors {
 		CoverDefinition coverDefinition = new CoverDefinition(coverId, behaviorCreator, placerItem.getStackForm());
 		CoverDefinition.registerCover(startingCoverId + idOffset, coverDefinition);
 		//noinspection deprecation // Using deprecation fields allows for compatibility with older GTCE versions
-		placerItem.addStats(new CoverPlaceBehavior(coverDefinition));
+		placerItem.addStats(new PlayerCoverPlaceBehavior(coverDefinition));
 	}
 }

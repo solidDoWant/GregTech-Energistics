@@ -44,7 +44,6 @@ import gregtech.api.GTValues;
 import gregtech.api.capability.GregtechTileCapabilities;
 import gregtech.api.capability.IControllable;
 import gregtech.api.capability.impl.FluidTankList;
-import gregtech.api.cover.CoverBehavior;
 import gregtech.api.cover.CoverWithUI;
 import gregtech.api.cover.ICoverable;
 import gregtech.api.gui.GuiTextures;
@@ -79,7 +78,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-public class CoverAE2Stocker extends CoverBehavior
+public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
         implements CoverWithUI, ITickable, IControllable, IGridBlock, IGridHost, IActionHost, ICraftingRequester {
 
     public final int tier;
@@ -192,6 +191,12 @@ public class CoverAE2Stocker extends CoverBehavior
             return coverHolder.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, attachedSide) != null ||
                     coverHolder.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, attachedSide) != null;
         }
+    }
+
+    @Override
+    public void setPlacingPlayer(EntityPlayer player) {
+        super.setPlacingPlayer(player);
+        node.setPlayerID(AEApi.instance().registries().players().getID(getPlacingPlayer()));
     }
 
     protected void updateMultiblockInformation() {
