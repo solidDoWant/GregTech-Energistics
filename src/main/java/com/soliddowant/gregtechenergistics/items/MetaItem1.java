@@ -74,7 +74,7 @@ public class MetaItem1 extends StandardModMetaItem {
 				MetaItems.AE2_STOCKER_UV, GTValues.UV);
 
 		RecipeMaps.ASSEMBLER_RECIPES.recipeBuilder()
-				.input(OrePrefix.plate, Materials.Tin, 4)
+				.input(OrePrefix.plate, Materials.Copper, 4)
 				.input(OrePrefix.dust, Materials.Redstone, 2)
 				.outputs(MetaItems.MACHINE_STATUS.getStackForm())
 				.duration(200)
