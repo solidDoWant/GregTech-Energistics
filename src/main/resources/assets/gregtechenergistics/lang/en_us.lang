@@ -27,8 +27,10 @@ cover.stocker.status.missing_inputs=Missing inputs
 cover.stocker.status.invalid_multiblock=Multiblock problem
 cover.stocker.status.missing_input_space=Missing input space
 cover.stocker.status.missing_output_space=Missing output space
-cover.stocker.fluids.enable=AE2 fluids enabled
-cover.stocker.fluids.disable=AE2 fluids disabled
+cover.stocker.fluids.enable=Fluids enabled
+cover.stocker.fluids.disable=Fluids disabled
+cover.stocker.output.enable=Output enabled
+cover.stocker.output.disable=Output disabled
 cover.stocker.upgrade.label=Crafting card
 
 metaitem.machine.status.name=Machine status cover

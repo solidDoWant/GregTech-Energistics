@@ -7,13 +7,18 @@ import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
 
 public class NetworkHandler {
-	public static final String CHANNEL_NAME = GregTechEnergisticsMod.MODID;
-	public static SimpleNetworkWrapper snw;
+	public static final String CHANNEL_BASE_NAME = GregTechEnergisticsMod.MODID;
+	public static SimpleNetworkWrapper ClientHandlerChannel;
+	public static SimpleNetworkWrapper ServerHandlerChannel;
 	
 	public NetworkHandler () {}
 	
 	public static void preInit(FMLPreInitializationEvent e) {
-		snw = NetworkRegistry.INSTANCE.newSimpleChannel(CHANNEL_NAME);
-		snw.registerMessage(PacketCompressedNBT.TerminalHandler.class, PacketCompressedNBT.class, 0, Side.CLIENT);
+		ClientHandlerChannel = NetworkRegistry.INSTANCE.newSimpleChannel(CHANNEL_BASE_NAME + "_client_handler");
+		ClientHandlerChannel.registerMessage(PacketTerminal.TerminalHandler.class, PacketTerminal.class, 0,
+				Side.CLIENT);
+
+		ServerHandlerChannel = NetworkRegistry.INSTANCE.newSimpleChannel(CHANNEL_BASE_NAME + "_server_handler");
+		ServerHandlerChannel.registerMessage(JEIPacket.JEIHandler.class, JEIPacket.class, 0, Side.SERVER);
 	}
 }

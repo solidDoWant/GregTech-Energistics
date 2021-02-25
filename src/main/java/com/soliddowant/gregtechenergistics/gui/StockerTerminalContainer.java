@@ -19,6 +19,7 @@ import appeng.util.inv.WrapperRangeItemHandler;
 import appeng.util.inv.filter.IAEItemFilter;
 import com.soliddowant.gregtechenergistics.networking.NetworkHandler;
 import com.soliddowant.gregtechenergistics.networking.PacketCompressedNBT;
+import com.soliddowant.gregtechenergistics.networking.PacketTerminal;
 import com.soliddowant.gregtechenergistics.parts.StockerTerminalPart;
 import com.soliddowant.gregtechenergistics.covers.CoverAE2Stocker;
 import com.soliddowant.gregtechenergistics.covers.CoverStatus;
@@ -123,7 +124,8 @@ public class StockerTerminalContainer extends AEBaseContainer {
         if (data.hasNoTags())
             return;
 
-        NetworkHandler.snw.sendTo(new PacketCompressedNBT(data), (EntityPlayerMP) this.getPlayerInv().player);
+        // TODO maybe rework this so that PacketTerminal is passed actual business objects instead of serialized data
+        NetworkHandler.ClientHandlerChannel.sendTo(new PacketTerminal(data), (EntityPlayerMP) this.getPlayerInv().player);
     }
 
     @Override

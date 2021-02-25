@@ -1,9 +1,6 @@
 package com.soliddowant.gregtechenergistics.networking;
 
-import com.soliddowant.gregtechenergistics.gui.StockerTerminalGuiContainer;
 import io.netty.buffer.ByteBuf;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.fml.common.FMLCommonHandler;
@@ -16,19 +13,8 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 public class PacketCompressedNBT implements IMessage {
-    protected NBTTagCompound tag;
-
-    public PacketCompressedNBT(NBTTagCompound tag) {
-        this.tag = tag;
-    }
-
     // If an empty constructor isn't here then Forge will lose it's shit
-    public PacketCompressedNBT() {
-    }
-
-    public NBTTagCompound getTag() {
-        return tag;
-    }
+    public PacketCompressedNBT() {}
 
     @Override
     public void fromBytes(ByteBuf buf) {
@@ -42,18 +28,30 @@ public class PacketCompressedNBT implements IMessage {
             }
         };
 
+        NBTTagCompound tag = null;
         try (
                 GZIPInputStream gzReader = new GZIPInputStream(byteStream);
                 DataInputStream inStream = new DataInputStream(gzReader)
         ) {
-            this.tag = CompressedStreamTools.read(inStream);
+
+            tag = CompressedStreamTools.read(inStream);
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        if(tag != null)
+            deserialize(tag);
     }
+
+    protected void deserialize(NBTTagCompound tag) {}
 
     @Override
     public void toBytes(ByteBuf buf) {
+        NBTTagCompound tag = serialize();
+
+        if(tag == null)
+            return;
+
         OutputStream byteStream = new OutputStream() {
             @Override
             public void write(int b) {
@@ -65,27 +63,24 @@ public class PacketCompressedNBT implements IMessage {
                 GZIPOutputStream gzWriter = new GZIPOutputStream(byteStream);
                 DataOutputStream outStream = new DataOutputStream(gzWriter)
         ) {
-            CompressedStreamTools.write(this.tag, outStream);
+            CompressedStreamTools.write(tag, outStream);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public static abstract class Handler implements IMessageHandler<PacketCompressedNBT, IMessage> {
+    protected NBTTagCompound serialize() {
+        return new NBTTagCompound();
+    }
+
+    public static abstract class Handler<T extends PacketCompressedNBT> implements IMessageHandler<T, IMessage> {
         @Override
-        public IMessage onMessage(PacketCompressedNBT message, MessageContext context) {
-            FMLCommonHandler.instance().getWorldThread(context.netHandler).addScheduledTask(() -> handle(message, context));
+        public IMessage onMessage(T message, MessageContext context) {
+            FMLCommonHandler.instance().getWorldThread(context.netHandler)
+                    .addScheduledTask(() -> handle(message, context));
             return null;
         }
 
-        protected abstract void handle(PacketCompressedNBT message, MessageContext context);
-    }
-
-    public static class TerminalHandler extends Handler {
-        protected void handle(PacketCompressedNBT message, MessageContext context) {
-            final GuiScreen gs = Minecraft.getMinecraft().currentScreen;
-            if (gs instanceof StockerTerminalGuiContainer)
-                ((StockerTerminalGuiContainer) gs).postUpdate(message.getTag());
-        }
+        protected abstract void handle(T message, MessageContext context);
     }
 }

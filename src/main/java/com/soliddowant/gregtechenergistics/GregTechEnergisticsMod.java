@@ -7,7 +7,7 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 
 @Mod(modid = GregTechEnergisticsMod.MODID, name = GregTechEnergisticsMod.NAME, version = GregTechEnergisticsMod.VERSION,
-		dependencies = "required-after:gregtech;required-after:appliedenergistics2;after:jei@[4.15.0,);")
+		dependencies = "required-after:gregtech;required-after:appliedenergistics2;after:jei@[4.15.0,);after:JustEnoughEnergistics")
 public class GregTechEnergisticsMod {
 	public static final String MODID = "gregtechenergistics";
 	public static final String NAME = "GregTech Energistics";

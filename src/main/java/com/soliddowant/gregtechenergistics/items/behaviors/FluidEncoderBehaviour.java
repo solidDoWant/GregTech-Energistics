@@ -74,7 +74,7 @@ public class FluidEncoderBehaviour implements IItemBehaviour, ItemUIFactory {
                 .widget(new ClickButtonWidget(41, 24, 20, 20, "-1", data -> adjustConfiguration(holder, -1, data.isShiftClick)))
                 .widget(new ClickButtonWidget(117, 24, 20, 20, "+1", data -> adjustConfiguration(holder, +1, data.isShiftClick)))
                 .widget(new ClickButtonWidget(137, 24, 30, 20, "+100", data -> adjustConfiguration(holder, +100, data.isShiftClick)))
-                .widget(new PhantomFluidWidget(44, 50, 18, 18, () -> getFluidStack(holder.getCurrentItem()), fluid -> setFluidStack(holder, fluid)))
+                .widget(new PhantomFluidWidget(44, 50, 18, 18, () -> getFluidStack(holder.getCurrentItem()), fluid -> setHeldItemStackFluid(holder, fluid)))
                 .label(11, 55, baseName + ".fluid")
                 .bindPlayerInventory(entityPlayer.inventory, 156)
                 .build(holder, entityPlayer);
@@ -101,15 +101,20 @@ public class FluidEncoderBehaviour implements IItemBehaviour, ItemUIFactory {
         return FluidStack.loadFluidStackFromNBT(tag.getCompoundTag("FluidStack"));
     }
 
-    public static void setFluidStack(PlayerInventoryHolder holder, FluidStack stack) {
-        ItemStack heldItemStack = holder.getCurrentItem();
-        NBTTagCompound tag = heldItemStack.hasTagCompound() ? heldItemStack.getTagCompound() : new NBTTagCompound();
-        NBTTagCompound fluidTag = new NBTTagCompound();
-        if(stack != null)
-            stack.writeToNBT(fluidTag);
-        tag.setTag("FluidStack", fluidTag);
-        heldItemStack.setTagCompound(tag);
+    public static void setHeldItemStackFluid(PlayerInventoryHolder holder, FluidStack stack) {
+        setItemStackFluid(holder.getCurrentItem(), stack);
         holder.markAsDirty();
+    }
+
+    public static void setItemStackFluid(ItemStack stack, FluidStack fluid) {
+        if(fluid == null)
+            return;
+
+        NBTTagCompound tag = stack.hasTagCompound() ? stack.getTagCompound() : new NBTTagCompound();
+        NBTTagCompound fluidTag = new NBTTagCompound();
+        fluid.writeToNBT(fluidTag);
+        tag.setTag("FluidStack", fluidTag);
+        stack.setTagCompound(tag);
     }
 
     public static int getFluidAmount(ItemStack heldItemStack) {
@@ -124,16 +129,16 @@ public class FluidEncoderBehaviour implements IItemBehaviour, ItemUIFactory {
         return tag.getInteger("Amount");
     }
 
-    public static void setFluidAmount(ItemStack heldItemStack, int fluidAmount) {
-        NBTTagCompound tag = heldItemStack.hasTagCompound() ? heldItemStack.getTagCompound() : new NBTTagCompound();
+    public static void setItemStackFluidAmount(ItemStack stack, int fluidAmount) {
+        NBTTagCompound tag = stack.hasTagCompound() ? stack.getTagCompound() : new NBTTagCompound();
         tag.setInteger("Amount", fluidAmount);
-        heldItemStack.setTagCompound(tag);
+        stack.setTagCompound(tag);
     }
 
     protected static void adjustConfiguration(PlayerInventoryHolder holder, int amount, boolean shouldScale) {
         ItemStack currentItemStack = holder.getCurrentItem();
         int incrementAmount = shouldScale ? 10 * amount : amount;
-        setFluidAmount(currentItemStack,
+        setItemStackFluidAmount(currentItemStack,
                 MathHelper.clamp(getFluidAmount(currentItemStack) + incrementAmount, 0, Integer.MAX_VALUE));
         holder.markAsDirty();
     }
