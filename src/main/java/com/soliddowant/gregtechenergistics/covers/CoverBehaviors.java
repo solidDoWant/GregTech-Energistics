@@ -14,7 +14,7 @@ import net.minecraft.util.ResourceLocation;
 import java.util.function.BiFunction;
 
 public class CoverBehaviors {
-	public static final int startingCoverId = 40;
+	public static final int startingCoverId = 50;
 	public static void init() {
 		registerStockerCover(0, "ae2.interface.lv", MetaItems.AE2_STOCKER_LV, GTValues.LV, 1280);
 		registerStockerCover(1, "ae2.interface.mv", MetaItems.AE2_STOCKER_MV, GTValues.MV, 5120);
