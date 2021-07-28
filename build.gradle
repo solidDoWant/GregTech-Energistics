@@ -36,17 +36,13 @@ minecraft {
 
 repositories {
     maven {
-    	name "GregTech Community Edition Maven"
-        url  "https://dl.bintray.com/gregtech/dev" 
-    }
-    maven {
 		name "ChickenBones Maven"
 		url "http://chickenbones.net/maven/"
 	}
-	maven {
-        name "Modmaven for Applied Energistics 2"
-        url "https://modmaven.dev/"
-    }    
+    maven {
+        name = "CurseForge"
+        setUrl("https://minecraft.curseforge.com/api/maven")
+    }  
     maven {
         name = "JEI Maven"
         setUrl("http://dvs1.progwml6.com/files/maven/")
@@ -55,12 +51,13 @@ repositories {
         name = "JEI Maven fallback"
         setUrl("modmaven.k-4u.nl")
     }
+	maven { url = "https://www.cursemaven.com" }
 }
 
 dependencies {
 	deobfCompile "codechicken:CodeChickenLib:1.12.2-3.2.3.358:universal"
-    deobfCompile "gregtech:gregtech:1.12.2-1.10.8.599"
-    deobfCompile "appeng:appliedenergistics2:rv6-stable-7"
+    deobfCompile "gregtechce:gregtech:1.12.2:1.16.1.753"
+    deobfCompile "curse.maven:applied-energistics-2-223794:2747063"
     deobfCompile "mezz.jei:jei_1.12.2:4.15.0.291"
 }
 
