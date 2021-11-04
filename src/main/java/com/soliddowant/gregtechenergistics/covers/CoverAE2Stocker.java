@@ -77,7 +77,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+@SuppressWarnings({"BooleanMethodIsAlwaysInverted", "unused"})
 public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
         implements CoverWithUI, ITickable, IControllable, IGridBlock, IGridHost, IActionHost, ICraftingRequester {
 
@@ -629,7 +629,7 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     @Override
     public void update() {
         // Only update on every 5th tick
-        long timer = coverHolder.getTimer();
+        long timer = coverHolder.getOffsetTimer();
         if (timer % 5 != 0)
             return;
 
@@ -646,7 +646,7 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
         // Upon checking this we should know several things and don't have to check
         // them:
         // * There is a pattern available
-        // * A the machine is attached to the grid
+        // * The machine is attached to the grid
         // * The stock count of all pattern output items have not been met
         // * All input items are available for another pattern's worth of crafts
         // * There is at least some space (though may not be all) for another pattern's

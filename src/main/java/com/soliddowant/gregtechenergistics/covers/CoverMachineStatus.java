@@ -60,7 +60,7 @@ public class CoverMachineStatus extends CoverBehavior implements ITickable, Cove
     @Override
     public void update() {
         // Only update on every 5th tick
-        long timer = coverHolder.getTimer();
+        long timer = coverHolder.getOffsetTimer();
         if (timer % 5 != 0)
             return;
 
