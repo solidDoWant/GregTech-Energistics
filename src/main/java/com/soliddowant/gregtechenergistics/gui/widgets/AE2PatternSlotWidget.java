@@ -42,8 +42,8 @@ public class AE2PatternSlotWidget extends CallbackSlotWidget {
 
 	@Override
 	@Nonnull
-	protected SlotWidget createSlotWidget(int x, int y) {
-		return super.createSlotWidget(x, y).setBackgroundTexture(Textures.getAE2Sprite(15, 7));
+	protected BackgroundSlotWidget createSlotWidget(int x, int y) {
+		return (BackgroundSlotWidget) super.createSlotWidget(x, y).setBackgroundTexture(Textures.getAE2Sprite(15, 7));
 	}
 
 	@Nullable

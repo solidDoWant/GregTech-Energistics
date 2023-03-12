@@ -4,6 +4,7 @@ import com.soliddowant.gregtechenergistics.GregTechEnergisticsMod;
 import com.soliddowant.gregtechenergistics.items.MetaItems;
 import com.soliddowant.gregtechenergistics.items.behaviors.PlayerCoverPlaceBehavior;
 import gregtech.api.GTValues;
+import gregtech.api.GregTechAPI;
 import gregtech.api.cover.CoverBehavior;
 import gregtech.api.cover.CoverDefinition;
 import gregtech.api.cover.ICoverable;
@@ -14,7 +15,7 @@ import net.minecraft.util.ResourceLocation;
 import java.util.function.BiFunction;
 
 public class CoverBehaviors {
-	public static final int startingCoverId = 50;
+	public static final int startingCoverId = 200;	// Arbitrary high number to avoid conflicts
 	public static void init() {
 		registerStockerCover(0, "ae2.interface.lv", MetaItems.AE2_STOCKER_LV, GTValues.LV, 1280);
 		registerStockerCover(1, "ae2.interface.mv", MetaItems.AE2_STOCKER_MV, GTValues.MV, 5120);
@@ -38,8 +39,9 @@ public class CoverBehaviors {
 	public static void registerBehavior(int idOffset, ResourceLocation coverId,
 			MetaItem<?>.MetaValueItem placerItem, BiFunction<ICoverable, EnumFacing, CoverBehavior> behaviorCreator) {
 		CoverDefinition coverDefinition = new CoverDefinition(coverId, behaviorCreator, placerItem.getStackForm());
-		CoverDefinition.registerCover(startingCoverId + idOffset, coverDefinition);
+		GregTechAPI.COVER_REGISTRY.register(startingCoverId + idOffset, coverId, coverDefinition);
+//		CoverDefinition.registerCover(startingCoverId + idOffset, coverDefinition);
 		//noinspection deprecation // Using deprecation fields allows for compatibility with older GTCE versions
-		placerItem.addStats(new PlayerCoverPlaceBehavior(coverDefinition));
+		placerItem.addComponents(new PlayerCoverPlaceBehavior(coverDefinition));
 	}
 }

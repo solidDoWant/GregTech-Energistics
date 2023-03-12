@@ -6,7 +6,7 @@ import com.soliddowant.gregtechenergistics.GregTechEnergisticsMod;
 import com.soliddowant.gregtechenergistics.items.stats.IModelProvider;
 import com.soliddowant.gregtechenergistics.items.stats.IPartProvider;
 import gregtech.api.items.metaitem.MetaItem;
-import gregtech.api.items.metaitem.stats.IMetaItemStats;
+import gregtech.api.items.metaitem.stats.IItemComponent;
 import net.minecraft.client.renderer.block.model.ModelBakery;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.item.ItemStack;
@@ -41,7 +41,7 @@ public abstract class ModMetaItem<T extends ModMetaItem<?>.ModMetaValueItem> ext
     @Override
     @SideOnly(Side.CLIENT)
     public void registerModels() {
-        for (short itemMetaKey : metaItems.keys()) {
+        for (short itemMetaKey : metaItems.keySet()) {
             T metaValueItem = metaItems.get(itemMetaKey);
 
             IModelProvider itemModelProvider = metaValueItem.getModelProvider();
@@ -80,9 +80,9 @@ public abstract class ModMetaItem<T extends ModMetaItem<?>.ModMetaValueItem> ext
 
         @SuppressWarnings("deprecation")
         @Override
-        protected void addItemComponentsInternal(IMetaItemStats... stats) {
+        protected void addItemComponentsInternal(IItemComponent... stats) {
             super.addItemComponentsInternal(stats);
-            for(IMetaItemStats itemComponent : stats) {
+            for(IItemComponent itemComponent : stats) {
                 if (itemComponent instanceof IPartProvider)
                     this.partProvider = (IPartProvider) itemComponent;
                 if (itemComponent instanceof IModelProvider)

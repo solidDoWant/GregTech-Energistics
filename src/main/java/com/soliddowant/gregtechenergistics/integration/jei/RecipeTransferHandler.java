@@ -146,7 +146,7 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
             return;
 
         if(cct instanceof ContainerPatternTerm)
-            ((ContainerPatternTerm) cct).getPatternTerminal().setCraftingRecipe(message.isCraftingRecipe);
+            ((ContainerPatternTerm) cct).getPart().setCraftingRecipe(message.isCraftingRecipe);
 
         IItemHandler craftMatrix = cct.getInventoryByName("crafting");
         // Should always be 9, but craftMatrix.getSlots() is the real limiting factor regardless of what it returns

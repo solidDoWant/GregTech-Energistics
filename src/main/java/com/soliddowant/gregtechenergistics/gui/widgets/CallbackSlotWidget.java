@@ -15,6 +15,7 @@ public class CallbackSlotWidget implements INBTSerializable<NBTTagCompound> {
     protected ItemStackHandler slotHandler;
     protected boolean hasStack;
     protected Consumer<Boolean> contentsChangedCallback;
+    protected BackgroundSlotWidget slotWidget;
 
     public CallbackSlotWidget() {
         this.slotHandler = new ItemStackHandler(1) {
@@ -56,11 +57,12 @@ public class CallbackSlotWidget implements INBTSerializable<NBTTagCompound> {
     }
 
     public void initUI(int x, int y, @Nonnull Consumer<Widget> widgetGroup) {
-        widgetGroup.accept(createSlotWidget(x, y));
+        slotWidget = createSlotWidget(x, y);
+        widgetGroup.accept(slotWidget);
     }
 
     @Nonnull
-    protected SlotWidget createSlotWidget(int x, int y) {
+    protected BackgroundSlotWidget createSlotWidget(int x, int y) {
         return new SavableBackgroundSlotWidget<>(slotHandler, 0, x, y, true,true);
     }
 
@@ -87,10 +89,14 @@ public class CallbackSlotWidget implements INBTSerializable<NBTTagCompound> {
 
     @SuppressWarnings("unused")
     protected void onSlotInserted(@Nonnull ItemStack slotStack) {
+        if(slotWidget != null)
+            slotWidget.setForegroundItemStack(slotStack);
         updateData(slotStack);
     }
 
     protected void onSlotRemoved() {
+        if(slotWidget != null)
+            slotWidget.clearForegroundItemStack();
         updateData(null);
     }
 

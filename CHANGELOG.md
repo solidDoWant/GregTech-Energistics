@@ -1,5 +1,8 @@
 ## Changelog
 
+### 1.0.0.4
+* Fixed compat issues with Nomifactory
+
 ### 1.0.0.3
 * Fixed machines breaking when network contained a security terminal 98e418e
 

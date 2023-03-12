@@ -18,7 +18,6 @@ archivesBaseName = "GregtechEnergistics"
 sourceCompatibility = targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
 compileJava {
     sourceCompatibility = targetCompatibility = '1.8'
-    options.compilerArgs << '-Xlint:unchecked,deprecation'
 }
 
 minecraft {
@@ -31,34 +30,44 @@ minecraft {
     // Use non-default mappings at your own risk. they may not always work.
     // simply re-run your setup task after changing the mappings to update your workspace.
     mappings = "snapshot_20171003"
-    // makeObfSourceJar = false // an Srg named sources jar is made by default. uncomment this to disable.
+//    makeObfSourceJar = false // an Srg named sources jar is made by default. uncomment this to disable.
 }
 
 repositories {
-    maven {
-		name "ChickenBones Maven"
-		url "http://chickenbones.net/maven/"
-	}
-    maven {
-        name = "CurseForge"
-        setUrl("https://minecraft.curseforge.com/api/maven")
-    }  
-    maven {
-        name = "JEI Maven"
-        setUrl("http://dvs1.progwml6.com/files/maven/")
-    }
-    maven {
-        name = "JEI Maven fallback"
-        setUrl("modmaven.k-4u.nl")
-    }
-	maven { url = "https://www.cursemaven.com" }
+    maven { url = "https://www.cursemaven.com" }
 }
 
 dependencies {
-	deobfCompile "codechicken:CodeChickenLib:1.12.2-3.2.3.358:universal"
-    deobfCompile "gregtechce:gregtech:1.12.2:1.16.1.753"
-    deobfCompile "curse.maven:applied-energistics-2-223794:2747063"
-    deobfCompile "mezz.jei:jei_1.12.2:4.15.0.291"
+    // you may put jars on which you depend on in ./libs
+    // or you may define them like so..
+    //compile "some.group:artifact:version:classifier"
+    //compile "some.group:artifact:version"
+      
+    // real examples
+    //compile 'com.mod-buildcraft:buildcraft:6.0.8:dev'  // adds buildcraft to the dev env
+    //compile 'com.googlecode.efficient-java-matrix-library:ejml:0.24' // adds ejml to the dev env
+
+    // the 'provided' configuration is for optional dependencies that exist at compile-time but might not at runtime.
+    //provided 'com.mod-buildcraft:buildcraft:6.0.8:dev'
+
+    // the deobf configurations:  'deobfCompile' and 'deobfProvided' are the same as the normal compile and provided,
+    // except that these dependencies get remapped to your current MCP mappings
+    //deobfCompile 'com.mod-buildcraft:buildcraft:6.0.8:dev'
+    //deobfProvided 'com.mod-buildcraft:buildcraft:6.0.8:dev'
+
+    // for more info...
+    // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
+    // http://www.gradle.org/docs/current/userguide/dependency_management.html
+
+    deobfCompile "curse.maven:hasenoughitems-557549:3934312-deobf-sources"
+    deobfCompile "curse.maven:codechickenlib-242818:2779848-deobf-sources"
+    deobfCompile "curse.maven:gregtech-557242:4429261-deobf-sources"
+    deobfCompile "curse.maven:ae2-570458:4396402-deobf-sources-api"
+//    compile "curse.maven:mousetweaks-60089:2462627-sources-2462630-api-2462629"
+    compile "curse.maven:endercore-231868:2972849-api-2972850"
+    compile "curse.maven:crafttweaker-239197:4403410-deobf-sources"
+    compileOnly "curse.maven:groovyscript-687577:4431117-deobf-sources"
+    compile "curse.maven:mixinbooter-419286:4090558"
 }
 
 processResources {

@@ -3,7 +3,7 @@ package com.soliddowant.gregtechenergistics.integration.jei;
 import appeng.container.implementations.ContainerPatternTerm;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableTable;
-import com.google.common.collect.Table;
+import mezz.jei.collect.Table;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.IModRegistry;
 import mezz.jei.api.JEIPlugin;
@@ -41,8 +41,8 @@ public class JeiPlugin implements IModPlugin {
     }
 
     protected static <T, U> Table<Class<?>, T, U> collectNonPatternTerminals(ImmutableTable<Class, T, U> transferHandlers) {
-        Table<Class<?>, T, U> newRegistry = HashBasedTable.create();
-        for (final Table.Cell<Class, T, U> currentCell : transferHandlers.cellSet()) {
+        Table<Class<?>, T, U> newRegistry = Table.hashBasedTable();
+        for (final ImmutableTable.Cell<Class, T, U> currentCell : transferHandlers.cellSet()) {
             Class<?> rowKey = currentCell.getRowKey();
             if(rowKey == null)
                 continue;

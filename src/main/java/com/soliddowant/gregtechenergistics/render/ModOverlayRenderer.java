@@ -5,9 +5,10 @@ import codechicken.lib.render.pipeline.IVertexOperation;
 import codechicken.lib.vec.Cuboid6;
 import codechicken.lib.vec.Matrix4;
 import com.soliddowant.gregtechenergistics.GregTechEnergisticsMod;
-import gregtech.api.render.SimpleOverlayRenderer;
+import gregtech.client.renderer.texture.cube.SimpleOverlayRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureMap;
+import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.relauncher.Side;
@@ -23,7 +24,7 @@ public class ModOverlayRenderer extends SimpleOverlayRenderer {
         this.modId = modId;
         this.basePath = basePath;
 
-        gregtech.api.render.Textures.iconRegisters.remove(this);
+        gregtech.client.renderer.texture.Textures.iconRegisters.remove(this);
         Textures.iconRegisters.add(this);
     }
 
@@ -40,6 +41,6 @@ public class ModOverlayRenderer extends SimpleOverlayRenderer {
     @SideOnly(Side.CLIENT)
     public void renderSided(EnumFacing side, Cuboid6 bounds, CCRenderState renderState, IVertexOperation[] pipeline,
                             Matrix4 translation) {
-        gregtech.api.render.Textures.renderFace(renderState, translation, pipeline, side, bounds, sprite);
+        gregtech.client.renderer.texture.Textures.renderFace(renderState, translation, pipeline, side, bounds, sprite, BlockRenderLayer.CUTOUT);
     }
 }

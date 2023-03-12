@@ -11,15 +11,18 @@ import appeng.client.me.SlotDisconnected;
 import appeng.util.Platform;
 import appeng.util.ReadableNumberConverter;
 import com.google.common.collect.HashMultimap;
+import com.soliddowant.gregtechenergistics.GregTechEnergisticsMod;
 import com.soliddowant.gregtechenergistics.parts.StockerTerminalPart;
 import com.soliddowant.gregtechenergistics.covers.CoverStatus;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 
 import java.io.IOException;
@@ -45,6 +48,11 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 		this.setScrollBar(scrollbar);
 		this.xSize = 195;
 		this.ySize = 222;
+	}
+
+	@Override
+	public boolean MT_isIgnored(Slot slot) {
+		return false;
 	}
 
 	@Override
@@ -114,6 +122,12 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 		}
 
 		super.mouseClicked(xCoord, yCoord, btn);
+	}
+
+	@Override
+	public void bindTexture(String file) {
+		ResourceLocation loc = new ResourceLocation(GregTechEnergisticsMod.MODID, "textures/" + file);
+		this.mc.getTextureManager().bindTexture(loc);
 	}
 
 	@Override

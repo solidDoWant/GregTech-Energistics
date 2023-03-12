@@ -4,7 +4,7 @@ import appeng.core.AppEng;
 import codechicken.lib.texture.TextureUtils;
 import com.soliddowant.gregtechenergistics.render.ModOverlayRenderer;
 import gregtech.api.gui.resources.TextureArea;
-import gregtech.api.render.SimpleOverlayRenderer;
+import gregtech.client.renderer.texture.cube.SimpleOverlayRenderer;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.relauncher.Side;

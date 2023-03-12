@@ -21,8 +21,8 @@ public class AE2UpgradeSlotWidget extends CallbackSlotWidget {
 
     @Nonnull
     @Override
-    public SlotWidget createSlotWidget(int x, int y) {
-        return super.createSlotWidget(x, y).setBackgroundTexture(Textures.getAE2Sprite(15, 13));
+    public BackgroundSlotWidget createSlotWidget(int x, int y) {
+        return (BackgroundSlotWidget) super.createSlotWidget(x, y).setBackgroundTexture(Textures.getAE2Sprite(15, 13));
     }
 
     @Override
@@ -56,5 +56,10 @@ public class AE2UpgradeSlotWidget extends CallbackSlotWidget {
     @Nullable
     public Upgrades getInsertedUpgrade() {
         return insertedUpgrade;
+    }
+
+    protected void onSlotInserted(@Nonnull ItemStack slotStack) {
+        super.onSlotInserted(slotStack);
+
     }
 }

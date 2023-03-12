@@ -66,7 +66,7 @@ public class MetaItem1 extends StandardModMetaItem {
 				MetaItems.AE2_STOCKER_EV, GTValues.EV);
 		registerStocker(gregtech.common.items.MetaItems.ROBOT_ARM_IV, gregtech.common.items.MetaItems.ELECTRIC_PUMP_IV,
 				MetaItems.AE2_STOCKER_IV, GTValues.IV);
-		registerStocker(gregtech.common.items.MetaItems.ROBOT_ARM_LUV, gregtech.common.items.MetaItems.ELECTRIC_PUMP_LUV,
+		registerStocker(gregtech.common.items.MetaItems.ROBOT_ARM_LuV, gregtech.common.items.MetaItems.ELECTRIC_PUMP_LuV,
 				MetaItems.AE2_STOCKER_LUV, GTValues.LuV);
 		registerStocker(gregtech.common.items.MetaItems.ROBOT_ARM_ZPM, gregtech.common.items.MetaItems.ELECTRIC_PUMP_ZPM,
 				MetaItems.AE2_STOCKER_ZPM, GTValues.ZPM);

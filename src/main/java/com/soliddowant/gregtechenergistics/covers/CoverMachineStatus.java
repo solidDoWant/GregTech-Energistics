@@ -95,11 +95,13 @@ public class CoverMachineStatus extends CoverBehavior implements ITickable, Cove
     }
 
     @Override
-    public void writeToNBT(NBTTagCompound tagCompound) {
+    public NBTTagCompound writeToNBT(NBTTagCompound tagCompound) {
         super.writeToNBT(tagCompound);
         tagCompound.setBoolean("IsOutputHigh", isOutputHigh);
         tagCompound.setBoolean("IsInverted", isInverted);
         tagCompound.setInteger("CheckStatus", checkStatus.ordinal());
+
+        return tagCompound;
     }
 
     @Override

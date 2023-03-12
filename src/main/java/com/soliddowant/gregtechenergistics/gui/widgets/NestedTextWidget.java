@@ -20,7 +20,7 @@ public class NestedTextWidget extends SimpleTextWidget {
     }
 
     @Override
-    public void drawInBackground(int mouseX, int mouseY, IRenderContext context) {
+    public void drawInBackground(int mouseX, int mouseY, float partialTicks, IRenderContext context) {
         FontRenderer fontRenderer = Minecraft.getMinecraft().fontRenderer;
         String text = getDisplayText();
         Position position = getPosition();

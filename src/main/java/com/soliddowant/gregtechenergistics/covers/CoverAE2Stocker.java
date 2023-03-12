@@ -54,7 +54,7 @@ import gregtech.api.metatileentity.multiblock.IMultiblockPart;
 import gregtech.api.metatileentity.multiblock.MultiblockAbility;
 import gregtech.api.metatileentity.multiblock.MultiblockControllerBase;
 import gregtech.api.metatileentity.multiblock.RecipeMapMultiblockController;
-import gregtech.common.metatileentities.electric.multiblockpart.MetaTileEntityMultiblockPart;
+import gregtech.common.metatileentities.multi.multiblockpart.MetaTileEntityMultiblockPart;
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -532,7 +532,7 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     }
 
     @Override
-    public void writeToNBT(NBTTagCompound tagCompound) {
+    public NBTTagCompound writeToNBT(NBTTagCompound tagCompound) {
         super.writeToNBT(tagCompound);
         tagCompound.setBoolean("OtherAllowsWorking", doesOtherAllowsWorking);
         tagCompound.setLong("StockCount", stockCount);
@@ -545,6 +545,8 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
         tagCompound.setTag("RemainingItems", serializeRemainingInputItems());
         tagCompound.setTag("RemainingFluids", serializeRemainingInputFluids());
         node.saveToNBT("node", tagCompound);
+
+        return tagCompound;
     }
 
     protected NBTTagCompound serializeRemainingInputItems() {
