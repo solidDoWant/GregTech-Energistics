@@ -1,12 +1,15 @@
 package com.soliddowant.gregtechenergistics.items;
 
-import appeng.api.parts.IPart;
-import appeng.api.parts.IPartItem;
+import javax.annotation.Nullable;
+
 import com.soliddowant.gregtechenergistics.GregTechEnergisticsMod;
 import com.soliddowant.gregtechenergistics.items.stats.IModelProvider;
 import com.soliddowant.gregtechenergistics.items.stats.IPartProvider;
+
+import appeng.api.parts.IPart;
+import appeng.api.parts.IPartItem;
 import gregtech.api.items.metaitem.MetaItem;
-import gregtech.api.items.metaitem.stats.IItemComponent;
+import gregtech.api.items.metaitem.stats.IMetaItemStats;
 import net.minecraft.client.renderer.block.model.ModelBakery;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.item.ItemStack;
@@ -15,9 +18,8 @@ import net.minecraftforge.client.model.ModelLoader;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import javax.annotation.Nullable;
-
-public abstract class ModMetaItem<T extends ModMetaItem<?>.ModMetaValueItem> extends MetaItem<T> implements IPartItem<IPart> {
+public abstract class ModMetaItem<T extends ModMetaItem<?>.ModMetaValueItem> extends MetaItem<T>
+        implements IPartItem<IPart> {
     protected static final ModelResourceLocation MISSING_LOCATION = new ModelResourceLocation("builtin/missing",
             "inventory");
 
@@ -28,11 +30,11 @@ public abstract class ModMetaItem<T extends ModMetaItem<?>.ModMetaValueItem> ext
     @Override
     public IPart createPartFromItemStack(ItemStack is) {
         T metaValueItem = getItem(is);
-        if(metaValueItem == null)
+        if (metaValueItem == null)
             return null;
 
         IPartProvider partProvider = metaValueItem.getPartProvider();
-        if(partProvider == null)
+        if (partProvider == null)
             return null;
 
         return partProvider.getPart(is);
@@ -41,21 +43,23 @@ public abstract class ModMetaItem<T extends ModMetaItem<?>.ModMetaValueItem> ext
     @Override
     @SideOnly(Side.CLIENT)
     public void registerModels() {
-        for (short itemMetaKey : metaItems.keySet()) {
+        metaItems.forEachKey((short itemMetaKey) -> {
             T metaValueItem = metaItems.get(itemMetaKey);
-
             IModelProvider itemModelProvider = metaValueItem.getModelProvider();
-            if(itemModelProvider != null) {
+            if (itemModelProvider != null) {
                 ModelResourceLocation resourceLocation = itemModelProvider.getModel();
                 ModelBakery.registerItemVariants(this, resourceLocation);
                 metaItemsModels.put((short) (metaItemOffset + itemMetaKey), resourceLocation);
             } else {
-                ResourceLocation resourceLocation = new ResourceLocation(GregTechEnergisticsMod.MODID, formatModelPath(metaValueItem));
+                ResourceLocation resourceLocation = new ResourceLocation(GregTechEnergisticsMod.MODID,
+                        formatModelPath(metaValueItem));
                 ModelBakery.registerItemVariants(this, resourceLocation);
                 metaItemsModels.put((short) (metaItemOffset + itemMetaKey),
-                    new ModelResourceLocation(resourceLocation, "inventory"));
+                        new ModelResourceLocation(resourceLocation, "inventory"));
             }
-        }
+
+            return true;
+        });
 
         ModelLoader.setCustomMeshDefinition(this, itemStack -> {
             short itemDamage = formatRawItemDamage((short) itemStack.getItemDamage());
@@ -70,7 +74,7 @@ public abstract class ModMetaItem<T extends ModMetaItem<?>.ModMetaValueItem> ext
         });
     }
 
-    public class ModMetaValueItem extends MetaValueItem {
+    public class ModMetaValueItem extends MetaItem<T>.MetaValueItem {
         protected IPartProvider partProvider;
         protected IModelProvider modelProvider;
 
@@ -80,9 +84,9 @@ public abstract class ModMetaItem<T extends ModMetaItem<?>.ModMetaValueItem> ext
 
         @SuppressWarnings("deprecation")
         @Override
-        protected void addItemComponentsInternal(IItemComponent... stats) {
+        protected void addItemComponentsInternal(IMetaItemStats... stats) {
             super.addItemComponentsInternal(stats);
-            for(IItemComponent itemComponent : stats) {
+            for (IMetaItemStats itemComponent : stats) {
                 if (itemComponent instanceof IPartProvider)
                     this.partProvider = (IPartProvider) itemComponent;
                 if (itemComponent instanceof IModelProvider)

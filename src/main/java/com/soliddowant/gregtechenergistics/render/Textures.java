@@ -1,25 +1,25 @@
 package com.soliddowant.gregtechenergistics.render;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import appeng.core.AppEng;
 import codechicken.lib.texture.TextureUtils;
-import com.soliddowant.gregtechenergistics.render.ModOverlayRenderer;
 import gregtech.api.gui.resources.TextureArea;
-import gregtech.client.renderer.texture.cube.SimpleOverlayRenderer;
+import gregtech.api.render.SimpleOverlayRenderer;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class Textures {
     public static List<TextureUtils.IIconRegister> iconRegisters = new ArrayList<>();
 
-    public static SimpleOverlayRenderer MACHINE_STATUS_OVERLAY = new ModOverlayRenderer("overlay/machine/overlay_status");
+    public static SimpleOverlayRenderer MACHINE_STATUS_OVERLAY = new ModOverlayRenderer(
+            "overlay/machine/overlay_status");
     public static SimpleOverlayRenderer STOCKER_OVERLAY = new ModOverlayRenderer("overlay/machine/overlay_stocker");
 
-    public static ResourceLocation AE2SpriteMap = new ResourceLocation(AppEng.MOD_ID,"textures/guis/states.png");
+    public static ResourceLocation AE2SpriteMap = new ResourceLocation(AppEng.MOD_ID, "textures/guis/states.png");
 
     @SideOnly(Side.CLIENT)
     public static void register(TextureMap textureMap) {

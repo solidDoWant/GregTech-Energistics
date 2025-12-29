@@ -1,28 +1,25 @@
 package com.soliddowant.gregtechenergistics.gui.widgets;
 
+import java.util.List;
+
 import gregtech.api.gui.GuiTextures;
 import gregtech.api.gui.IRenderContext;
 import gregtech.api.gui.Widget;
-import gregtech.api.gui.resources.IGuiTexture;
 import gregtech.api.gui.resources.TextureArea;
 import gregtech.api.gui.widgets.SlotWidget;
-import gregtech.api.util.GTUtility;
 import gregtech.api.util.Position;
 import gregtech.api.util.Size;
-import net.minecraft.client.resources.I18n;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.items.IItemHandler;
 
-import java.util.Arrays;
-import java.util.List;
-
 public class BackgroundSlotWidget extends SlotWidget {
     protected TextureArea BorderTexture = GuiTextures.SLOT;
     protected ItemStack foregroundItemStack;
-    public BackgroundSlotWidget(IItemHandler itemHandler, int slotIndex, int xPosition, int yPosition, boolean canTakeItems, boolean canPutItems) {
+
+    public BackgroundSlotWidget(IItemHandler itemHandler, int slotIndex, int xPosition, int yPosition,
+            boolean canTakeItems, boolean canPutItems) {
         super(itemHandler, slotIndex, xPosition, yPosition, canTakeItems, canPutItems);
     }
 
@@ -33,8 +30,8 @@ public class BackgroundSlotWidget extends SlotWidget {
 
     @Override
     @SideOnly(Side.CLIENT)
-    public void drawInBackground(int mouseX, int mouseY, float partialTicks, IRenderContext context) {
-        if(!isEnabled())
+    public void drawInBackground(int mouseX, int mouseY, IRenderContext context) {
+        if (!isEnabled())
             return;
 
         Position pos = getPosition();
@@ -47,10 +44,10 @@ public class BackgroundSlotWidget extends SlotWidget {
             drawSelectionOverlay(pos.getX() + 1, pos.getY() + 1, slotSize.getWidth(), slotSize.getHeight());
         }
 
-        if(backgroundTexture == null || foregroundItemStack != null)
+        if (backgroundTexture == null || foregroundItemStack != null)
             return;
 
-        for (IGuiTexture backgroundTexture : this.backgroundTexture) {
+        for (TextureArea backgroundTexture : this.backgroundTexture) {
             backgroundTexture.draw(pos.x + 1, pos.y + 1, size.width - 2, size.height - 2);
             backgroundTexture.draw(pos.x + 1, pos.y + 1, size.width - 2, size.height - 2);
         }
@@ -59,7 +56,7 @@ public class BackgroundSlotWidget extends SlotWidget {
     @Override
     @SideOnly(Side.CLIENT)
     public void drawInForeground(int mouseX, int mouseY) {
-        if(foregroundItemStack == null)
+        if (foregroundItemStack == null)
             return;
 
         Position slotPosition = this.getPosition();

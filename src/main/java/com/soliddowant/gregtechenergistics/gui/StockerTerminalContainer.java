@@ -1,5 +1,15 @@
 package com.soliddowant.gregtechenergistics.gui;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import com.soliddowant.gregtechenergistics.covers.CoverAE2Stocker;
+import com.soliddowant.gregtechenergistics.covers.CoverStatus;
+import com.soliddowant.gregtechenergistics.networking.NetworkHandler;
+import com.soliddowant.gregtechenergistics.networking.PacketTerminal;
+import com.soliddowant.gregtechenergistics.parts.StockerTerminalPart;
+
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.security.IActionHost;
@@ -17,12 +27,6 @@ import appeng.util.inv.WrapperCursorItemHandler;
 import appeng.util.inv.WrapperFilteredItemHandler;
 import appeng.util.inv.WrapperRangeItemHandler;
 import appeng.util.inv.filter.IAEItemFilter;
-import com.soliddowant.gregtechenergistics.networking.NetworkHandler;
-import com.soliddowant.gregtechenergistics.networking.PacketCompressedNBT;
-import com.soliddowant.gregtechenergistics.networking.PacketTerminal;
-import com.soliddowant.gregtechenergistics.parts.StockerTerminalPart;
-import com.soliddowant.gregtechenergistics.covers.CoverAE2Stocker;
-import com.soliddowant.gregtechenergistics.covers.CoverStatus;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
@@ -31,10 +35,6 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.items.IItemHandler;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
 
 public class StockerTerminalContainer extends AEBaseContainer {
     protected static long autoBase = Long.MIN_VALUE;
@@ -52,7 +52,7 @@ public class StockerTerminalContainer extends AEBaseContainer {
     }
 
     public static StockerTerminalContainer getServerGuiContainer(AEPartLocation side, EntityPlayer player, World world,
-                                                                 int x, int y, int z) {
+            int x, int y, int z) {
         StockerTerminalPart part = GuiProxy.getPartAtLocation(world, x, y, z, side, StockerTerminalPart.class);
         if (part == null)
             return null;
@@ -121,11 +121,13 @@ public class StockerTerminalContainer extends AEBaseContainer {
                         this.updateTagChildItems(data, inv, i, 1);
             }
 
-        if (data.hasNoTags())
+        if (data.isEmpty())
             return;
 
-        // TODO maybe rework this so that PacketTerminal is passed actual business objects instead of serialized data
-        NetworkHandler.ClientHandlerChannel.sendTo(new PacketTerminal(data), (EntityPlayerMP) this.getPlayerInv().player);
+        // TODO maybe rework this so that PacketTerminal is passed actual business
+        // objects instead of serialized data
+        NetworkHandler.ClientHandlerChannel.sendTo(new PacketTerminal(data),
+                (EntityPlayerMP) this.getPlayerInv().player);
     }
 
     @Override
@@ -243,7 +245,7 @@ public class StockerTerminalContainer extends AEBaseContainer {
         final String name = getItemTagName(tracker);
         final NBTTagCompound tag = parentTag.getCompoundTag(name);
 
-        if (tag.hasNoTags()) {
+        if (tag.isEmpty()) {
             tag.setLong("sortBy", tracker.sortBy);
             tag.setString("un", tracker.unlocalizedName);
         }
@@ -273,7 +275,7 @@ public class StockerTerminalContainer extends AEBaseContainer {
     }
 
     protected void setItemTag(NBTTagCompound parent, NBTTagCompound child, InvTracker inv) {
-        if (child.hasNoTags())
+        if (child.isEmpty())
             return;
 
         parent.setTag(getItemTagName(inv), child);
@@ -290,7 +292,7 @@ public class StockerTerminalContainer extends AEBaseContainer {
     }
 
     protected void buildStockerTag(final NBTTagCompound data, final Entry<CoverAE2Stocker, InvTracker> en,
-								   @SuppressWarnings("SameParameterValue") final int offset, final int length) {
+            @SuppressWarnings("SameParameterValue") final int offset, final int length) {
         InvTracker invTracker = en.getValue();
 
         updateTagChildItems(data, invTracker, offset, length);
@@ -311,14 +313,15 @@ public class StockerTerminalContainer extends AEBaseContainer {
             this.cover = cover;
             this.unlocalizedName = unlocalizedName;
             BlockPos coverPosition = this.cover.coverHolder.getPos();
-            this.sortBy = ((long) coverPosition.getZ() << 24) ^ ((long) coverPosition.getX() << 8) ^ coverPosition.getY();
+            this.sortBy = ((long) coverPosition.getZ() << 24) ^ ((long) coverPosition.getX() << 8)
+                    ^ coverPosition.getY();
         }
 
         public static InvTracker build(final CoverAE2Stocker cover) {
             IItemHandler patterns = cover.getPatternHandler();
             SideDetails server = new SideDetails(patterns, cover);
             SideDetails client = new SideDetails(new AppEngInternalInventory(null, patterns.getSlots()),
-					0, 0, null);
+                    0, 0, null);
 
             return new InvTracker(client, server, cover, cover.getHolderName());
         }
@@ -357,7 +360,8 @@ public class StockerTerminalContainer extends AEBaseContainer {
         }
 
         public void update(CoverAE2Stocker cover) {
-            update(cover.getStockCount(), cover.isGridConnected() ? cover.getOutputLeastAvailableCount() : 0, cover.getCurrentStatus());
+            update(cover.getStockCount(), cover.isGridConnected() ? cover.getOutputLeastAvailableCount() : 0,
+                    cover.getCurrentStatus());
         }
 
         public boolean isSlotDifferent(final SideDetails otherSide, int slot) {

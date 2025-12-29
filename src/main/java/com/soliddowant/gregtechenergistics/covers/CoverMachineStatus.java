@@ -1,14 +1,15 @@
 package com.soliddowant.gregtechenergistics.covers;
 
+import javax.annotation.Nonnull;
+
+import com.soliddowant.gregtechenergistics.render.Textures;
+
 import appeng.util.Platform;
 import codechicken.lib.raytracer.CuboidRayTraceResult;
 import codechicken.lib.render.CCRenderState;
 import codechicken.lib.render.pipeline.IVertexOperation;
 import codechicken.lib.vec.Cuboid6;
 import codechicken.lib.vec.Matrix4;
-import com.soliddowant.gregtechenergistics.covers.CoverAE2Stocker;
-import com.soliddowant.gregtechenergistics.covers.CoverStatus;
-import com.soliddowant.gregtechenergistics.render.Textures;
 import gregtech.api.cover.CoverBehavior;
 import gregtech.api.cover.CoverWithUI;
 import gregtech.api.cover.ICoverable;
@@ -20,9 +21,11 @@ import gregtech.api.gui.widgets.WidgetGroup;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.*;
-
-import javax.annotation.Nonnull;
+import net.minecraft.util.BlockRenderLayer;
+import net.minecraft.util.EnumActionResult;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.EnumHand;
+import net.minecraft.util.ITickable;
 
 // Note: Due to a bug that has since been fixed, this cover will not work on GTCE < 1.10.8.
 public class CoverMachineStatus extends CoverBehavior implements ITickable, CoverWithUI {
@@ -40,7 +43,7 @@ public class CoverMachineStatus extends CoverBehavior implements ITickable, Cove
     }
 
     public void renderCover(CCRenderState renderState, Matrix4 translation, IVertexOperation[] pipeline,
-                            Cuboid6 plateBox) {
+            Cuboid6 plateBox) {
         Textures.MACHINE_STATUS_OVERLAY.renderSided(attachedSide, plateBox, renderState, pipeline, translation);
     }
 
@@ -83,7 +86,7 @@ public class CoverMachineStatus extends CoverBehavior implements ITickable, Cove
     }
 
     // Note: This relies on one, and only one CoverAE2Stocker on the machine.
-	// CoverAE2Stocker must check this on attachment.
+    // CoverAE2Stocker must check this on attachment.
     protected CoverAE2Stocker getAttachedStockerCover() {
         for (EnumFacing side : EnumFacing.VALUES) {
             CoverBehavior sideCover = coverHolder.getCoverAtSide(side);
@@ -95,13 +98,11 @@ public class CoverMachineStatus extends CoverBehavior implements ITickable, Cove
     }
 
     @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound tagCompound) {
+    public void writeToNBT(NBTTagCompound tagCompound) {
         super.writeToNBT(tagCompound);
         tagCompound.setBoolean("IsOutputHigh", isOutputHigh);
         tagCompound.setBoolean("IsInverted", isInverted);
         tagCompound.setInteger("CheckStatus", checkStatus.ordinal());
-
-        return tagCompound;
     }
 
     @Override
@@ -163,7 +164,7 @@ public class CoverMachineStatus extends CoverBehavior implements ITickable, Cove
     }
 
     public void renderCover(CCRenderState renderState, Matrix4 translation, IVertexOperation[] pipeline,
-                            Cuboid6 plateBox, BlockRenderLayer layer) {
+            Cuboid6 plateBox, BlockRenderLayer layer) {
         renderCover(renderState, translation, pipeline, plateBox);
     }
 }

@@ -1,6 +1,7 @@
 package com.soliddowant.gregtechenergistics.items.behaviors;
 
 import com.soliddowant.gregtechenergistics.covers.PlayerPlacedCoverBehavior;
+
 import gregtech.api.capability.GregtechTileCapabilities;
 import gregtech.api.cover.CoverBehavior;
 import gregtech.api.cover.CoverDefinition;
@@ -21,9 +22,11 @@ public class PlayerCoverPlaceBehavior extends CoverPlaceBehavior {
     }
 
     @Override
-    public EnumActionResult onItemUseFirst(EntityPlayer player, World world, BlockPos pos, EnumFacing side, float hitX, float hitY, float hitZ, EnumHand hand) {
+    public EnumActionResult onItemUseFirst(EntityPlayer player, World world, BlockPos pos, EnumFacing side, float hitX,
+            float hitY, float hitZ, EnumHand hand) {
         TileEntity tileEntity = world.getTileEntity(pos);
-        ICoverable coverable = tileEntity == null ? null : tileEntity.getCapability(GregtechTileCapabilities.CAPABILITY_COVERABLE, null);
+        ICoverable coverable = tileEntity == null ? null
+                : tileEntity.getCapability(GregtechTileCapabilities.CAPABILITY_COVERABLE, null);
         if (coverable == null)
             return EnumActionResult.PASS;
 
@@ -33,13 +36,13 @@ public class PlayerCoverPlaceBehavior extends CoverPlaceBehavior {
 
         if (!world.isRemote) {
             ItemStack itemStack = player.getHeldItem(hand);
-            boolean successfullyPlaced = coverable.placeCoverOnSide(coverSide, itemStack, coverDefinition, player);
+            boolean successfullyPlaced = coverable.placeCoverOnSide(coverSide, itemStack, coverDefinition);
             if (successfullyPlaced) {
-                if(!player.capabilities.isCreativeMode)
+                if (!player.capabilities.isCreativeMode)
                     itemStack.shrink(1);
 
                 CoverBehavior placedCoverBehavior = coverable.getCoverAtSide(coverSide);
-                if(placedCoverBehavior instanceof PlayerPlacedCoverBehavior)
+                if (placedCoverBehavior instanceof PlayerPlacedCoverBehavior)
                     ((PlayerPlacedCoverBehavior) placedCoverBehavior).setPlacingPlayer(player);
             }
 

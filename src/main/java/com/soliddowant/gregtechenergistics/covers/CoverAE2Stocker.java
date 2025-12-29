@@ -1,13 +1,42 @@
 package com.soliddowant.gregtechenergistics.covers;
 
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.annotation.Nonnull;
+
+import com.google.common.collect.ImmutableSet;
+import com.soliddowant.gregtechenergistics.capability.impl.ItemHandlerListFixed;
+import com.soliddowant.gregtechenergistics.gui.widgets.AE2PatternSlotWidget;
+import com.soliddowant.gregtechenergistics.gui.widgets.AE2UpgradeSlotWidget;
+import com.soliddowant.gregtechenergistics.gui.widgets.NestedTextWidget;
+import com.soliddowant.gregtechenergistics.helpers.CraftingTracker;
+import com.soliddowant.gregtechenergistics.items.behaviors.FluidEncoderBehaviour;
+import com.soliddowant.gregtechenergistics.render.Textures;
+
 import appeng.api.AEApi;
 import appeng.api.config.Actionable;
 import appeng.api.config.Upgrades;
-import appeng.api.networking.*;
+import appeng.api.networking.GridFlags;
+import appeng.api.networking.GridNotification;
+import appeng.api.networking.IGrid;
+import appeng.api.networking.IGridBlock;
+import appeng.api.networking.IGridHost;
+import appeng.api.networking.IGridNode;
 import appeng.api.networking.crafting.ICraftingGrid;
 import appeng.api.networking.crafting.ICraftingLink;
 import appeng.api.networking.crafting.ICraftingRequester;
-import appeng.api.networking.events.*;
+import appeng.api.networking.events.MENetworkBootingStatusChange;
+import appeng.api.networking.events.MENetworkChannelChanged;
+import appeng.api.networking.events.MENetworkChannelsChanged;
+import appeng.api.networking.events.MENetworkControllerChange;
+import appeng.api.networking.events.MENetworkEventSubscribe;
+import appeng.api.networking.events.MENetworkPowerStatusChange;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.storage.IStorageGrid;
@@ -32,14 +61,6 @@ import codechicken.lib.render.CCRenderState;
 import codechicken.lib.render.pipeline.IVertexOperation;
 import codechicken.lib.vec.Cuboid6;
 import codechicken.lib.vec.Matrix4;
-import com.google.common.collect.ImmutableSet;
-import com.soliddowant.gregtechenergistics.capability.impl.ItemHandlerListFixed;
-import com.soliddowant.gregtechenergistics.gui.widgets.AE2PatternSlotWidget;
-import com.soliddowant.gregtechenergistics.gui.widgets.AE2UpgradeSlotWidget;
-import com.soliddowant.gregtechenergistics.gui.widgets.NestedTextWidget;
-import com.soliddowant.gregtechenergistics.helpers.CraftingTracker;
-import com.soliddowant.gregtechenergistics.items.behaviors.FluidEncoderBehaviour;
-import com.soliddowant.gregtechenergistics.render.Textures;
 import gregtech.api.GTValues;
 import gregtech.api.capability.GregtechTileCapabilities;
 import gregtech.api.capability.IControllable;
@@ -48,19 +69,29 @@ import gregtech.api.cover.CoverWithUI;
 import gregtech.api.cover.ICoverable;
 import gregtech.api.gui.GuiTextures;
 import gregtech.api.gui.ModularUI;
-import gregtech.api.gui.widgets.*;
+import gregtech.api.gui.widgets.ClickButtonWidget;
+import gregtech.api.gui.widgets.CycleButtonWidget;
+import gregtech.api.gui.widgets.ImageWidget;
+import gregtech.api.gui.widgets.LabelWidget;
+import gregtech.api.gui.widgets.SimpleTextWidget;
+import gregtech.api.gui.widgets.WidgetGroup;
 import gregtech.api.metatileentity.MetaTileEntity;
 import gregtech.api.metatileentity.multiblock.IMultiblockPart;
 import gregtech.api.metatileentity.multiblock.MultiblockAbility;
 import gregtech.api.metatileentity.multiblock.MultiblockControllerBase;
 import gregtech.api.metatileentity.multiblock.RecipeMapMultiblockController;
-import gregtech.common.metatileentities.multi.multiblockpart.MetaTileEntityMultiblockPart;
+import gregtech.common.metatileentities.electric.multiblockpart.MetaTileEntityMultiblockPart;
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.*;
+import net.minecraft.util.BlockRenderLayer;
+import net.minecraft.util.EnumActionResult;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.EnumHand;
+import net.minecraft.util.ITickable;
+import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fluids.FluidStack;
@@ -72,12 +103,7 @@ import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.IItemHandlerModifiable;
 
-import javax.annotation.Nonnull;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-@SuppressWarnings({"BooleanMethodIsAlwaysInverted", "unused"})
+@SuppressWarnings({ "BooleanMethodIsAlwaysInverted", "unused" })
 public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
         implements CoverWithUI, ITickable, IControllable, IGridBlock, IGridHost, IActionHost, ICraftingRequester {
 
@@ -129,7 +155,8 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
         this.fluidChannel = AEApi.instance().storage().getStorageChannel(IFluidStorageChannel.class);
         this.craftingTracker = new CraftingTracker(this, machineActionSource);
 
-        // In the case of non-multiblocks this only needs to be done once and can be done on instantiation
+        // In the case of non-multiblocks this only needs to be done once and can be
+        // done on instantiation
         if (!isHolderMultiblock())
             registerSingleBlockHandlers();
     }
@@ -157,8 +184,10 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     public boolean canAttach() {
         if (isHolderMultiblock()) {
             // Cover holder is a multiblock part
-            // Unfortunately this has to check specifically for a MetaTileEntityMultiblockPart here
-            // (rather than IMultiblockPart) because this needs to get the controller from the part.
+            // Unfortunately this has to check specifically for a
+            // MetaTileEntityMultiblockPart here
+            // (rather than IMultiblockPart) because this needs to get the controller from
+            // the part.
             MetaTileEntityMultiblockPart castedHolder = (MetaTileEntityMultiblockPart) coverHolder;
             MultiblockControllerBase controller = castedHolder.getController();
 
@@ -173,12 +202,14 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
                     if (checkIfICoveraebleContainsCover((ICoverable) part))
                         return false;
 
-            // Check to make sure the multiblock has at least one input and export capability
+            // Check to make sure the multiblock has at least one input and export
+            // capability
             if (controller.getAbilities(MultiblockAbility.IMPORT_ITEMS).isEmpty() &&
                     controller.getAbilities(MultiblockAbility.IMPORT_FLUIDS).isEmpty())
                 return false;
 
-            //noinspection RedundantIfStatement // This is easier to read than the alternative
+            // noinspection RedundantIfStatement // This is easier to read than the
+            // alternative
             if (controller.getAbilities(MultiblockAbility.EXPORT_ITEMS).isEmpty() &&
                     controller.getAbilities(MultiblockAbility.EXPORT_FLUIDS).isEmpty())
                 return false;
@@ -227,7 +258,7 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     }
 
     // Will remove these warnings after ItemHandlerList bug is fixed
-    @SuppressWarnings({"CommentedOutCode", "DuplicatedCode"})
+    @SuppressWarnings({ "CommentedOutCode", "DuplicatedCode" })
     protected void registerRecipeMapMultiblockControllerHandlers() {
         RecipeMapMultiblockController castedController = (RecipeMapMultiblockController) controller;
 
@@ -239,8 +270,8 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
         List<IItemHandlerModifiable> itemExportHandlers = controller.getAbilities(MultiblockAbility.EXPORT_ITEMS);
         if (!itemExportHandlers.isEmpty())
             machineItemExportHandler = new ItemHandlerListFixed(itemExportHandlers);
-//        machineItemInputHandler = castedController.getInputInventory();
-//        machineItemExportHandler = castedController.getOutputInventory();
+        // machineItemInputHandler = castedController.getInputInventory();
+        // machineItemExportHandler = castedController.getOutputInventory();
 
         machineFluidInputHandler = castedController.getInputFluidInventory();
         machineFluidExportHandler = castedController.getOutputFluidInventory();
@@ -279,14 +310,15 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
             Block.spawnAsEntity(coverHolder.getWorld(), coverHolder.getPos(), itemStack);
     }
 
-    // The two renderCover methods provide backwards and forwards compatibility with GTCE versions
+    // The two renderCover methods provide backwards and forwards compatibility with
+    // GTCE versions
     public void renderCover(CCRenderState renderState, Matrix4 translation, IVertexOperation[] pipeline,
-                            Cuboid6 plateBox) {
+            Cuboid6 plateBox) {
         Textures.STOCKER_OVERLAY.renderSided(attachedSide, plateBox, renderState, pipeline, translation);
     }
 
     public void renderCover(CCRenderState renderState, Matrix4 translation, IVertexOperation[] pipeline,
-                            Cuboid6 plateBox, BlockRenderLayer layer) {
+            Cuboid6 plateBox, BlockRenderLayer layer) {
         renderCover(renderState, translation, pipeline, plateBox);
     }
 
@@ -398,7 +430,8 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
         // tricky.
         LinkedList<IAEFluidStack> foundFluids = new LinkedList<>();
         for (IAEItemStack aeItemStack : aeItemStacks) {
-            // getDefinition is used here as there shouldn't be any modifications of the item stack anywhere it's passed.
+            // getDefinition is used here as there shouldn't be any modifications of the
+            // item stack anywhere it's passed.
             ItemStack itemStack = aeItemStack.getDefinition();
 
             if (!FluidEncoderBehaviour.hasStackBehavior(itemStack))
@@ -532,7 +565,7 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     }
 
     @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound tagCompound) {
+    public void writeToNBT(NBTTagCompound tagCompound) {
         super.writeToNBT(tagCompound);
         tagCompound.setBoolean("OtherAllowsWorking", doesOtherAllowsWorking);
         tagCompound.setLong("StockCount", stockCount);
@@ -545,8 +578,6 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
         tagCompound.setTag("RemainingItems", serializeRemainingInputItems());
         tagCompound.setTag("RemainingFluids", serializeRemainingInputFluids());
         node.saveToNBT("node", tagCompound);
-
-        return tagCompound;
     }
 
     protected NBTTagCompound serializeRemainingInputItems() {
@@ -641,7 +672,8 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
         if (coverHolder.getWorld() != null && !isGridConnected())
             node.updateState();
 
-        // If the cover holder is/should be a part of a multiblock and the multiblock changed, this will deal with the
+        // If the cover holder is/should be a part of a multiblock and the multiblock
+        // changed, this will deal with the
         // new/changed handlers.
         updateMultiblockInformation();
 
@@ -659,14 +691,20 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
         // checked
         currentStatus = getPartialStatus();
         if (!isWorkingEnabled()) {
-            // If the cover holder is/should be a part of a multiblock and the current status is missing input or output
-            // space, then it's likely that the multiblock needs to be reformed with new hatches/busses. If working is
-            // disabled then the multiblock cannot reform, resulting in the status to always return the initial missing
-            // input/output space. While working is enabled, the method is exited afterwords as not all checks have been
+            // If the cover holder is/should be a part of a multiblock and the current
+            // status is missing input or output
+            // space, then it's likely that the multiblock needs to be reformed with new
+            // hatches/busses. If working is
+            // disabled then the multiblock cannot reform, resulting in the status to always
+            // return the initial missing
+            // input/output space. While working is enabled, the method is exited afterwords
+            // as not all checks have been
             // passed.
-            //noinspection RedundantIfStatement // This is easier to read than the alternative
+            // noinspection RedundantIfStatement // This is easier to read than the
+            // alternative
             if (!isHolderMultiblock() ||
-                    (currentStatus != CoverStatus.MISSING_INPUT_SPACE && currentStatus != CoverStatus.MISSING_OUTPUT_SPACE))
+                    (currentStatus != CoverStatus.MISSING_INPUT_SPACE
+                            && currentStatus != CoverStatus.MISSING_OUTPUT_SPACE))
                 setWorkingStatus(false);
             else
                 setWorkingStatus(true);
@@ -691,7 +729,8 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
             shouldInsert = doExtract();
     }
 
-    // Returns true if at least one item or fluid was extracted, and there was no missing output space.
+    // Returns true if at least one item or fluid was extracted, and there was no
+    // missing output space.
     // Extract produced items
     // This will extract all items, not just what's in the pattern.
     // Good for things like electrolyzing clay dust where there are 4 outputs but
@@ -704,7 +743,8 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
         boolean missingOutputSpace = false;
         boolean hasRemovedSomething = false;
         if (machineItemExportHandler != null)
-            for (int slot = 0; slot < (machineItemExportHandler == null ? 0 : machineItemExportHandler.getSlots()); slot++) {
+            for (int slot = 0; slot < (machineItemExportHandler == null ? 0
+                    : machineItemExportHandler.getSlots()); slot++) {
                 ItemStack slotStack = machineItemExportHandler.getStackInSlot(slot);
                 if (slotStack.isEmpty())
                     continue;
@@ -713,7 +753,8 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
 
                 // Test to see how many items can be removed. Some slots (i.e. inputs) might not
                 // be removable.
-                int amountAvailableToRemove = machineItemExportHandler.extractItem(slot, availableCount, true).getCount();
+                int amountAvailableToRemove = machineItemExportHandler.extractItem(slot, availableCount, true)
+                        .getCount();
 
                 if (amountAvailableToRemove == 0)
                     continue;
@@ -771,7 +812,8 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     }
 
     // Returns true if all items were inserted.
-    // This will track how much of the recipe is actually inserted so that multiple sets
+    // This will track how much of the recipe is actually inserted so that multiple
+    // sets
     // of the same recipe aren't inserted when input space runs out.
     protected boolean doInsert() {
         LinkedList<IAEItemStack> newRemainingInputItems = insertItems();
@@ -804,7 +846,8 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
                 extractionStack.setStackSize(remainingCount);
                 newRemainingInputFluids.add(extractionStack);
 
-                // Can't insert into this slot for whatever reason. No need to try to extract 0 fluid from grid
+                // Can't insert into this slot for whatever reason. No need to try to extract 0
+                // fluid from grid
                 if (insertedCount == 0)
                     continue;
             } else {
@@ -818,11 +861,11 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
         return newRemainingInputFluids;
     }
 
-    protected LinkedList<IAEItemStack>  insertItems() {
+    protected LinkedList<IAEItemStack> insertItems() {
         LinkedList<IAEItemStack> newRemainingInputItems = new LinkedList<>();
         for (IAEItemStack inputItem : getRemainingInputItems()) {
             IAEItemStack remainingStack = insertItem(inputItem);
-            if(remainingStack != null)
+            if (remainingStack != null)
                 newRemainingInputItems.add(remainingStack);
         }
 
@@ -843,8 +886,9 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
             IAEItemStack extractionStack;
             if (insertedCount != inputItem.getStackSize()) {
                 extractionStack = AEItemStack.fromItemStack(insertingStack);
-                // extractionStack is only null if insertingStack.isEmpty(), which is checked elsewhere
-                //noinspection ConstantConditions
+                // extractionStack is only null if insertingStack.isEmpty(), which is checked
+                // elsewhere
+                // noinspection ConstantConditions
                 extractionStack.setStackSize(insertedCount);
             } else {
                 // No need to make a new item stack if they're identical
@@ -859,7 +903,8 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
                 break;
         }
 
-        // insertingStack is now remainingStack. Add the remainder to the remaining items list
+        // insertingStack is now remainingStack. Add the remainder to the remaining
+        // items list
         return insertingStack.isEmpty() ? null : AEItemStack.fromItemStack(insertingStack);
     }
 
@@ -1061,8 +1106,9 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     }
 
     public long getOutputLeastAvailableCount() {
-        return (isGridConnected() && isPatternAvailable()) ?
-                getOutputAvailableCounts().stream().reduce((x, y) -> x < y ? x : y).orElse(0L) : 0;
+        return (isGridConnected() && isPatternAvailable())
+                ? getOutputAvailableCounts().stream().reduce((x, y) -> x < y ? x : y).orElse(0L)
+                : 0;
     }
 
     /// Check if all items in a pattern are available to insert.
@@ -1133,7 +1179,7 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
         if (isMissingItemInputSpace())
             return false;
 
-        //noinspection RedundantIfStatement
+        // noinspection RedundantIfStatement
         if (shouldUseFluids() && isMissingFluidInputSpace())
             return false;
 
@@ -1160,11 +1206,13 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
             int targetInsertingCount = (int) iaeItemStack.getStackSize();
             int neededSpace = targetInsertingCount;
             for (int slot = 0; slot < machineItemInputHandler.getSlots(); slot++) {
-                int missingSpace = machineItemInputHandler.insertItem(slot, iaeItemStack.createItemStack(), true).getCount();
+                int missingSpace = machineItemInputHandler.insertItem(slot, iaeItemStack.createItemStack(), true)
+                        .getCount();
                 int spaceAvailableToInsert = targetInsertingCount - missingSpace;
                 neededSpace -= spaceAvailableToInsert;
 
-                // No need to keep checking slots if there is enough space in the previously checked slots
+                // No need to keep checking slots if there is enough space in the previously
+                // checked slots
                 if (neededSpace <= 0)
                     break;
             }
@@ -1184,7 +1232,7 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
         if (isMissingItemOutputSpace())
             return false;
 
-        //noinspection RedundantIfStatement
+        // noinspection RedundantIfStatement
         if (shouldUseFluids() && isMissingFluidOutputSpace())
             return false;
 
@@ -1221,9 +1269,9 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
 
     public String getHolderName() {
         if (isHolderMultiblock() && controller != null)
-            return controller.getStackForm().getUnlocalizedName();
+            return controller.getStackForm().getTranslationKey();
 
-        return this.coverHolder.getStackForm().getUnlocalizedName();
+        return this.coverHolder.getStackForm().getTranslationKey();
     }
 
     public IItemHandler getPatternHandler() {
@@ -1248,8 +1296,8 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     }
 
     protected <T extends IAEStack<T>> List<T> copyAEStackList(List<T> sourceList) {
-        return sourceList == null ?
-                null : sourceList.stream().map(T::copy).collect(Collectors.toCollection(LinkedList::new));
+        return sourceList == null ? null
+                : sourceList.stream().map(T::copy).collect(Collectors.toCollection(LinkedList::new));
     }
 
     @Override

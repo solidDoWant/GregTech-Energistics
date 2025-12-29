@@ -1,8 +1,9 @@
 package com.soliddowant.gregtechenergistics.items;
 
-import appeng.core.Api;
 import com.soliddowant.gregtechenergistics.items.behaviors.FluidEncoderBehaviour;
 import com.soliddowant.gregtechenergistics.items.behaviors.StockerTerminalBehavior;
+
+import appeng.core.Api;
 import gregtech.api.GTValues;
 import gregtech.api.items.metaitem.MetaItem;
 import gregtech.api.recipes.RecipeMaps;
@@ -35,9 +36,9 @@ public class MetaItem1 extends StandardModMetaItem {
 				.addComponents(new StockerTerminalBehavior());
 	}
 
-	@SuppressWarnings("OptionalGetWithoutIsPresent")	// If these items are missing the mod should probably fail to load
+	@SuppressWarnings("OptionalGetWithoutIsPresent") // If these items are missing the mod should probably fail to load
 	protected void registerStocker(MetaItem<?>.MetaValueItem roboticArm, MetaItem<?>.MetaValueItem pump,
-								   MetaItem<?>.MetaValueItem output, int voltage) {
+			MetaItem<?>.MetaValueItem output, int voltage) {
 		RecipeMaps.ASSEMBLER_RECIPES.recipeBuilder()
 				.inputs(
 						roboticArm.getStackForm(),
@@ -46,8 +47,7 @@ public class MetaItem1 extends StandardModMetaItem {
 						Api.INSTANCE.definitions().blocks().iface().maybeStack(1).get(),
 						Api.INSTANCE.definitions().blocks().fluidIface().maybeStack(1).get(),
 						Api.INSTANCE.definitions().parts().levelEmitter().maybeStack(1).get(),
-						Api.INSTANCE.definitions().parts().fluidLevelEmitter().maybeStack(1).get()
-				)
+						Api.INSTANCE.definitions().parts().fluidLevelEmitter().maybeStack(1).get())
 				.input(OrePrefix.plate, Materials.Tin, 4)
 				.outputs(output.getStackForm())
 				.duration(200)
@@ -66,9 +66,11 @@ public class MetaItem1 extends StandardModMetaItem {
 				MetaItems.AE2_STOCKER_EV, GTValues.EV);
 		registerStocker(gregtech.common.items.MetaItems.ROBOT_ARM_IV, gregtech.common.items.MetaItems.ELECTRIC_PUMP_IV,
 				MetaItems.AE2_STOCKER_IV, GTValues.IV);
-		registerStocker(gregtech.common.items.MetaItems.ROBOT_ARM_LuV, gregtech.common.items.MetaItems.ELECTRIC_PUMP_LuV,
+		registerStocker(gregtech.common.items.MetaItems.ROBOT_ARM_LUV,
+				gregtech.common.items.MetaItems.ELECTRIC_PUMP_LUV,
 				MetaItems.AE2_STOCKER_LUV, GTValues.LuV);
-		registerStocker(gregtech.common.items.MetaItems.ROBOT_ARM_ZPM, gregtech.common.items.MetaItems.ELECTRIC_PUMP_ZPM,
+		registerStocker(gregtech.common.items.MetaItems.ROBOT_ARM_ZPM,
+				gregtech.common.items.MetaItems.ELECTRIC_PUMP_ZPM,
 				MetaItems.AE2_STOCKER_ZPM, GTValues.ZPM);
 		registerStocker(gregtech.common.items.MetaItems.ROBOT_ARM_UV, gregtech.common.items.MetaItems.ELECTRIC_PUMP_UV,
 				MetaItems.AE2_STOCKER_UV, GTValues.UV);
@@ -84,8 +86,7 @@ public class MetaItem1 extends StandardModMetaItem {
 		RecipeMaps.ASSEMBLER_RECIPES.recipeBuilder()
 				.inputs(
 						gregtech.common.items.MetaItems.INTEGRATED_CIRCUIT.getStackForm(),
-						new ItemStack(Items.BUCKET)
-				)
+						new ItemStack(Items.BUCKET))
 				.outputs(MetaItems.FLUID_ENCODER.getStackForm())
 				.duration(200)
 				.EUt((int) GTValues.V[GTValues.MV])
@@ -95,8 +96,7 @@ public class MetaItem1 extends StandardModMetaItem {
 				.input("itemIlluminatedPanel", 1)
 				.inputs(
 						Api.INSTANCE.definitions().materials().engProcessor().maybeStack(1).get(),
-						MetaItems.AE2_STOCKER_MV.getStackForm()
-				)
+						MetaItems.AE2_STOCKER_MV.getStackForm())
 				.outputs(MetaItems.STOCKER_TERMINAL.getStackForm())
 				.duration(200)
 				.EUt((int) GTValues.V[GTValues.MV])
