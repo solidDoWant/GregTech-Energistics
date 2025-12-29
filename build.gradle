@@ -62,8 +62,8 @@ dependencies {
     deobfCompile "curse.maven:hasenoughitems-557549:3934312-deobf-sources"
     deobfCompile "curse.maven:codechickenlib-242818:2779848-deobf-sources"
     deobfCompile "curse.maven:gregtech-557242:4429261-deobf-sources"
-    deobfCompile "curse.maven:ae2-570458:4396402-deobf-sources-api"
-//    compile "curse.maven:mousetweaks-60089:2462627-sources-2462630-api-2462629"
+    deobfCompile "curse.maven:ae2-extended-life-570458:5035908-deobf-sources-api"
+    compileOnly "curse.maven:mousetweaks-60089:2671937-sources-2671939-api-3359845"  // API only, not bundled at runtime
     compile "curse.maven:endercore-231868:2972849-api-2972850"
     compile "curse.maven:crafttweaker-239197:4403410-deobf-sources"
     compileOnly "curse.maven:groovyscript-687577:4431117-deobf-sources"
