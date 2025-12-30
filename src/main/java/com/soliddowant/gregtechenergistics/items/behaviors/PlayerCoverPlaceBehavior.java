@@ -36,6 +36,7 @@ public class PlayerCoverPlaceBehavior extends CoverPlaceBehavior {
 
         if (!world.isRemote) {
             ItemStack itemStack = player.getHeldItem(hand);
+
             boolean successfullyPlaced = coverable.placeCoverOnSide(coverSide, itemStack, coverDefinition);
             if (successfullyPlaced) {
                 if (!player.capabilities.isCreativeMode)

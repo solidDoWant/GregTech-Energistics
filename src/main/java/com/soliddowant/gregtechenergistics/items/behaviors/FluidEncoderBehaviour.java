@@ -1,10 +1,15 @@
 package com.soliddowant.gregtechenergistics.items.behaviors;
 
-import appeng.util.Platform;
-import appeng.util.ReadableNumberConverter;
+import java.util.List;
+
+import javax.annotation.Nonnull;
+
 import com.soliddowant.gregtechenergistics.gui.ModularUIItemBuilder;
 import com.soliddowant.gregtechenergistics.items.MetaItems;
 import com.soliddowant.gregtechenergistics.items.StandardModMetaItem;
+
+import appeng.util.Platform;
+import appeng.util.ReadableNumberConverter;
 import gregtech.api.gui.GuiTextures;
 import gregtech.api.gui.ModularUI;
 import gregtech.api.gui.widgets.ClickButtonWidget;
@@ -27,14 +32,11 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraftforge.fluids.FluidStack;
 
-import javax.annotation.Nonnull;
-import java.util.List;
-
 public class FluidEncoderBehaviour implements IItemBehaviour, ItemUIFactory {
     @Override
     public void addInformation(ItemStack stack, List<String> lines) {
         FluidStack containedStack = getFluidStack(stack);
-        if(containedStack == null)
+        if (containedStack == null)
             return;
 
         MetaItem<?>.MetaValueItem heldMetaItem = MetaItems.getMetaValueItemFromStack(stack);
@@ -48,7 +50,7 @@ public class FluidEncoderBehaviour implements IItemBehaviour, ItemUIFactory {
     public ActionResult<ItemStack> onItemRightClick(@Nonnull World world, EntityPlayer player, @Nonnull EnumHand hand) {
         ItemStack heldItem = player.getHeldItem(hand);
 
-        if(player.isSneaking()) {
+        if (player.isSneaking()) {
             heldItem.setTagCompound(null);
             return ActionResult.newResult(EnumActionResult.SUCCESS, heldItem);
         }
@@ -69,12 +71,18 @@ public class FluidEncoderBehaviour implements IItemBehaviour, ItemUIFactory {
                 .label(9, 8, heldItemStack.getDisplayName())
                 .widget(new ImageWidget(61, 24, 56, 20, GuiTextures.DISPLAY))
                 .widget(new SimpleTextWidget(89, 34, baseName + ".amount", 0xFFFFFF,
-                        () -> ReadableNumberConverter.INSTANCE.toWideReadableForm(getFluidAmount(holder.getCurrentItem()))))
-                .widget(new ClickButtonWidget(11, 24, 30, 20, "-100", data -> adjustConfiguration(holder, -100, data.isShiftClick)))
-                .widget(new ClickButtonWidget(41, 24, 20, 20, "-1", data -> adjustConfiguration(holder, -1, data.isShiftClick)))
-                .widget(new ClickButtonWidget(117, 24, 20, 20, "+1", data -> adjustConfiguration(holder, +1, data.isShiftClick)))
-                .widget(new ClickButtonWidget(137, 24, 30, 20, "+100", data -> adjustConfiguration(holder, +100, data.isShiftClick)))
-                .widget(new PhantomFluidWidget(44, 50, 18, 18, () -> getFluidStack(holder.getCurrentItem()), fluid -> setHeldItemStackFluid(holder, fluid)))
+                        () -> ReadableNumberConverter.INSTANCE
+                                .toWideReadableForm(getFluidAmount(holder.getCurrentItem()))))
+                .widget(new ClickButtonWidget(11, 24, 30, 20, "-100",
+                        data -> adjustConfiguration(holder, -100, data.isShiftClick)))
+                .widget(new ClickButtonWidget(41, 24, 20, 20, "-1",
+                        data -> adjustConfiguration(holder, -1, data.isShiftClick)))
+                .widget(new ClickButtonWidget(117, 24, 20, 20, "+1",
+                        data -> adjustConfiguration(holder, +1, data.isShiftClick)))
+                .widget(new ClickButtonWidget(137, 24, 30, 20, "+100",
+                        data -> adjustConfiguration(holder, +100, data.isShiftClick)))
+                .widget(new PhantomFluidWidget(44, 50, 18, 18, () -> getFluidStack(holder.getCurrentItem()),
+                        fluid -> setHeldItemStackFluid(holder, fluid)))
                 .label(11, 55, baseName + ".fluid")
                 .bindPlayerInventory(entityPlayer.inventory, 156)
                 .build(holder, entityPlayer);
@@ -107,7 +115,7 @@ public class FluidEncoderBehaviour implements IItemBehaviour, ItemUIFactory {
     }
 
     public static void setItemStackFluid(ItemStack stack, FluidStack fluid) {
-        if(fluid == null)
+        if (fluid == null)
             return;
 
         NBTTagCompound tag = stack.hasTagCompound() ? stack.getTagCompound() : new NBTTagCompound();
@@ -145,15 +153,15 @@ public class FluidEncoderBehaviour implements IItemBehaviour, ItemUIFactory {
 
     public static FluidEncoderBehaviour getStackBehaviour(ItemStack stack) {
         Item item = stack.getItem();
-        if(!(item instanceof StandardModMetaItem))
+        if (!(item instanceof StandardModMetaItem))
             return null;
 
         MetaItem<?>.MetaValueItem stackMetaValueItem = ((MetaItem<?>) item).getItem(stack);
-        if(stackMetaValueItem == null)
+        if (stackMetaValueItem == null)
             return null;
 
-        for(IItemBehaviour behavior : stackMetaValueItem.getBehaviours())
-            if(behavior instanceof FluidEncoderBehaviour)
+        for (IItemBehaviour behavior : stackMetaValueItem.getBehaviours())
+            if (behavior instanceof FluidEncoderBehaviour)
                 return (FluidEncoderBehaviour) behavior;
 
         return null;
