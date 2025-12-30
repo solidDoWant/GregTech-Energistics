@@ -42,18 +42,16 @@ dependencies {
     api(rfg.deobf("curse.maven:codechickenlib-242818:2779848-deobf-sources"))
     api(rfg.deobf("curse.maven:gregtech-nomifactory-edition-1019238:7064114-deobf-sources"))
     api(rfg.deobf("curse.maven:ae2-extended-life-570458:5035908-deobf-sources-api"))
-    api(rfg.deobf("curse.maven:endercore-231868:4671295-api-4671297"))
-    // Every newer 1.12.2 compatible version of this has a bug that only affects development. The
-    // META-INF directory contains multiple files with the same name, causing Gradle to fail to
-    // deobfuscate it. Using this older version avoids the issue.
-    api(rfg.deobf("curse.maven:crafttweaker-239197:2487573"))
 
     // Compile-only API dependencies - available at compiletime for depending mods, optional at runtime
-    compileOnlyApi(rfg.deobf("curse.maven:mousetweaks-60089:2671937-sources-2671939-api-3359845"))
+    // compileOnlyApi(rfg.deobf("curse.maven:mousetweaks-60089:2671937-sources-2671939-api-3359845"))
 
     // // Compile-only dependencies - optional integrations, not available to depending mods
     // compileOnly(rfg.deobf("curse.maven:groovyscript-687577:4431117-deobf-sources"))
 
     // // Dev environment only - not published as dependencies
-    // devOnlyNonPublishable(rfg.deobf("curse.maven:hasenoughitems-557549:3934312-deobf-sources"))
+    // Every newer 1.12.2 compatible version of this has a bug that only affects development. The
+    // META-INF directory contains multiple files with the same name, causing Gradle to fail to
+    // deobfuscate it. Using this older version avoids the issue.
+    // runtimeOnlyNonPublishable(rfg.deobf("curse.maven:crafttweaker-239197:2487573-deobf-sources"))
 }
