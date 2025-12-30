@@ -54,4 +54,8 @@ dependencies {
     // META-INF directory contains multiple files with the same name, causing Gradle to fail to
     // deobfuscate it. Using this older version avoids the issue.
     // runtimeOnlyNonPublishable(rfg.deobf("curse.maven:crafttweaker-239197:2487573-deobf-sources"))
+
+    // This is the only way that I can get endercore to load, and it only works with the obf client.
+    runtimeOnly(rfg.deobf("curse.maven:endercore-231868:2972849"))
+    runtimeOnly(rfg.deobf("curse.maven:ender-io-64578:3328811"))
 }
