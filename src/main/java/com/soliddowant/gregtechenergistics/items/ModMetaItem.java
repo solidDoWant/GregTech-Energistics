@@ -2,7 +2,7 @@ package com.soliddowant.gregtechenergistics.items;
 
 import javax.annotation.Nullable;
 
-import com.soliddowant.gregtechenergistics.GregTechEnergisticsMod;
+import com.soliddowant.gregtechenergistics.Tags;
 import com.soliddowant.gregtechenergistics.items.stats.IModelProvider;
 import com.soliddowant.gregtechenergistics.items.stats.IPartProvider;
 
@@ -51,8 +51,7 @@ public abstract class ModMetaItem<T extends ModMetaItem<?>.ModMetaValueItem> ext
                 ModelBakery.registerItemVariants(this, resourceLocation);
                 metaItemsModels.put((short) (metaItemOffset + itemMetaKey), resourceLocation);
             } else {
-                ResourceLocation resourceLocation = new ResourceLocation(GregTechEnergisticsMod.MODID,
-                        formatModelPath(metaValueItem));
+                ResourceLocation resourceLocation = new ResourceLocation(Tags.MODID, formatModelPath(metaValueItem));
                 ModelBakery.registerItemVariants(this, resourceLocation);
                 metaItemsModels.put((short) (metaItemOffset + itemMetaKey),
                         new ModelResourceLocation(resourceLocation, "inventory"));

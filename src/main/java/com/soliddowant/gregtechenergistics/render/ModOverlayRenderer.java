@@ -1,6 +1,6 @@
 package com.soliddowant.gregtechenergistics.render;
 
-import com.soliddowant.gregtechenergistics.GregTechEnergisticsMod;
+import com.soliddowant.gregtechenergistics.Tags;
 
 import codechicken.lib.render.CCRenderState;
 import codechicken.lib.render.pipeline.IVertexOperation;
@@ -29,7 +29,7 @@ public class ModOverlayRenderer extends SimpleOverlayRenderer {
     }
 
     public ModOverlayRenderer(String basePath) {
-        this(GregTechEnergisticsMod.MODID, basePath);
+        this(Tags.MODID, basePath);
     }
 
     @Override

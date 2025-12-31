@@ -2,7 +2,7 @@ package com.soliddowant.gregtechenergistics.items.behaviors;
 
 import javax.annotation.Nonnull;
 
-import com.soliddowant.gregtechenergistics.GregTechEnergisticsMod;
+import com.soliddowant.gregtechenergistics.Tags;
 import com.soliddowant.gregtechenergistics.items.stats.IModelProvider;
 import com.soliddowant.gregtechenergistics.items.stats.IPartProvider;
 import com.soliddowant.gregtechenergistics.parts.StockerTerminalPart;
@@ -39,6 +39,6 @@ public class StockerTerminalBehavior implements IItemBehaviour, IPartProvider, I
     @Override
     public ModelResourceLocation getModel() {
         AEApi.instance().registries().partModels().registerModels(StockerTerminalPart.MODELS);
-        return new ModelResourceLocation(GregTechEnergisticsMod.MODID + ":part/stocker.terminal");
+        return new ModelResourceLocation(Tags.MODID + ":part/stocker.terminal");
     }
 }

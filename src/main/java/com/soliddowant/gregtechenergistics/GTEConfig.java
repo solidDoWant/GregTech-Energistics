@@ -6,7 +6,7 @@ import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-@Config(modid = GregTechEnergisticsMod.MODID)
+@Config(modid = Tags.MODID)
 public class GTEConfig {
 
     @Config.Comment("Settings for the AE2 Stocker Cover")
@@ -20,13 +20,13 @@ public class GTEConfig {
         public int updateIntervalTicks = 5;
     }
 
-    @Mod.EventBusSubscriber(modid = GregTechEnergisticsMod.MODID)
+    @Mod.EventBusSubscriber(modid = Tags.MODID)
     public static class ConfigSyncHandler {
         @SubscribeEvent
         public static void onConfigChanged(ConfigChangedEvent.OnConfigChangedEvent event) {
-            if (!event.getModID().equals(GregTechEnergisticsMod.MODID))
+            if (!event.getModID().equals(Tags.MODID))
                 return;
-            ConfigManager.sync(GregTechEnergisticsMod.MODID, Config.Type.INSTANCE);
+            ConfigManager.sync(Tags.MODID, Config.Type.INSTANCE);
         }
     }
 }

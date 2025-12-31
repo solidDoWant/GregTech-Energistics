@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 import com.google.common.collect.HashMultimap;
-import com.soliddowant.gregtechenergistics.GregTechEnergisticsMod;
+import com.soliddowant.gregtechenergistics.Tags;
 import com.soliddowant.gregtechenergistics.covers.CoverStatus;
 import com.soliddowant.gregtechenergistics.parts.StockerTerminalPart;
 
@@ -127,7 +127,7 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 
 	@Override
 	public void bindTexture(String file) {
-		ResourceLocation loc = new ResourceLocation(GregTechEnergisticsMod.MODID, "textures/" + file);
+		ResourceLocation loc = new ResourceLocation(Tags.MODID, "textures/" + file);
 		this.mc.getTextureManager().bindTexture(loc);
 	}
 

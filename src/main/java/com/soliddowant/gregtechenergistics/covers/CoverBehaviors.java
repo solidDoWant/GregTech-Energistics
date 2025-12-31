@@ -2,7 +2,7 @@ package com.soliddowant.gregtechenergistics.covers;
 
 import java.util.function.BiFunction;
 
-import com.soliddowant.gregtechenergistics.GregTechEnergisticsMod;
+import com.soliddowant.gregtechenergistics.Tags;
 import com.soliddowant.gregtechenergistics.items.MetaItems;
 import com.soliddowant.gregtechenergistics.items.behaviors.PlayerCoverPlaceBehavior;
 
@@ -27,14 +27,14 @@ public class CoverBehaviors {
 		registerStockerCover(6, "ae2.interface.zpm", MetaItems.AE2_STOCKER_ZPM, GTValues.ZPM, 5242880);
 		registerStockerCover(7, "ae2.interface.uv", MetaItems.AE2_STOCKER_UV, GTValues.UV, 20971520);
 
-		registerBehavior(8, new ResourceLocation(GregTechEnergisticsMod.MODID, "machine.status"),
+		registerBehavior(8, new ResourceLocation(Tags.MODID, "machine.status"),
 				MetaItems.MACHINE_STATUS,
 				CoverMachineStatus::new);
 	}
 
 	protected static void registerStockerCover(int idOffset, String resourcePath, MetaItem<?>.MetaValueItem placerItem,
 			int tier, int maxStockCount) {
-		registerBehavior(idOffset, new ResourceLocation(GregTechEnergisticsMod.MODID, resourcePath), placerItem,
+		registerBehavior(idOffset, new ResourceLocation(Tags.MODID, resourcePath), placerItem,
 				(tile, side) -> new CoverAE2Stocker(tile, side, tier, maxStockCount));
 	}
 
