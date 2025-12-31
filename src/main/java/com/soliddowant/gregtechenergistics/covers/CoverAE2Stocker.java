@@ -473,7 +473,10 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
             return null;
 
         Stream<IAEItemStack> items = Arrays.stream(aeItemStacks)
-                .filter(item -> item.getStackSize() > 0);
+                .filter(item -> {
+                        if(item == null){return false;}
+                        return item.getStackSize() > 0;
+                });
 
         if (shouldUseFluids())
             items = items.filter(item -> !(FluidEncoderBehaviour.hasFluidStack(item.getDefinition())));
