@@ -1,5 +1,11 @@
 ## Changelog
 
+### 1.0.1
+* Fixed compat issues with Nomifactory dev (now requires Nomifactory fork of GregTech)
+* Fixed Ender IO conduits not connecting with stocker covers
+* Made cover tick rate globally configurable
+* Added +/- 1 and 64 buttons for stocker cover size
+
 ### 1.0.0.4
 * Fixed compat issues with Nomifactory
 
