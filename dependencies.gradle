@@ -44,7 +44,7 @@ dependencies {
     api(rfg.deobf("curse.maven:ae2-extended-life-570458:5035908-deobf-sources-api"))
 
     // Compile-only API dependencies - available at compiletime for depending mods, optional at runtime
-    // compileOnlyApi(rfg.deobf("curse.maven:mousetweaks-60089:2671937-sources-2671939-api-3359845"))
+    compileOnlyApi(rfg.deobf("curse.maven:mousetweaks-60089:2671937-sources-2671939-api-3359845"))
 
     // // Compile-only dependencies - optional integrations, not available to depending mods
     // compileOnly(rfg.deobf("curse.maven:groovyscript-687577:4431117-deobf-sources"))

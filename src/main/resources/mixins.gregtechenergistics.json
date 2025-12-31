@@ -1,0 +1,12 @@
+{
+  "package": "com.soliddowant.gregtechenergistics.mixins",
+  "refmap": "mixins.gregtechenergistics.refmap.json",
+  "target": "@env(DEFAULT)",
+  "minVersion": "0.8",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "MetaTileEntityHolderMixin"
+  ],
+  "client": [],
+  "server": []
+}
