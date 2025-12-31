@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
 import com.google.common.collect.ImmutableSet;
+import com.soliddowant.gregtechenergistics.GTEConfig;
 import com.soliddowant.gregtechenergistics.capability.impl.ItemHandlerListFixed;
 import com.soliddowant.gregtechenergistics.gui.widgets.AE2PatternSlotWidget;
 import com.soliddowant.gregtechenergistics.gui.widgets.AE2UpgradeSlotWidget;
@@ -661,9 +662,9 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
 
     @Override
     public void update() {
-        // Only update on every 5th tick
+        // Only update on every Nth tick (configurable)
         long timer = coverHolder.getOffsetTimer();
-        if (timer % 5 != 0)
+        if (timer % GTEConfig.stockerCover.updateIntervalTicks != 0)
             return;
 
         // Covers cannot currently tell when a neighboring block changes. This is a
