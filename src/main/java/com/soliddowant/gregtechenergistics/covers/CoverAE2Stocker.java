@@ -70,6 +70,7 @@ import gregtech.api.cover.CoverWithUI;
 import gregtech.api.cover.ICoverable;
 import gregtech.api.gui.GuiTextures;
 import gregtech.api.gui.ModularUI;
+import gregtech.api.gui.Widget.ClickData;
 import gregtech.api.gui.widgets.ClickButtonWidget;
 import gregtech.api.gui.widgets.CycleButtonWidget;
 import gregtech.api.gui.widgets.ImageWidget;
@@ -352,18 +353,24 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
         // Title
         primaryGroup.addWidget(new LabelWidget(6, 5, getUITitle(), GTValues.VN[tier]));
 
-        // Stock amount
-        long incrementSize = maxItemsStocked / 100;
-        String readableIncrementSize = ReadableNumberConverter.INSTANCE.toWideReadableForm(incrementSize);
-        primaryGroup.addWidget(new ClickButtonWidget(10, 20, 40, 20,
-                "-" + readableIncrementSize,
-                data -> adjustStockCount(data.isShiftClick ? -10 * incrementSize : -incrementSize)));
-        primaryGroup.addWidget(new ClickButtonWidget(126, 20, 40, 20,
-                "+" + readableIncrementSize,
-                data -> adjustStockCount(data.isShiftClick ? 10 * incrementSize : incrementSize)));
-        primaryGroup.addWidget(new ImageWidget(50, 20, 76, 20, GuiTextures.DISPLAY));
+        // Stock amount - stack-based increments
+        // Shift = 10x, Ctrl = 100x, Shift+Ctrl = 1000x
+        final int stackSize = 64;
+        primaryGroup.addWidget(new ClickButtonWidget(10, 20, 30, 20,
+                "-" + stackSize,
+                data -> adjustStockCount(-getIncrementMultiplier(data) * stackSize)));
+        primaryGroup.addWidget(new ClickButtonWidget(40, 20, 20, 20,
+                "-1",
+                data -> adjustStockCount(-getIncrementMultiplier(data))));
+        primaryGroup.addWidget(new ImageWidget(60, 20, 56, 20, GuiTextures.DISPLAY));
         primaryGroup.addWidget(new SimpleTextWidget(88, 30, "cover.stocker.stock_count",
                 0xFFFFFF, () -> ReadableNumberConverter.INSTANCE.toWideReadableForm(stockCount)));
+        primaryGroup.addWidget(new ClickButtonWidget(116, 20, 20, 20,
+                "+1",
+                data -> adjustStockCount(getIncrementMultiplier(data))));
+        primaryGroup.addWidget(new ClickButtonWidget(136, 20, 30, 20,
+                "+" + stackSize,
+                data -> adjustStockCount(getIncrementMultiplier(data) * stackSize)));
 
         // Pattern
         primaryGroup.addWidget(new LabelWidget(32, 45 + 5, "cover.stocker.pattern.title"));
@@ -488,6 +495,17 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
 
     protected void adjustStockCount(long amount) {
         setStockCount((long) MathHelper.clamp(stockCount + amount, 0, maxItemsStocked));
+    }
+
+    protected long getIncrementMultiplier(ClickData data) {
+        if (data.isShiftClick && data.isCtrlClick) {
+            return 1000;
+        } else if (data.isCtrlClick) {
+            return 100;
+        } else if (data.isShiftClick) {
+            return 10;
+        }
+        return 1;
     }
 
     @Override
