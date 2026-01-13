@@ -40,6 +40,9 @@ public class FluidEncoderBakedModel implements IBakedModel {
     private static final Logger LOGGER = LogManager.getLogger("GTEnergistics");
     private static boolean hasLoggedOnce = false;
 
+    // Thread-local to store the current ItemStack being rendered
+    private static final ThreadLocal<ItemStack> CURRENT_STACK = new ThreadLocal<>();
+
     private final IBakedModel baseModel;
     private final TextureAtlasSprite baseSprite;
     private final TextureAtlasSprite maskSprite;
@@ -54,8 +57,19 @@ public class FluidEncoderBakedModel implements IBakedModel {
 
     @Override
     public List<BakedQuad> getQuads(@Nullable IBlockState state, @Nullable EnumFacing side, long rand) {
-        // Default: empty encoder with gray droplet
-        return getQuadsForFluid(null, side, rand);
+        // Get the current stack from thread-local (set by handleItemState)
+        ItemStack currentStack = CURRENT_STACK.get();
+        FluidStack fluidStack = null;
+
+        if (currentStack != null && FluidEncoderBehaviour.hasStackBehavior(currentStack)) {
+            fluidStack = FluidEncoderBehaviour.getFluidStack(currentStack);
+            LOGGER.info("[FluidEncoder] getQuads called with stack, fluidStack={}",
+                    fluidStack != null ? fluidStack.getFluid().getName() : "null");
+        } else {
+            LOGGER.info("[FluidEncoder] getQuads called without stack (using default)");
+        }
+
+        return getQuadsForFluid(fluidStack, side, rand);
     }
 
     /**
@@ -161,12 +175,14 @@ public class FluidEncoderBakedModel implements IBakedModel {
     }
 
     @Override
-    public Pair<? extends IBakedModel, Matrix4f> handlePerspective(ItemCameraTransforms.TransformType cameraTransformType) {
+    public Pair<? extends IBakedModel, Matrix4f> handlePerspective(
+            ItemCameraTransforms.TransformType cameraTransformType) {
         return Pair.of(this, baseModel.handlePerspective(cameraTransformType).getRight());
     }
 
     /**
-     * Override list that returns a fluid-specific model based on the ItemStack's NBT
+     * Override list that returns a fluid-specific model based on the ItemStack's
+     * NBT
      */
     private static class FluidEncoderOverrideList extends ItemOverrideList {
         private final FluidEncoderBakedModel parent;
@@ -179,59 +195,19 @@ public class FluidEncoderBakedModel implements IBakedModel {
         @Override
         public IBakedModel handleItemState(IBakedModel originalModel, ItemStack stack,
                 @Nullable World world, @Nullable EntityLivingBase entity) {
-            if (!FluidEncoderBehaviour.hasStackBehavior(stack)) {
-                return originalModel;
-            }
-
-            FluidStack fluidStack = FluidEncoderBehaviour.getFluidStack(stack);
+            // Store the current stack in thread-local so getQuads can access it
+            CURRENT_STACK.set(stack);
 
             if (!hasLoggedOnce) {
+                FluidStack fluidStack = FluidEncoderBehaviour.hasStackBehavior(stack)
+                        ? FluidEncoderBehaviour.getFluidStack(stack)
+                        : null;
                 LOGGER.info("[FluidEncoder] handleItemState called, fluidStack: {}",
                         fluidStack != null ? fluidStack.getFluid().getName() + " x" + fluidStack.amount : "null");
             }
 
-            // Return a wrapper that provides the fluid-specific quads
-            return new FluidEncoderRenderedModel(parent, fluidStack);
-        }
-    }
-
-    /**
-     * Inner model class that renders with a specific fluid
-     */
-    private static class FluidEncoderRenderedModel implements IBakedModel {
-        private final FluidEncoderBakedModel parent;
-        private final FluidStack fluidStack;
-
-        public FluidEncoderRenderedModel(FluidEncoderBakedModel parent, FluidStack fluidStack) {
-            this.parent = parent;
-            this.fluidStack = fluidStack;
-        }
-
-        @Override
-        public List<BakedQuad> getQuads(@Nullable IBlockState state, @Nullable EnumFacing side, long rand) {
-            return parent.getQuadsForFluid(fluidStack, side, rand);
-        }
-
-        @Override
-        public boolean isAmbientOcclusion() { return parent.isAmbientOcclusion(); }
-        @Override
-        public boolean isGui3d() { return parent.isGui3d(); }
-        @Override
-        public boolean isBuiltInRenderer() { return false; }
-        @Override
-        public TextureAtlasSprite getParticleTexture() { return parent.getParticleTexture(); }
-        @Override
-        public ItemOverrideList getOverrides() { return ItemOverrideList.NONE; }
-
-        @Override
-        @SuppressWarnings("deprecation")
-        public ItemCameraTransforms getItemCameraTransforms() {
-            return parent.baseModel.getItemCameraTransforms();
-        }
-
-        @Override
-        public Pair<? extends IBakedModel, Matrix4f> handlePerspective(ItemCameraTransforms.TransformType cameraTransformType) {
-            return parent.handlePerspective(cameraTransformType);
+            // Return the parent model itself - it will use CURRENT_STACK in getQuads
+            return parent;
         }
     }
 
