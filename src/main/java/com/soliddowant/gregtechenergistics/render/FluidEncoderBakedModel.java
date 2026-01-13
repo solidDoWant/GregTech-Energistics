@@ -189,11 +189,16 @@ public class FluidEncoderBakedModel implements IBakedModel {
             hasLoggedOnce = true;
         }
 
-        // Layer 0: Bounded quad for fluid/mask (only covers droplet area)
-        BakedQuad boundedQuad = buildBoundedQuad(layer0Sprite, 0,
+        // Layer 0: Bounded quads for fluid/mask (only covers droplet area)
+        // Need both front and back faces so item looks correct from both sides
+        quads.add(buildBoundedQuad(layer0Sprite, 0,
                 dropletMinX / 16f, dropletMinY / 16f,
-                dropletMaxX / 16f, dropletMaxY / 16f);
-        quads.add(boundedQuad);
+                dropletMaxX / 16f, dropletMaxY / 16f,
+                EnumFacing.SOUTH));  // Front face
+        quads.add(buildBoundedQuad(layer0Sprite, 0,
+                dropletMinX / 16f, dropletMinY / 16f,
+                dropletMaxX / 16f, dropletMaxY / 16f,
+                EnumFacing.NORTH));  // Back face
 
         // Layer 1: Full frame (unchanged - uses ItemLayerModel)
         quads.addAll(ItemLayerModel.getQuadsForSprite(1, baseSprite,
@@ -207,15 +212,18 @@ public class FluidEncoderBakedModel implements IBakedModel {
      * Coordinates are in 0-1 range (e.g., 0.25 to 0.75 for center half).
      */
     private BakedQuad buildBoundedQuad(TextureAtlasSprite texture, int tintIndex,
-            float minX, float minY, float maxX, float maxY) {
+            float minX, float minY, float maxX, float maxY, EnumFacing facing) {
 
         UnpackedBakedQuad.Builder builder = new UnpackedBakedQuad.Builder(DefaultVertexFormats.ITEM);
         builder.setQuadTint(tintIndex);
         builder.setTexture(texture);
-        builder.setQuadOrientation(EnumFacing.SOUTH);
+        builder.setQuadOrientation(facing);
 
-        // Z position for layer 0 (slightly behind layer 1)
-        float z = 7.5f / 16f;
+        // Z position - front face slightly in front, back face slightly behind
+        float z = facing == EnumFacing.SOUTH ? 7.5f / 16f : 8.5f / 16f;
+
+        // Normal direction
+        float normalZ = facing == EnumFacing.SOUTH ? 1f : -1f;
 
         // Calculate UV coordinates - sample from the bounded region of the texture
         float u0 = texture.getInterpolatedU(minX * 16);
@@ -223,12 +231,19 @@ public class FluidEncoderBakedModel implements IBakedModel {
         float v0 = texture.getInterpolatedV(minY * 16);
         float v1 = texture.getInterpolatedV(maxY * 16);
 
-        // Build quad vertices (counter-clockwise from bottom-left)
-        // Note: Minecraft Y is inverted in textures, so we flip V coordinates
-        putVertex(builder, minX, 1 - maxY, z, u0, v1);  // Bottom-left
-        putVertex(builder, maxX, 1 - maxY, z, u1, v1);  // Bottom-right
-        putVertex(builder, maxX, 1 - minY, z, u1, v0);  // Top-right
-        putVertex(builder, minX, 1 - minY, z, u0, v0);  // Top-left
+        if (facing == EnumFacing.SOUTH) {
+            // Front face - counter-clockwise winding
+            putVertex(builder, minX, 1 - maxY, z, u0, v1, normalZ);  // Bottom-left
+            putVertex(builder, maxX, 1 - maxY, z, u1, v1, normalZ);  // Bottom-right
+            putVertex(builder, maxX, 1 - minY, z, u1, v0, normalZ);  // Top-right
+            putVertex(builder, minX, 1 - minY, z, u0, v0, normalZ);  // Top-left
+        } else {
+            // Back face - clockwise winding (reversed order)
+            putVertex(builder, minX, 1 - minY, z, u0, v0, normalZ);  // Top-left
+            putVertex(builder, maxX, 1 - minY, z, u1, v0, normalZ);  // Top-right
+            putVertex(builder, maxX, 1 - maxY, z, u1, v1, normalZ);  // Bottom-right
+            putVertex(builder, minX, 1 - maxY, z, u0, v1, normalZ);  // Bottom-left
+        }
 
         return builder.build();
     }
@@ -236,7 +251,7 @@ public class FluidEncoderBakedModel implements IBakedModel {
     /**
      * Put a vertex into the quad builder.
      */
-    private void putVertex(UnpackedBakedQuad.Builder builder, float x, float y, float z, float u, float v) {
+    private void putVertex(UnpackedBakedQuad.Builder builder, float x, float y, float z, float u, float v, float normalZ) {
         VertexFormat format = DefaultVertexFormats.ITEM;
         for (int e = 0; e < format.getElementCount(); e++) {
             switch (format.getElement(e).getUsage()) {
@@ -255,7 +270,7 @@ public class FluidEncoderBakedModel implements IBakedModel {
                     }
                     break;
                 case NORMAL:
-                    builder.put(e, 0f, 0f, 1f, 0f);
+                    builder.put(e, 0f, 0f, normalZ, 0f);
                     break;
                 default:
                     builder.put(e);
