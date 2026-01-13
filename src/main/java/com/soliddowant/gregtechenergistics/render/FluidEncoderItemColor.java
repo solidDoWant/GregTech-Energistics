@@ -3,14 +3,19 @@ package com.soliddowant.gregtechenergistics.render;
 import com.soliddowant.gregtechenergistics.items.behaviors.FluidEncoderBehaviour;
 
 import appeng.api.util.AEColor;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.color.IItemColor;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 
 /**
  * Custom item color handler for MetaItem1.
  * For fluid encoder items:
- * - Layer 0: Fluid layer - white when fluid present (to show actual texture), gray when empty
+ * - Layer 0: Fluid layer - no tint if texture found, fluid color tint if texture missing, gray if empty
  * - Layer 1: Base frame - always white (no tint)
  * For other items:
  * - Uses AE2's transparent color (default behavior)
@@ -33,8 +38,16 @@ public class FluidEncoderItemColor implements IItemColor {
         if (tintIndex == 0) {
             FluidStack fluidStack = FluidEncoderBehaviour.getFluidStack(stack);
             if (fluidStack != null && fluidStack.getFluid() != null) {
-                // Fluid set - no tint so actual fluid texture colors show
-                return NO_TINT;
+                Fluid fluid = fluidStack.getFluid();
+
+                // Check if we have a valid fluid texture
+                if (hasFluidTexture(fluid, fluidStack)) {
+                    // Fluid texture found - no tint so actual texture colors show
+                    return NO_TINT;
+                } else {
+                    // Fluid texture not found - tint with fluid color as fallback
+                    return fluid.getColor(fluidStack);
+                }
             } else {
                 // Empty - tint gray
                 return EMPTY_GRAY;
@@ -43,5 +56,21 @@ public class FluidEncoderItemColor implements IItemColor {
 
         // Layer 1 (base frame) - no tint
         return NO_TINT;
+    }
+
+    /**
+     * Check if a fluid's texture is available in the texture atlas
+     */
+    private boolean hasFluidTexture(Fluid fluid, FluidStack fluidStack) {
+        ResourceLocation fluidStill = fluid.getStill(fluidStack);
+        if (fluidStill == null) {
+            return false;
+        }
+
+        TextureMap textureMap = Minecraft.getMinecraft().getTextureMapBlocks();
+        TextureAtlasSprite fluidSprite = textureMap.getAtlasSprite(fluidStill.toString());
+        TextureAtlasSprite missingSprite = textureMap.getMissingSprite();
+
+        return fluidSprite != null && fluidSprite != missingSprite;
     }
 }

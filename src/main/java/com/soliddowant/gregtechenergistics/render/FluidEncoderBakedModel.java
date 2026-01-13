@@ -9,7 +9,6 @@ import javax.vecmath.Matrix4f;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.common.collect.ImmutableList;
-import com.soliddowant.gregtechenergistics.Tags;
 import com.soliddowant.gregtechenergistics.items.behaviors.FluidEncoderBehaviour;
 
 import net.minecraft.block.state.IBlockState;
@@ -19,6 +18,7 @@ import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.client.renderer.block.model.ItemCameraTransforms;
 import net.minecraft.client.renderer.block.model.ItemOverrideList;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.item.ItemStack;
@@ -39,10 +39,6 @@ public class FluidEncoderBakedModel implements IBakedModel {
     private final TextureAtlasSprite baseSprite;
     private final TextureAtlasSprite maskSprite;
     private final FluidEncoderOverrideList overrideList;
-
-    // Gray sprite for empty encoder
-    private static final ResourceLocation GRAY_TEXTURE =
-            new ResourceLocation(Tags.MODID, "items/metaitems/fluid.encoder.underlay");
 
     public FluidEncoderBakedModel(IBakedModel baseModel, TextureAtlasSprite baseSprite, TextureAtlasSprite maskSprite) {
         this.baseModel = baseModel;
@@ -66,17 +62,26 @@ public class FluidEncoderBakedModel implements IBakedModel {
         }
 
         ImmutableList.Builder<BakedQuad> quads = ImmutableList.builder();
+        TextureMap textureMap = Minecraft.getMinecraft().getTextureMapBlocks();
 
-        // Layer 0: Fluid texture in droplet shape, or gray mask when empty
-        TextureAtlasSprite layer0Sprite;
+        // Layer 0: Fluid texture or mask sprite
+        TextureAtlasSprite layer0Sprite = maskSprite; // Default to mask
+
         if (fluidStack != null && fluidStack.getFluid() != null) {
             Fluid fluid = fluidStack.getFluid();
-            ResourceLocation fluidTexture = fluid.getStill(fluidStack);
-            layer0Sprite = Minecraft.getMinecraft().getTextureMapBlocks()
-                    .getAtlasSprite(fluidTexture.toString());
-        } else {
-            // Use the mask sprite with gray color (handled by IItemColor)
-            layer0Sprite = maskSprite;
+            ResourceLocation fluidStill = fluid.getStill(fluidStack);
+
+            if (fluidStill != null) {
+                // Try to get the fluid texture from the atlas
+                TextureAtlasSprite fluidSprite = textureMap.getAtlasSprite(fluidStill.toString());
+
+                // Check if we got a valid sprite (not the missing texture)
+                TextureAtlasSprite missingSprite = textureMap.getMissingSprite();
+                if (fluidSprite != null && fluidSprite != missingSprite) {
+                    layer0Sprite = fluidSprite;
+                }
+                // If fluid texture not found, keep maskSprite and IItemColor will tint it
+            }
         }
 
         // Generate quads for layer 0 using ItemLayerModel's quad builder
@@ -88,6 +93,27 @@ public class FluidEncoderBakedModel implements IBakedModel {
                 DefaultVertexFormats.ITEM, Optional.empty()));
 
         return quads.build();
+    }
+
+    /**
+     * Check if a fluid's texture was successfully loaded
+     */
+    public boolean hasFluidTexture(@Nullable FluidStack fluidStack) {
+        if (fluidStack == null || fluidStack.getFluid() == null) {
+            return false;
+        }
+
+        Fluid fluid = fluidStack.getFluid();
+        ResourceLocation fluidStill = fluid.getStill(fluidStack);
+        if (fluidStill == null) {
+            return false;
+        }
+
+        TextureMap textureMap = Minecraft.getMinecraft().getTextureMapBlocks();
+        TextureAtlasSprite fluidSprite = textureMap.getAtlasSprite(fluidStill.toString());
+        TextureAtlasSprite missingSprite = textureMap.getMissingSprite();
+
+        return fluidSprite != null && fluidSprite != missingSprite;
     }
 
     @Override
