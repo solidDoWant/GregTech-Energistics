@@ -1,9 +1,8 @@
 package com.soliddowant.gregtechenergistics;
 
-import appeng.api.util.AEColor;
-import appeng.client.render.StaticItemColor;
 import codechicken.lib.texture.TextureUtils;
 import com.soliddowant.gregtechenergistics.items.MetaItems;
+import com.soliddowant.gregtechenergistics.render.FluidEncoderItemColor;
 import com.soliddowant.gregtechenergistics.render.FluidEncoderModelLoader;
 import com.soliddowant.gregtechenergistics.render.Textures;
 import net.minecraft.client.Minecraft;
@@ -20,9 +19,9 @@ public class ClientProxy extends CommonProxy {
 	@Override
 	public void init(FMLInitializationEvent e) {
 		super.init(e);
-		// Register default AE2 color handler for other meta items
+		// Register color handler for meta items (handles fluid encoder + AE2 defaults)
 		Minecraft.getMinecraft().getItemColors().registerItemColorHandler(
-				new StaticItemColor(AEColor.TRANSPARENT), MetaItems.metaItem1);
+				new FluidEncoderItemColor(), MetaItems.metaItem1);
 	}
 
 	@Override

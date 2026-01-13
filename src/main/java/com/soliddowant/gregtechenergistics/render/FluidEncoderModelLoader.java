@@ -35,8 +35,9 @@ public class FluidEncoderModelLoader implements ICustomModelLoader {
     @Override
     public boolean accepts(ResourceLocation modelLocation) {
         // Only handle our specific fluid encoder model
+        // GregTech registers models with path "metaitems/..." not "item/metaitems/..."
         return modelLocation.getNamespace().equals(Tags.MODID) &&
-               modelLocation.getPath().equals("item/metaitems/fluid.encoder");
+               modelLocation.getPath().equals("metaitems/fluid.encoder");
     }
 
     @Override

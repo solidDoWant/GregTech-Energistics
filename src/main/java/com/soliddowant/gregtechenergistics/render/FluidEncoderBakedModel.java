@@ -1,6 +1,5 @@
 package com.soliddowant.gregtechenergistics.render;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -9,6 +8,8 @@ import javax.vecmath.Matrix4f;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.soliddowant.gregtechenergistics.Tags;
 import com.soliddowant.gregtechenergistics.items.behaviors.FluidEncoderBehaviour;
 
 import net.minecraft.block.state.IBlockState;
@@ -18,17 +19,14 @@ import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.client.renderer.block.model.ItemCameraTransforms;
 import net.minecraft.client.renderer.block.model.ItemOverrideList;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.client.renderer.vertex.VertexFormat;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import net.minecraftforge.client.model.ItemLayerModel;
-import net.minecraftforge.client.model.pipeline.UnpackedBakedQuad;
-import net.minecraftforge.common.model.IModelState;
+import net.minecraftforge.common.model.TRSRTransformation;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 
@@ -43,10 +41,9 @@ public class FluidEncoderBakedModel implements IBakedModel {
     private final TextureAtlasSprite maskSprite;
     private final FluidEncoderOverrideList overrideList;
 
-    // Gray color for empty encoder (RGB components as floats)
-    private static final float EMPTY_R = 0.6f;
-    private static final float EMPTY_G = 0.6f;
-    private static final float EMPTY_B = 0.6f;
+    // Gray sprite for empty encoder
+    private static final ResourceLocation GRAY_TEXTURE =
+            new ResourceLocation(Tags.MODID, "items/metaitems/fluid.encoder.underlay");
 
     public FluidEncoderBakedModel(IBakedModel baseModel, TextureAtlasSprite baseSprite, TextureAtlasSprite maskSprite) {
         this.baseModel = baseModel;
@@ -57,8 +54,8 @@ public class FluidEncoderBakedModel implements IBakedModel {
 
     @Override
     public List<BakedQuad> getQuads(@Nullable IBlockState state, @Nullable EnumFacing side, long rand) {
-        // Return base model quads by default (for empty encoder or non-GUI rendering)
-        return baseModel.getQuads(state, side, rand);
+        // Default: empty encoder with gray droplet
+        return getQuadsForFluid(null, side, rand);
     }
 
     /**
@@ -69,116 +66,39 @@ public class FluidEncoderBakedModel implements IBakedModel {
             return ImmutableList.of();
         }
 
-        List<BakedQuad> quads = new ArrayList<>();
-        TextureMap textureMap = Minecraft.getMinecraft().getTextureMapBlocks();
+        ImmutableList.Builder<BakedQuad> quads = ImmutableList.builder();
 
-        // Layer 0: Fluid texture (or gray for empty) in droplet shape
+        // Layer 0: Fluid texture in droplet shape, or gray mask when empty
+        TextureAtlasSprite layer0Sprite;
         if (fluidStack != null && fluidStack.getFluid() != null) {
             Fluid fluid = fluidStack.getFluid();
             ResourceLocation fluidTexture = fluid.getStill(fluidStack);
-            TextureAtlasSprite fluidSprite = textureMap.getAtlasSprite(fluidTexture.toString());
-            int fluidColor = fluid.getColor(fluidStack);
-
-            // Add fluid quad using the mask shape
-            quads.addAll(getQuadsForSprite(0, maskSprite, fluidSprite, fluidColor));
+            layer0Sprite = Minecraft.getMinecraft().getTextureMapBlocks()
+                    .getAtlasSprite(fluidTexture.toString());
         } else {
-            // Empty - render gray droplet
-            quads.addAll(getQuadsForSolidColor(0, maskSprite, EMPTY_R, EMPTY_G, EMPTY_B));
+            // Use the mask sprite with gray color (handled by IItemColor)
+            layer0Sprite = maskSprite;
         }
 
-        // Layer 1: Base frame (with transparent droplet hole)
-        quads.addAll(getQuadsForSprite(1, baseSprite, baseSprite, 0xFFFFFFFF));
+        // Generate quads for layer 0 using ItemLayerModel's quad builder
+        quads.addAll(ItemLayerModel.getQuadsForSprite(0, layer0Sprite,
+                DefaultVertexFormats.ITEM, TRSRTransformation.identity()));
 
-        return quads;
-    }
+        // Layer 1: Base frame
+        quads.addAll(ItemLayerModel.getQuadsForSprite(1, baseSprite,
+                DefaultVertexFormats.ITEM, TRSRTransformation.identity()));
 
-    /**
-     * Create quads for a sprite with texture from another sprite and color tint
-     */
-    private List<BakedQuad> getQuadsForSprite(int layerIndex, TextureAtlasSprite shape,
-            TextureAtlasSprite texture, int color) {
-        List<BakedQuad> quads = new ArrayList<>();
-
-        float r = ((color >> 16) & 0xFF) / 255.0f;
-        float g = ((color >> 8) & 0xFF) / 255.0f;
-        float b = (color & 0xFF) / 255.0f;
-        float a = ((color >> 24) & 0xFF) / 255.0f;
-        if (a == 0) a = 1.0f;
-
-        // Create a simple quad for the item face
-        UnpackedBakedQuad.Builder builder = new UnpackedBakedQuad.Builder(DefaultVertexFormats.ITEM);
-        builder.setQuadTint(layerIndex);
-        builder.setTexture(texture);
-        builder.setQuadOrientation(EnumFacing.SOUTH);
-
-        // Vertex positions for a standard item quad (16x16 mapped to 0-1)
-        float z = layerIndex * 0.001f; // Slight z-offset per layer
-        putVertex(builder, 0, 0, z, texture.getMinU(), texture.getMaxV(), r, g, b, a);
-        putVertex(builder, 1, 0, z, texture.getMaxU(), texture.getMaxV(), r, g, b, a);
-        putVertex(builder, 1, 1, z, texture.getMaxU(), texture.getMinV(), r, g, b, a);
-        putVertex(builder, 0, 1, z, texture.getMinU(), texture.getMinV(), r, g, b, a);
-
-        quads.add(builder.build());
-        return quads;
-    }
-
-    /**
-     * Create quads for a solid color using the shape sprite
-     */
-    private List<BakedQuad> getQuadsForSolidColor(int layerIndex, TextureAtlasSprite shape,
-            float r, float g, float b) {
-        List<BakedQuad> quads = new ArrayList<>();
-
-        UnpackedBakedQuad.Builder builder = new UnpackedBakedQuad.Builder(DefaultVertexFormats.ITEM);
-        builder.setQuadTint(layerIndex);
-        builder.setTexture(shape);
-        builder.setQuadOrientation(EnumFacing.SOUTH);
-
-        float z = layerIndex * 0.001f;
-        putVertex(builder, 0, 0, z, shape.getMinU(), shape.getMaxV(), r, g, b, 1.0f);
-        putVertex(builder, 1, 0, z, shape.getMaxU(), shape.getMaxV(), r, g, b, 1.0f);
-        putVertex(builder, 1, 1, z, shape.getMaxU(), shape.getMinV(), r, g, b, 1.0f);
-        putVertex(builder, 0, 1, z, shape.getMinU(), shape.getMinV(), r, g, b, 1.0f);
-
-        quads.add(builder.build());
-        return quads;
-    }
-
-    private void putVertex(UnpackedBakedQuad.Builder builder, float x, float y, float z,
-            float u, float v, float r, float g, float b, float a) {
-        VertexFormat format = DefaultVertexFormats.ITEM;
-        for (int e = 0; e < format.getElementCount(); e++) {
-            switch (format.getElement(e).getUsage()) {
-                case POSITION:
-                    builder.put(e, x, y, z, 1.0f);
-                    break;
-                case COLOR:
-                    builder.put(e, r, g, b, a);
-                    break;
-                case UV:
-                    if (format.getElement(e).getIndex() == 0) {
-                        builder.put(e, u, v, 0f, 1f);
-                    } else {
-                        builder.put(e, 0f, 0f, 0f, 1f);
-                    }
-                    break;
-                case NORMAL:
-                    builder.put(e, 0f, 0f, 1f, 0f);
-                    break;
-                default:
-                    builder.put(e);
-            }
-        }
+        return quads.build();
     }
 
     @Override
     public boolean isAmbientOcclusion() {
-        return baseModel.isAmbientOcclusion();
+        return false;
     }
 
     @Override
     public boolean isGui3d() {
-        return baseModel.isGui3d();
+        return false;
     }
 
     @Override
@@ -222,29 +142,47 @@ public class FluidEncoderBakedModel implements IBakedModel {
             FluidStack fluidStack = FluidEncoderBehaviour.getFluidStack(stack);
 
             // Return a wrapper that provides the fluid-specific quads
-            return new IBakedModel() {
-                @Override
-                public List<BakedQuad> getQuads(@Nullable IBlockState state, @Nullable EnumFacing side, long rand) {
-                    return parent.getQuadsForFluid(fluidStack, side, rand);
-                }
+            return new FluidEncoderRenderedModel(parent, fluidStack);
+        }
+    }
 
-                @Override
-                public boolean isAmbientOcclusion() { return parent.isAmbientOcclusion(); }
-                @Override
-                public boolean isGui3d() { return parent.isGui3d(); }
-                @Override
-                public boolean isBuiltInRenderer() { return false; }
-                @Override
-                public TextureAtlasSprite getParticleTexture() { return parent.getParticleTexture(); }
-                @Override
-                public ItemOverrideList getOverrides() { return ItemOverrideList.NONE; }
+    /**
+     * Inner model class that renders with a specific fluid
+     */
+    private static class FluidEncoderRenderedModel implements IBakedModel {
+        private final FluidEncoderBakedModel parent;
+        private final FluidStack fluidStack;
 
-                @Override
-                @SuppressWarnings("deprecation")
-                public ItemCameraTransforms getItemCameraTransforms() {
-                    return parent.baseModel.getItemCameraTransforms();
-                }
-            };
+        public FluidEncoderRenderedModel(FluidEncoderBakedModel parent, FluidStack fluidStack) {
+            this.parent = parent;
+            this.fluidStack = fluidStack;
+        }
+
+        @Override
+        public List<BakedQuad> getQuads(@Nullable IBlockState state, @Nullable EnumFacing side, long rand) {
+            return parent.getQuadsForFluid(fluidStack, side, rand);
+        }
+
+        @Override
+        public boolean isAmbientOcclusion() { return parent.isAmbientOcclusion(); }
+        @Override
+        public boolean isGui3d() { return parent.isGui3d(); }
+        @Override
+        public boolean isBuiltInRenderer() { return false; }
+        @Override
+        public TextureAtlasSprite getParticleTexture() { return parent.getParticleTexture(); }
+        @Override
+        public ItemOverrideList getOverrides() { return ItemOverrideList.NONE; }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public ItemCameraTransforms getItemCameraTransforms() {
+            return parent.baseModel.getItemCameraTransforms();
+        }
+
+        @Override
+        public Pair<? extends IBakedModel, Matrix4f> handlePerspective(ItemCameraTransforms.TransformType cameraTransformType) {
+            return parent.handlePerspective(cameraTransformType);
         }
     }
 

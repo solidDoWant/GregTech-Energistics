@@ -5,22 +5,21 @@ import com.soliddowant.gregtechenergistics.items.behaviors.FluidEncoderBehaviour
 import appeng.api.util.AEColor;
 import net.minecraft.client.renderer.color.IItemColor;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 
 /**
  * Custom item color handler for MetaItem1.
  * For fluid encoder items:
- * - Layer 0: Underlay (droplet shape) - tinted with fluid color, or gray when
- * empty
- * - Layer 1: Base frame with transparent droplet area - no tint
+ * - Layer 0: Fluid layer - white when fluid present (to show actual texture), gray when empty
+ * - Layer 1: Base frame - always white (no tint)
  * For other items:
  * - Uses AE2's transparent color (default behavior)
  */
 public class FluidEncoderItemColor implements IItemColor {
 
     private static final int DEFAULT_COLOR = AEColor.TRANSPARENT.getVariantByTintIndex(0);
-    private static final int EMPTY_DROPLET_COLOR = 0xFF989898;
+    private static final int NO_TINT = 0xFFFFFFFF;
+    private static final int EMPTY_GRAY = 0xFF989898;
 
     @Override
     public int colorMultiplier(ItemStack stack, int tintIndex) {
@@ -30,28 +29,19 @@ public class FluidEncoderItemColor implements IItemColor {
             return DEFAULT_COLOR;
         }
 
-        // Layer 0 (underlay/droplet) - tint with fluid color or gray when empty
+        // Layer 0 (fluid/underlay layer)
         if (tintIndex == 0) {
             FluidStack fluidStack = FluidEncoderBehaviour.getFluidStack(stack);
-            if (fluidStack == null) {
-                // No fluid set - show gray droplet
-                return EMPTY_DROPLET_COLOR;
+            if (fluidStack != null && fluidStack.getFluid() != null) {
+                // Fluid set - no tint so actual fluid texture colors show
+                return NO_TINT;
+            } else {
+                // Empty - tint gray
+                return EMPTY_GRAY;
             }
-
-            Fluid fluid = fluidStack.getFluid();
-            if (fluid == null) {
-                return EMPTY_DROPLET_COLOR;
-            }
-
-            // Return the fluid's color
-            return fluid.getColor(fluidStack);
         }
 
         // Layer 1 (base frame) - no tint
-        if (tintIndex == 1) {
-            return -1; // White/no tint
-        }
-
-        return -1;
+        return NO_TINT;
     }
 }
