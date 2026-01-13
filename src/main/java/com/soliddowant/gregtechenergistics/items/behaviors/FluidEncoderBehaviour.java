@@ -33,6 +33,21 @@ import net.minecraft.world.World;
 import net.minecraftforge.fluids.FluidStack;
 
 public class FluidEncoderBehaviour implements IItemBehaviour, ItemUIFactory {
+    // Thread-local context to track when we're rendering AE2 pattern tooltips
+    private static final ThreadLocal<Boolean> IN_PATTERN_TOOLTIP = ThreadLocal.withInitial(() -> false);
+
+    public static void enterPatternTooltip() {
+        IN_PATTERN_TOOLTIP.set(true);
+    }
+
+    public static void exitPatternTooltip() {
+        IN_PATTERN_TOOLTIP.set(false);
+    }
+
+    public static boolean isInPatternTooltip() {
+        return IN_PATTERN_TOOLTIP.get();
+    }
+
     @Override
     public void addInformation(ItemStack stack, List<String> lines) {
         FluidStack containedStack = getFluidStack(stack);

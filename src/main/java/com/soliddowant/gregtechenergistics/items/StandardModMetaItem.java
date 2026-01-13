@@ -1,6 +1,7 @@
 package com.soliddowant.gregtechenergistics.items;
 
 import com.soliddowant.gregtechenergistics.items.behaviors.FluidEncoderBehaviour;
+
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 
@@ -26,6 +27,14 @@ public class StandardModMetaItem extends ModMetaItem<ModMetaItem<?>.ModMetaValue
             return baseName;
 
         int amount = FluidEncoderBehaviour.getFluidAmount(stack);
-        return baseName + ": " + fluidStack.getLocalizedName() + " (" + amount + " mb)";
+        String fluidInfo = fluidStack.getLocalizedName() + " (" + amount + " mb)";
+
+        // In AE2 pattern tooltips, show just the fluid info without "Fluid Encoder:"
+        // prefix
+        if (FluidEncoderBehaviour.isInPatternTooltip()) {
+            return fluidInfo;
+        }
+
+        return baseName + ": " + fluidInfo;
     }
 }
