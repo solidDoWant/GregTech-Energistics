@@ -7,6 +7,8 @@ import javax.annotation.Nullable;
 import javax.vecmath.Matrix4f;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.common.collect.ImmutableList;
 import com.soliddowant.gregtechenergistics.items.behaviors.FluidEncoderBehaviour;
@@ -34,6 +36,9 @@ import net.minecraftforge.fluids.FluidStack;
  * in the droplet area, not just a color tint.
  */
 public class FluidEncoderBakedModel implements IBakedModel {
+
+    private static final Logger LOGGER = LogManager.getLogger("GTEnergistics");
+    private static boolean hasLoggedOnce = false;
 
     private final IBakedModel baseModel;
     private final TextureAtlasSprite baseSprite;
@@ -66,10 +71,12 @@ public class FluidEncoderBakedModel implements IBakedModel {
 
         // Layer 0: Fluid texture or mask sprite
         TextureAtlasSprite layer0Sprite = maskSprite; // Default to mask
+        String debugInfo = "empty/null";
 
         if (fluidStack != null && fluidStack.getFluid() != null) {
             Fluid fluid = fluidStack.getFluid();
             ResourceLocation fluidStill = fluid.getStill(fluidStack);
+            debugInfo = "fluid=" + fluid.getName() + ", still=" + fluidStill;
 
             if (fluidStill != null) {
                 // Try to get the fluid texture from the atlas
@@ -79,9 +86,21 @@ public class FluidEncoderBakedModel implements IBakedModel {
                 TextureAtlasSprite missingSprite = textureMap.getMissingSprite();
                 if (fluidSprite != null && fluidSprite != missingSprite) {
                     layer0Sprite = fluidSprite;
+                    debugInfo += ", FOUND sprite: " + fluidSprite.getIconName();
+                } else {
+                    debugInfo += ", NOT FOUND (got missing sprite)";
                 }
-                // If fluid texture not found, keep maskSprite and IItemColor will tint it
             }
+        }
+
+        // Log once per session to avoid spam
+        if (!hasLoggedOnce) {
+            LOGGER.info("[FluidEncoder] getQuadsForFluid: {}", debugInfo);
+            LOGGER.info("[FluidEncoder] Using layer0 sprite: {} ({}x{})",
+                    layer0Sprite.getIconName(), layer0Sprite.getIconWidth(), layer0Sprite.getIconHeight());
+            LOGGER.info("[FluidEncoder] Using layer1 sprite: {} ({}x{})",
+                    baseSprite.getIconName(), baseSprite.getIconWidth(), baseSprite.getIconHeight());
+            hasLoggedOnce = true;
         }
 
         // Generate quads for layer 0 using ItemLayerModel's quad builder
@@ -165,6 +184,11 @@ public class FluidEncoderBakedModel implements IBakedModel {
             }
 
             FluidStack fluidStack = FluidEncoderBehaviour.getFluidStack(stack);
+
+            if (!hasLoggedOnce) {
+                LOGGER.info("[FluidEncoder] handleItemState called, fluidStack: {}",
+                        fluidStack != null ? fluidStack.getFluid().getName() + " x" + fluidStack.amount : "null");
+            }
 
             // Return a wrapper that provides the fluid-specific quads
             return new FluidEncoderRenderedModel(parent, fluidStack);
