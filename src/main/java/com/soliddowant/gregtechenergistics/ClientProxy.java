@@ -1,9 +1,8 @@
 package com.soliddowant.gregtechenergistics;
 
-import appeng.api.util.AEColor;
-import appeng.client.render.StaticItemColor;
 import codechicken.lib.texture.TextureUtils;
 import com.soliddowant.gregtechenergistics.items.MetaItems;
+import com.soliddowant.gregtechenergistics.render.FluidEncoderItemColor;
 import com.soliddowant.gregtechenergistics.render.Textures;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.fml.common.Mod;
@@ -17,7 +16,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 public class ClientProxy extends CommonProxy {
 	public void init(FMLInitializationEvent e) {
 		super.init(e);
-		Minecraft.getMinecraft().getItemColors().registerItemColorHandler(new StaticItemColor(AEColor.TRANSPARENT),
+		Minecraft.getMinecraft().getItemColors().registerItemColorHandler(new FluidEncoderItemColor(),
 				MetaItems.metaItem1);
 	}
 

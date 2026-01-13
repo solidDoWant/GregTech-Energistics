@@ -33,19 +33,19 @@ import net.minecraft.world.World;
 import net.minecraftforge.fluids.FluidStack;
 
 public class FluidEncoderBehaviour implements IItemBehaviour, ItemUIFactory {
-    // Thread-local context to track when we're rendering AE2 pattern tooltips
-    private static final ThreadLocal<Boolean> IN_PATTERN_TOOLTIP = ThreadLocal.withInitial(() -> false);
+    // Thread-local context to track when we're in AE2 pattern context (tooltips or rendering)
+    private static final ThreadLocal<Boolean> IN_PATTERN_CONTEXT = ThreadLocal.withInitial(() -> false);
 
-    public static void enterPatternTooltip() {
-        IN_PATTERN_TOOLTIP.set(true);
+    public static void enterPatternContext() {
+        IN_PATTERN_CONTEXT.set(true);
     }
 
-    public static void exitPatternTooltip() {
-        IN_PATTERN_TOOLTIP.set(false);
+    public static void exitPatternContext() {
+        IN_PATTERN_CONTEXT.set(false);
     }
 
-    public static boolean isInPatternTooltip() {
-        return IN_PATTERN_TOOLTIP.get();
+    public static boolean isInPatternContext() {
+        return IN_PATTERN_CONTEXT.get();
     }
 
     @Override
