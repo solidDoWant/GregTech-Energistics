@@ -1,6 +1,7 @@
 package com.soliddowant.gregtechenergistics.render;
 
 import java.util.List;
+import java.util.Optional;
 
 import javax.annotation.Nullable;
 import javax.vecmath.Matrix4f;
@@ -8,7 +9,6 @@ import javax.vecmath.Matrix4f;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.soliddowant.gregtechenergistics.Tags;
 import com.soliddowant.gregtechenergistics.items.behaviors.FluidEncoderBehaviour;
 
@@ -26,7 +26,6 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import net.minecraftforge.client.model.ItemLayerModel;
-import net.minecraftforge.common.model.TRSRTransformation;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 
@@ -82,11 +81,11 @@ public class FluidEncoderBakedModel implements IBakedModel {
 
         // Generate quads for layer 0 using ItemLayerModel's quad builder
         quads.addAll(ItemLayerModel.getQuadsForSprite(0, layer0Sprite,
-                DefaultVertexFormats.ITEM, TRSRTransformation.identity()));
+                DefaultVertexFormats.ITEM, Optional.empty()));
 
         // Layer 1: Base frame
         quads.addAll(ItemLayerModel.getQuadsForSprite(1, baseSprite,
-                DefaultVertexFormats.ITEM, TRSRTransformation.identity()));
+                DefaultVertexFormats.ITEM, Optional.empty()));
 
         return quads.build();
     }
