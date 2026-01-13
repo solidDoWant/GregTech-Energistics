@@ -11,16 +11,16 @@ import net.minecraftforge.fluids.FluidStack;
 /**
  * Custom item color handler for MetaItem1.
  * For fluid encoder items:
- *   - Layer 0: Underlay (droplet shape) - tinted with fluid color, or gray when empty
- *   - Layer 1: Base frame with transparent droplet area - no tint
+ * - Layer 0: Underlay (droplet shape) - tinted with fluid color, or gray when
+ * empty
+ * - Layer 1: Base frame with transparent droplet area - no tint
  * For other items:
- *   - Uses AE2's transparent color (default behavior)
+ * - Uses AE2's transparent color (default behavior)
  */
 public class FluidEncoderItemColor implements IItemColor {
 
     private static final int DEFAULT_COLOR = AEColor.TRANSPARENT.getVariantByTintIndex(0);
-    // Gray color matching the original droplet (adjust if needed)
-    private static final int EMPTY_DROPLET_COLOR = 0xFF808080;
+    private static final int EMPTY_DROPLET_COLOR = 0xFF989898;
 
     @Override
     public int colorMultiplier(ItemStack stack, int tintIndex) {
