@@ -7,8 +7,6 @@ import javax.annotation.Nullable;
 import javax.vecmath.Matrix4f;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import com.google.common.collect.ImmutableList;
 import com.soliddowant.gregtechenergistics.items.behaviors.FluidEncoderBehaviour;
@@ -39,9 +37,6 @@ import net.minecraftforge.fluids.FluidStack;
  */
 public class FluidEncoderBakedModel implements IBakedModel {
 
-    private static final Logger LOGGER = LogManager.getLogger("GTEnergistics");
-    private static boolean hasLoggedOnce = false;
-
     // Thread-local to store the current ItemStack being rendered
     private static final ThreadLocal<ItemStack> CURRENT_STACK = new ThreadLocal<>();
 
@@ -68,9 +63,6 @@ public class FluidEncoderBakedModel implements IBakedModel {
         this.dropletMinY = bounds[1];
         this.dropletMaxX = bounds[2];
         this.dropletMaxY = bounds[3];
-
-        LOGGER.info("[FluidEncoder] Droplet bounds: ({}, {}) to ({}, {})",
-                dropletMinX, dropletMinY, dropletMaxX, dropletMaxY);
     }
 
     /**
@@ -84,48 +76,48 @@ public class FluidEncoderBakedModel implements IBakedModel {
         // Default to full sprite if we can't read pixels
         float minX = 0, minY = 0, maxX = 16, maxY = 16;
 
-        try {
-            // Get the first animation frame (frame 0)
-            int[][] frameData = mask.getFrameTextureData(0);
-            if (frameData != null && frameData.length > 0 && frameData[0] != null) {
-                int[] pixels = frameData[0];
+        // Get the first animation frame (frame 0)
+        int[][] frameData = mask.getFrameTextureData(0);
+        if (frameData != null && frameData.length > 0 && frameData[0] != null) {
+            int[] pixels = frameData[0];
 
-                minX = width;
-                minY = height;
-                maxX = 0;
-                maxY = 0;
+            minX = width;
+            minY = height;
+            maxX = 0;
+            maxY = 0;
 
-                for (int y = 0; y < height; y++) {
-                    for (int x = 0; x < width; x++) {
-                        int pixel = pixels[y * width + x];
-                        int alpha = (pixel >> 24) & 0xFF;
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    int pixel = pixels[y * width + x];
+                    int alpha = (pixel >> 24) & 0xFF;
 
-                        // If pixel is opaque (alpha > 128), include in bounds
-                        if (alpha > 128) {
-                            if (x < minX) minX = x;
-                            if (y < minY) minY = y;
-                            if (x + 1 > maxX) maxX = x + 1;
-                            if (y + 1 > maxY) maxY = y + 1;
-                        }
+                    // If pixel is opaque (alpha > 128), include in bounds
+                    if (alpha > 128) {
+                        if (x < minX)
+                            minX = x;
+                        if (y < minY)
+                            minY = y;
+                        if (x + 1 > maxX)
+                            maxX = x + 1;
+                        if (y + 1 > maxY)
+                            maxY = y + 1;
                     }
                 }
-
-                // If no opaque pixels found, use full sprite
-                if (maxX <= minX || maxY <= minY) {
-                    minX = 0;
-                    minY = 0;
-                    maxX = width;
-                    maxY = height;
-                }
-
-                // Scale to 16x16 coordinate space
-                minX = (minX / width) * 16;
-                minY = (minY / height) * 16;
-                maxX = (maxX / width) * 16;
-                maxY = (maxY / height) * 16;
             }
-        } catch (Exception e) {
-            LOGGER.warn("[FluidEncoder] Failed to calculate droplet bounds: {}", e.getMessage());
+
+            // If no opaque pixels found, use full sprite
+            if (maxX <= minX || maxY <= minY) {
+                minX = 0;
+                minY = 0;
+                maxX = width;
+                maxY = height;
+            }
+
+            // Scale to 16x16 coordinate space
+            minX = (minX / width) * 16;
+            minY = (minY / height) * 16;
+            maxX = (maxX / width) * 16;
+            maxY = (maxY / height) * 16;
         }
 
         return new float[] { minX, minY, maxX, maxY };
@@ -182,26 +174,16 @@ public class FluidEncoderBakedModel implements IBakedModel {
             }
         }
 
-        // Log once per session to avoid spam
-        if (!hasLoggedOnce) {
-            LOGGER.info("[FluidEncoder] getQuadsForFluid: {}", debugInfo);
-            LOGGER.info("[FluidEncoder] Using layer0 sprite: {} ({}x{})",
-                    layer0Sprite.getIconName(), layer0Sprite.getIconWidth(), layer0Sprite.getIconHeight());
-            LOGGER.info("[FluidEncoder] Using layer1 sprite: {} ({}x{})",
-                    baseSprite.getIconName(), baseSprite.getIconWidth(), baseSprite.getIconHeight());
-            hasLoggedOnce = true;
-        }
-
         // Layer 0: Bounded quads for fluid/mask (only covers droplet area)
         // Need both front and back faces so item looks correct from both sides
         quads.add(buildBoundedQuad(layer0Sprite, 0,
                 dropletMinX / 16f, dropletMinY / 16f,
                 dropletMaxX / 16f, dropletMaxY / 16f,
-                EnumFacing.SOUTH));  // Front face
+                EnumFacing.SOUTH)); // Front face
         quads.add(buildBoundedQuad(layer0Sprite, 0,
                 dropletMinX / 16f, dropletMinY / 16f,
                 dropletMaxX / 16f, dropletMaxY / 16f,
-                EnumFacing.NORTH));  // Back face
+                EnumFacing.NORTH)); // Back face
 
         // Layer 1: Full frame (unchanged - uses ItemLayerModel)
         quads.addAll(ItemLayerModel.getQuadsForSprite(1, baseSprite,
@@ -236,16 +218,16 @@ public class FluidEncoderBakedModel implements IBakedModel {
 
         if (facing == EnumFacing.SOUTH) {
             // Front face - counter-clockwise winding
-            putVertex(builder, minX, 1 - maxY, z, u0, v1, normalZ);  // Bottom-left
-            putVertex(builder, maxX, 1 - maxY, z, u1, v1, normalZ);  // Bottom-right
-            putVertex(builder, maxX, 1 - minY, z, u1, v0, normalZ);  // Top-right
-            putVertex(builder, minX, 1 - minY, z, u0, v0, normalZ);  // Top-left
+            putVertex(builder, minX, 1 - maxY, z, u0, v1, normalZ); // Bottom-left
+            putVertex(builder, maxX, 1 - maxY, z, u1, v1, normalZ); // Bottom-right
+            putVertex(builder, maxX, 1 - minY, z, u1, v0, normalZ); // Top-right
+            putVertex(builder, minX, 1 - minY, z, u0, v0, normalZ); // Top-left
         } else {
             // Back face - clockwise winding (reversed order)
-            putVertex(builder, minX, 1 - minY, z, u0, v0, normalZ);  // Top-left
-            putVertex(builder, maxX, 1 - minY, z, u1, v0, normalZ);  // Top-right
-            putVertex(builder, maxX, 1 - maxY, z, u1, v1, normalZ);  // Bottom-right
-            putVertex(builder, minX, 1 - maxY, z, u0, v1, normalZ);  // Bottom-left
+            putVertex(builder, minX, 1 - minY, z, u0, v0, normalZ); // Top-left
+            putVertex(builder, maxX, 1 - minY, z, u1, v0, normalZ); // Top-right
+            putVertex(builder, maxX, 1 - maxY, z, u1, v1, normalZ); // Bottom-right
+            putVertex(builder, minX, 1 - maxY, z, u0, v1, normalZ); // Bottom-left
         }
 
         return builder.build();
@@ -254,7 +236,8 @@ public class FluidEncoderBakedModel implements IBakedModel {
     /**
      * Put a vertex into the quad builder.
      */
-    private void putVertex(UnpackedBakedQuad.Builder builder, float x, float y, float z, float u, float v, float normalZ) {
+    private void putVertex(UnpackedBakedQuad.Builder builder, float x, float y, float z, float u, float v,
+            float normalZ) {
         VertexFormat format = DefaultVertexFormats.ITEM;
         for (int e = 0; e < format.getElementCount(); e++) {
             switch (format.getElement(e).getUsage()) {
@@ -350,14 +333,6 @@ public class FluidEncoderBakedModel implements IBakedModel {
                 @Nullable World world, @Nullable EntityLivingBase entity) {
             // Store the current stack in thread-local so getQuads can access it
             CURRENT_STACK.set(stack);
-
-            if (!hasLoggedOnce) {
-                FluidStack fluidStack = FluidEncoderBehaviour.hasStackBehavior(stack)
-                        ? FluidEncoderBehaviour.getFluidStack(stack)
-                        : null;
-                LOGGER.info("[FluidEncoder] handleItemState called, fluidStack: {}",
-                        fluidStack != null ? fluidStack.getFluid().getName() + " x" + fluidStack.amount : "null");
-            }
 
             // Return the parent model itself - it will use CURRENT_STACK in getQuads
             return parent;
