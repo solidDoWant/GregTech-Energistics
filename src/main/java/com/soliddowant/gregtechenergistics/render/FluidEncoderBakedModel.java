@@ -133,9 +133,6 @@ public class FluidEncoderBakedModel implements IBakedModel {
             fluidStack = FluidEncoderBehaviour.getFluidStack(currentStack);
         }
 
-        // Clean up thread-local to prevent memory leaks
-        CURRENT_STACK.remove();
-
         return getQuadsForFluid(fluidStack, side, rand);
     }
 
@@ -305,7 +302,8 @@ public class FluidEncoderBakedModel implements IBakedModel {
         @Override
         public IBakedModel handleItemState(IBakedModel originalModel, ItemStack stack,
                 @Nullable World world, @Nullable EntityLivingBase entity) {
-            // Store the current stack in thread-local so getQuads can access it
+            // Clean up any previous value, then store the current stack in thread-local
+            CURRENT_STACK.remove();
             CURRENT_STACK.set(stack);
 
             // Return the parent model itself - it will use CURRENT_STACK in getQuads
