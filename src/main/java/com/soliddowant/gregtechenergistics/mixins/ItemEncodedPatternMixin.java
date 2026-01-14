@@ -24,12 +24,12 @@ public class ItemEncodedPatternMixin {
     @Inject(method = "addCheckedInformation", at = @At("HEAD"))
     private void onAddCheckedInformationStart(ItemStack stack, World world, List<String> lines,
             ITooltipFlag advancedTooltips, CallbackInfo ci) {
-        FluidEncoderBehaviour.enterPatternTooltip();
+        FluidEncoderBehaviour.enterPatternContext();
     }
 
     @Inject(method = "addCheckedInformation", at = @At("RETURN"))
     private void onAddCheckedInformationEnd(ItemStack stack, World world, List<String> lines,
             ITooltipFlag advancedTooltips, CallbackInfo ci) {
-        FluidEncoderBehaviour.exitPatternTooltip();
+        FluidEncoderBehaviour.exitPatternContext();
     }
 }

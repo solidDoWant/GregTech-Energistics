@@ -29,9 +29,8 @@ public class StandardModMetaItem extends ModMetaItem<ModMetaItem<?>.ModMetaValue
         int amount = FluidEncoderBehaviour.getFluidAmount(stack);
         String fluidInfo = fluidStack.getLocalizedName() + " (" + amount + " mb)";
 
-        // In AE2 pattern tooltips, show just the fluid info without "Fluid Encoder:"
-        // prefix
-        if (FluidEncoderBehaviour.isInPatternTooltip()) {
+        // In AE2 pattern context, show just the fluid info without "Fluid Encoder:" prefix
+        if (FluidEncoderBehaviour.isInPatternContext()) {
             return fluidInfo;
         }
 

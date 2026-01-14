@@ -1,6 +1,7 @@
 {
   "parent": "item/generated",
   "textures": {
-    "layer0": "gregtechenergistics:items/metaitems/fluid.encoder"
+    "layer0": "gregtechenergistics:items/metaitems/fluid.encoder.underlay",
+    "layer1": "gregtechenergistics:items/metaitems/fluid.encoder"
   }
 }
