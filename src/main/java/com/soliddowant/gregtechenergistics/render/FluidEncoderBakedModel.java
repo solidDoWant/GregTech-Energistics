@@ -166,16 +166,22 @@ public class FluidEncoderBakedModel implements IBakedModel {
             }
         }
 
+        // Get fluid color for tinting (default to white if no fluid)
+        int fluidColor = 0xFFFFFFFF; // White (opaque)
+        if (fluidStack != null && fluidStack.getFluid() != null) {
+            fluidColor = fluidStack.getFluid().getColor(fluidStack);
+        }
+
         // Layer 0: Bounded quads for fluid/mask (only covers droplet area)
         // Need both front and back faces so item looks correct from both sides
         quads.add(buildBoundedQuad(layer0Sprite, 0,
                 dropletMinX / 16f, dropletMinY / 16f,
                 dropletMaxX / 16f, dropletMaxY / 16f,
-                EnumFacing.SOUTH)); // Front face
+                EnumFacing.SOUTH, fluidColor)); // Front face
         quads.add(buildBoundedQuad(layer0Sprite, 0,
                 dropletMinX / 16f, dropletMinY / 16f,
                 dropletMaxX / 16f, dropletMaxY / 16f,
-                EnumFacing.NORTH)); // Back face
+                EnumFacing.NORTH, fluidColor)); // Back face
 
         // Layer 1: Full frame (unchanged - uses ItemLayerModel)
         quads.addAll(ItemLayerModel.getQuadsForSprite(1, baseSprite,
@@ -189,7 +195,7 @@ public class FluidEncoderBakedModel implements IBakedModel {
      * Coordinates are in 0-1 range (e.g., 0.25 to 0.75 for center half).
      */
     private BakedQuad buildBoundedQuad(TextureAtlasSprite texture, int tintIndex,
-            float minX, float minY, float maxX, float maxY, EnumFacing facing) {
+            float minX, float minY, float maxX, float maxY, EnumFacing facing, int color) {
 
         UnpackedBakedQuad.Builder builder = new UnpackedBakedQuad.Builder(DefaultVertexFormats.ITEM);
         builder.setQuadTint(tintIndex);
@@ -208,28 +214,34 @@ public class FluidEncoderBakedModel implements IBakedModel {
         float v0 = texture.getInterpolatedV(minY * 16);
         float v1 = texture.getInterpolatedV(maxY * 16);
 
+        // Extract RGBA from color int (ARGB format)
+        float alpha = ((color >> 24) & 0xFF) / 255.0f;
+        float red = ((color >> 16) & 0xFF) / 255.0f;
+        float green = ((color >> 8) & 0xFF) / 255.0f;
+        float blue = (color & 0xFF) / 255.0f;
+
         if (facing == EnumFacing.SOUTH) {
             // Front face - counter-clockwise winding
-            putVertex(builder, minX, 1 - maxY, z, u0, v1, normalZ); // Bottom-left
-            putVertex(builder, maxX, 1 - maxY, z, u1, v1, normalZ); // Bottom-right
-            putVertex(builder, maxX, 1 - minY, z, u1, v0, normalZ); // Top-right
-            putVertex(builder, minX, 1 - minY, z, u0, v0, normalZ); // Top-left
+            putVertex(builder, minX, 1 - maxY, z, u0, v1, normalZ, red, green, blue, alpha); // Bottom-left
+            putVertex(builder, maxX, 1 - maxY, z, u1, v1, normalZ, red, green, blue, alpha); // Bottom-right
+            putVertex(builder, maxX, 1 - minY, z, u1, v0, normalZ, red, green, blue, alpha); // Top-right
+            putVertex(builder, minX, 1 - minY, z, u0, v0, normalZ, red, green, blue, alpha); // Top-left
         } else {
             // Back face - clockwise winding (reversed order)
-            putVertex(builder, minX, 1 - minY, z, u0, v0, normalZ); // Top-left
-            putVertex(builder, maxX, 1 - minY, z, u1, v0, normalZ); // Top-right
-            putVertex(builder, maxX, 1 - maxY, z, u1, v1, normalZ); // Bottom-right
-            putVertex(builder, minX, 1 - maxY, z, u0, v1, normalZ); // Bottom-left
+            putVertex(builder, minX, 1 - minY, z, u0, v0, normalZ, red, green, blue, alpha); // Top-left
+            putVertex(builder, maxX, 1 - minY, z, u1, v0, normalZ, red, green, blue, alpha); // Top-right
+            putVertex(builder, maxX, 1 - maxY, z, u1, v1, normalZ, red, green, blue, alpha); // Bottom-right
+            putVertex(builder, minX, 1 - maxY, z, u0, v1, normalZ, red, green, blue, alpha); // Bottom-left
         }
 
         return builder.build();
     }
 
     /**
-     * Put a vertex into the quad builder.
+     * Put a vertex into the quad builder with color support.
      */
     private void putVertex(UnpackedBakedQuad.Builder builder, float x, float y, float z, float u, float v,
-            float normalZ) {
+            float normalZ, float red, float green, float blue, float alpha) {
         VertexFormat format = DefaultVertexFormats.ITEM;
         for (int e = 0; e < format.getElementCount(); e++) {
             switch (format.getElement(e).getUsage()) {
@@ -237,7 +249,7 @@ public class FluidEncoderBakedModel implements IBakedModel {
                     builder.put(e, x, y, z, 1.0f);
                     break;
                 case COLOR:
-                    builder.put(e, 1.0f, 1.0f, 1.0f, 1.0f);
+                    builder.put(e, red, green, blue, alpha);
                     break;
                 case UV:
                     if (format.getElement(e).getIndex() == 0) {
