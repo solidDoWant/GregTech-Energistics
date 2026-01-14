@@ -152,12 +152,10 @@ public class FluidEncoderBakedModel implements IBakedModel {
 
         // Layer 0: Fluid texture or mask sprite, bounded to droplet area
         TextureAtlasSprite layer0Sprite = maskSprite; // Default to mask
-        String debugInfo = "empty/null";
 
         if (fluidStack != null && fluidStack.getFluid() != null) {
             Fluid fluid = fluidStack.getFluid();
             ResourceLocation fluidStill = fluid.getStill(fluidStack);
-            debugInfo = "fluid=" + fluid.getName() + ", still=" + fluidStill;
 
             if (fluidStill != null) {
                 // Try to get the fluid texture from the atlas
@@ -167,9 +165,6 @@ public class FluidEncoderBakedModel implements IBakedModel {
                 TextureAtlasSprite missingSprite = textureMap.getMissingSprite();
                 if (fluidSprite != null && fluidSprite != missingSprite) {
                     layer0Sprite = fluidSprite;
-                    debugInfo += ", FOUND sprite: " + fluidSprite.getIconName();
-                } else {
-                    debugInfo += ", NOT FOUND (got missing sprite)";
                 }
             }
         }
