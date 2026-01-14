@@ -264,27 +264,6 @@ public class FluidEncoderBakedModel implements IBakedModel {
         }
     }
 
-    /**
-     * Check if a fluid's texture was successfully loaded
-     */
-    public boolean hasFluidTexture(@Nullable FluidStack fluidStack) {
-        if (fluidStack == null || fluidStack.getFluid() == null) {
-            return false;
-        }
-
-        Fluid fluid = fluidStack.getFluid();
-        ResourceLocation fluidStill = fluid.getStill(fluidStack);
-        if (fluidStill == null) {
-            return false;
-        }
-
-        TextureMap textureMap = Minecraft.getMinecraft().getTextureMapBlocks();
-        TextureAtlasSprite fluidSprite = textureMap.getAtlasSprite(fluidStill.toString());
-        TextureAtlasSprite missingSprite = textureMap.getMissingSprite();
-
-        return fluidSprite != null && fluidSprite != missingSprite;
-    }
-
     @Override
     public boolean isAmbientOcclusion() {
         return false;
