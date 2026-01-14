@@ -28,8 +28,7 @@ import net.minecraft.item.ItemStack;
 public class RenderItemOverlayMixin {
 
     @Inject(method = "renderStackSize", at = @At("HEAD"), cancellable = true)
-    private void onRenderStackSize(FontRenderer fontRenderer, IAEItemStack aeStack, int xPos, int yPos,
-            CallbackInfo ci) {
+    private void onRenderStackSize(FontRenderer fontRenderer, IAEItemStack aeStack, int xPos, int yPos, CallbackInfo ci) {
         if (aeStack == null) {
             return;
         }
@@ -67,8 +66,7 @@ public class RenderItemOverlayMixin {
         GlStateManager.pushMatrix();
         GlStateManager.scale(scaleFactor, scaleFactor, scaleFactor);
 
-        final int X = (int) (((float) xPos + offset + 16.0f - fontRenderer.getStringWidth(formatted) * scaleFactor)
-                * inverseScaleFactor);
+        final int X = (int) (((float) xPos + offset + 16.0f - fontRenderer.getStringWidth(formatted) * scaleFactor) * inverseScaleFactor);
         final int Y = (int) (((float) yPos + offset + 16.0f - 7.0f * scaleFactor) * inverseScaleFactor);
 
         fontRenderer.drawStringWithShadow(formatted, X, Y, 16777215);
@@ -114,6 +112,5 @@ public class RenderItemOverlayMixin {
         String result = String.format("%.3f", buckets);
         result = result.replaceAll("0+$", ""); // Remove trailing zeros
         return result.endsWith(".") ? result + "0" : result; // Keep at least one decimal
-
     }
 }

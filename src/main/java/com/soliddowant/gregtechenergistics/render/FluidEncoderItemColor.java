@@ -15,7 +15,8 @@ import net.minecraftforge.fluids.FluidStack;
 /**
  * Custom item color handler for MetaItem1.
  * For fluid encoder items:
- * - Layer 0: Fluid layer - no tint if texture found, fluid color tint if texture missing, gray if empty
+ * - Layer 0: Fluid layer - no tint if texture found, fluid color tint if
+ * texture missing, gray if empty
  * - Layer 1: Base frame - always white (no tint)
  * For other items:
  * - Uses AE2's transparent color (default behavior)
@@ -35,27 +36,26 @@ public class FluidEncoderItemColor implements IItemColor {
         }
 
         // Layer 0 (fluid/underlay layer)
-        if (tintIndex == 0) {
-            FluidStack fluidStack = FluidEncoderBehaviour.getFluidStack(stack);
-            if (fluidStack != null && fluidStack.getFluid() != null) {
-                Fluid fluid = fluidStack.getFluid();
-
-                // Check if we have a valid fluid texture
-                if (hasFluidTexture(fluid, fluidStack)) {
-                    // Fluid texture found - no tint so actual texture colors show
-                    return NO_TINT;
-                } else {
-                    // Fluid texture not found - tint with fluid color as fallback
-                    return fluid.getColor(fluidStack);
-                }
-            } else {
-                // Empty - tint gray
-                return EMPTY_GRAY;
-            }
+        if (tintIndex != 0) {
+            // Layer 1 (base frame) - no tint
+            return NO_TINT;
         }
 
-        // Layer 1 (base frame) - no tint
-        return NO_TINT;
+        FluidStack fluidStack = FluidEncoderBehaviour.getFluidStack(stack);
+        if (fluidStack == null || fluidStack.getFluid() == null) {
+            // Empty - tint gray
+            return EMPTY_GRAY;
+        }
+
+        // Check if we have a valid fluid texture
+        Fluid fluid = fluidStack.getFluid();
+        if (hasFluidTexture(fluid, fluidStack)) {
+            // Fluid texture found - no tint so actual texture colors show
+            return NO_TINT;
+        }
+
+        // Fluid texture not found - tint with fluid color as fallback
+        return fluid.getColor(fluidStack);
     }
 
     /**

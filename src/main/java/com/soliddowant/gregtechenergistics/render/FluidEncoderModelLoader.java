@@ -67,22 +67,19 @@ public class FluidEncoderModelLoader implements ICustomModelLoader {
         @Override
         public IBakedModel bake(IModelState state, VertexFormat format,
                 Function<ResourceLocation, TextureAtlasSprite> bakedTextureGetter) {
-
             // Get the textures
             TextureAtlasSprite baseSprite = bakedTextureGetter.apply(BASE_TEXTURE);
             TextureAtlasSprite maskSprite = bakedTextureGetter.apply(MASK_TEXTURE);
 
             // Get the default item model to use as base for transforms
-            IBakedModel defaultModel;
             try {
-                IModel defaultItemModel = ModelLoaderRegistry.getModel(
-                        new ResourceLocation("minecraft", "item/generated"));
-                defaultModel = defaultItemModel.bake(state, format, bakedTextureGetter);
+                IModel defaultItemModel = ModelLoaderRegistry
+                        .getModel(new ResourceLocation("minecraft", "item/generated"));
+                IBakedModel defaultModel = defaultItemModel.bake(state, format, bakedTextureGetter);
+                return new FluidEncoderBakedModel(defaultModel, baseSprite, maskSprite);
             } catch (Exception e) {
                 throw new RuntimeException("Failed to load default item model for fluid encoder", e);
             }
-
-            return new FluidEncoderBakedModel(defaultModel, baseSprite, maskSprite);
         }
     }
 }

@@ -20,8 +20,7 @@ public class ClientProxy extends CommonProxy {
 	public void init(FMLInitializationEvent e) {
 		super.init(e);
 		// Register color handler for meta items (handles fluid encoder + AE2 defaults)
-		Minecraft.getMinecraft().getItemColors().registerItemColorHandler(
-				new FluidEncoderItemColor(), MetaItems.metaItem1);
+		Minecraft.getMinecraft().getItemColors().registerItemColorHandler(new FluidEncoderItemColor(), MetaItems.metaItem1);
 	}
 
 	@Override
