@@ -39,15 +39,16 @@ public class RenderItemOverlayMixin {
             return;
         }
 
-        int amountMb = FluidEncoderBehaviour.getFluidAmount(itemStack);
-
-        // Only show if there's a fluid amount set
-        if (amountMb <= 0) {
+        // Check if fluid is set - if not, let AE2 render the default "1"
+        if (!FluidEncoderBehaviour.hasFluidStack(itemStack)) {
             return;
         }
 
+        int amountMb = FluidEncoderBehaviour.getFluidAmount(itemStack);
+
         // Convert to buckets and format using AE2's style
-        String formatted = formatFluidAmount(amountMb);
+        // Show "0" if amount is 0 but fluid is set
+        String formatted = amountMb <= 0 ? "0" : formatFluidAmount(amountMb);
 
         // Render using AE2's style (matching StackSizeRenderer behavior)
         final float scaleFactor = AEConfig.instance().useTerminalUseLargeFont() ? 0.85f : 0.5f;
