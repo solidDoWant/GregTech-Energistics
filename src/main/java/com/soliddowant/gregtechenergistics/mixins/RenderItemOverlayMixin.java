@@ -1,7 +1,5 @@
 package com.soliddowant.gregtechenergistics.mixins;
 
-import javax.annotation.Nullable;
-
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -9,111 +7,95 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.soliddowant.gregtechenergistics.items.behaviors.FluidEncoderBehaviour;
 
-import net.minecraft.client.Minecraft;
+import appeng.api.storage.data.IAEItemStack;
+import appeng.client.render.StackSizeRenderer;
+import appeng.core.AEConfig;
+import appeng.util.ReadableNumberConverter;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.RenderItem;
 import net.minecraft.item.ItemStack;
 
 /**
  * Mixin to show fluid quantity (in buckets) instead of "1" for fluid encoder items
- * in AE2 pattern terminal displays only.
+ * in AE2 pattern terminal displays.
+ *
+ * This hooks into AE2's StackSizeRenderer which is used to render quantity overlays
+ * in ME terminals and pattern terminals.
  */
-@Mixin(RenderItem.class)
+@Mixin(value = StackSizeRenderer.class, remap = false)
 public class RenderItemOverlayMixin {
 
-    @Inject(method = "renderItemOverlayIntoGUI", at = @At("HEAD"), cancellable = true)
-    private void onRenderItemOverlay(FontRenderer fr, ItemStack stack, int xPosition, int yPosition,
-            @Nullable String text, CallbackInfo ci) {
-        // Only process if no custom text is already provided
-        if (text != null) {
+    @Inject(method = "renderStackSize", at = @At("HEAD"), cancellable = true)
+    private void onRenderStackSize(FontRenderer fontRenderer, IAEItemStack aeStack, int xPos, int yPos, CallbackInfo ci) {
+        if (aeStack == null) {
             return;
         }
 
-        // Only apply in AE2 pattern terminal context
-        if (!isInPatternTerminalContext()) {
+        // Get the underlying ItemStack
+        ItemStack itemStack = aeStack.createItemStack();
+
+        // Check if this is a fluid encoder
+        if (!FluidEncoderBehaviour.hasStackBehavior(itemStack)) {
             return;
         }
 
-        // Check if this is a fluid encoder with fluid
-        if (!FluidEncoderBehaviour.hasStackBehavior(stack)) {
-            return;
-        }
-
-        int amountMb = FluidEncoderBehaviour.getFluidAmount(stack);
+        int amountMb = FluidEncoderBehaviour.getFluidAmount(itemStack);
 
         // Only show if there's a fluid amount set
         if (amountMb <= 0) {
             return;
         }
 
-        // Convert to buckets and format
-        double buckets = amountMb / 1000.0;
-        String formatted = formatBuckets(buckets);
+        // Convert to buckets and format using AE2's style
+        String formatted = formatFluidAmount(amountMb);
 
-        // Render custom quantity text (replicating vanilla's rendering)
-        // Use a smaller scale to match the expected text size in pattern terminal
+        // Render using AE2's style (matching StackSizeRenderer behavior)
+        final float scaleFactor = AEConfig.instance().useTerminalUseLargeFont() ? 0.85f : 0.5f;
+        final float inverseScaleFactor = 1.0f / scaleFactor;
+        final int offset = AEConfig.instance().useTerminalUseLargeFont() ? 0 : -1;
+
+        final boolean unicodeFlag = fontRenderer.getUnicodeFlag();
+        fontRenderer.setUnicodeFlag(false);
+
         GlStateManager.disableLighting();
         GlStateManager.disableDepth();
         GlStateManager.disableBlend();
-
-        // Calculate position and render with scaling to reduce text size
-        float scale = 0.5f;
-        float x = xPosition + 19 - 2 - fr.getStringWidth(formatted) * scale;
-        float y = yPosition + 6 + 3;
-
         GlStateManager.pushMatrix();
-        GlStateManager.translate(x, y, 0);
-        GlStateManager.scale(scale, scale, 1.0f);
-        fr.drawStringWithShadow(formatted, 0, 0, 16777215);
-        GlStateManager.popMatrix();
+        GlStateManager.scale(scaleFactor, scaleFactor, scaleFactor);
 
+        final int X = (int) (((float) xPos + offset + 16.0f - fontRenderer.getStringWidth(formatted) * scaleFactor) * inverseScaleFactor);
+        final int Y = (int) (((float) yPos + offset + 16.0f - 7.0f * scaleFactor) * inverseScaleFactor);
+
+        fontRenderer.drawStringWithShadow(formatted, X, Y, 16777215);
+
+        GlStateManager.popMatrix();
         GlStateManager.enableLighting();
         GlStateManager.enableDepth();
+        GlStateManager.enableBlend();
 
-        // Cancel the original method to prevent it from rendering "1"
+        fontRenderer.setUnicodeFlag(unicodeFlag);
+
+        // Cancel the original method
         ci.cancel();
     }
 
     /**
-     * Check if we're currently rendering in an AE2 pattern terminal context.
+     * Format fluid amount (in millibuckets) to a readable bucket format.
+     * Uses AE2's ReadableNumberConverter for consistency with other AE2 displays.
+     *
+     * Examples:
+     * - 11mb -> "0.011"
+     * - 1000mb -> "1.00"
+     * - 20000000mb -> "20K" (20,000 buckets)
      */
-    private boolean isInPatternTerminalContext() {
-        Minecraft mc = Minecraft.getMinecraft();
-        GuiScreen screen = mc.currentScreen;
-        if (screen == null) {
-            return false;
-        }
+    private String formatFluidAmount(int amountMb) {
+        double buckets = amountMb / 1000.0;
 
-        // Check if it's an AE2 pattern terminal or related GUI
-        String className = screen.getClass().getName();
-        return className.contains("GuiPatternTerm") ||
-               className.contains("GuiExpandedProcessingPatternTerm") ||
-               className.contains("GuiCraftingStatus") ||
-               className.contains("GuiMEMonitorable");
-    }
-
-    /**
-     * Format bucket amount according to AE2 style:
-     * - 11mb -> 0.011
-     * - 10mb -> 0.01
-     * - 20,000B -> 20K
-     * - 640B -> 640.0
-     * - 6B -> 6.00
-     * - 5.21B -> 5.21
-     * - 24B -> 24.0
-     */
-    private String formatBuckets(double buckets) {
         if (buckets >= 10000) {
-            // Very large amounts: use K/M suffixes
-            if (buckets >= 1000000) {
-                return String.format("%.0fM", buckets / 1000000);
-            } else {
-                return String.format("%.0fK", buckets / 1000);
-            }
+            // Use AE2's converter for large numbers (shows as K, M, etc.)
+            return ReadableNumberConverter.INSTANCE.toWideReadableForm((long) buckets);
         } else if (buckets >= 1000) {
-            // 1000-9999: show as X.XK
+            // 1000-9999 buckets: show as X.XK or XK
             double k = buckets / 1000;
             if (k == Math.floor(k)) {
                 return String.format("%.0fK", k);
@@ -121,17 +103,16 @@ public class RenderItemOverlayMixin {
                 return String.format("%.1fK", k);
             }
         } else if (buckets >= 100) {
-            // 100-999: show one decimal
+            // 100-999 buckets: one decimal
             return String.format("%.1f", buckets);
         } else if (buckets >= 10) {
-            // 10-99: show one decimal
+            // 10-99 buckets: one decimal
             return String.format("%.1f", buckets);
         } else if (buckets >= 1) {
-            // 1-9.99: show two decimals
+            // 1-9.99 buckets: two decimals
             return String.format("%.2f", buckets);
         } else {
             // Sub-bucket amounts: show enough precision
-            // 0.011, 0.01, 0.1, 0.5, etc.
             String result = String.format("%.3f", buckets);
             // Remove trailing zeros but keep at least one decimal place
             result = result.replaceAll("0+$", "");
