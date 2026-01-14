@@ -9,14 +9,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.soliddowant.gregtechenergistics.items.behaviors.FluidEncoderBehaviour;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderItem;
 import net.minecraft.item.ItemStack;
 
 /**
  * Mixin to show fluid quantity (in buckets) instead of "1" for fluid encoder items
- * in AE2 pattern displays and other inventory slots.
+ * in AE2 pattern terminal displays only.
  */
 @Mixin(RenderItem.class)
 public class RenderItemOverlayMixin {
@@ -26,6 +28,11 @@ public class RenderItemOverlayMixin {
             @Nullable String text, CallbackInfo ci) {
         // Only process if no custom text is already provided
         if (text != null) {
+            return;
+        }
+
+        // Only apply in AE2 pattern terminal context
+        if (!isInPatternTerminalContext()) {
             return;
         }
 
@@ -46,19 +53,45 @@ public class RenderItemOverlayMixin {
         String formatted = formatBuckets(buckets);
 
         // Render custom quantity text (replicating vanilla's rendering)
+        // Use a smaller scale to match the expected text size in pattern terminal
         GlStateManager.disableLighting();
         GlStateManager.disableDepth();
         GlStateManager.disableBlend();
-        fr.drawStringWithShadow(formatted,
-                (float) (xPosition + 19 - 2 - fr.getStringWidth(formatted)),
-                (float) (yPosition + 6 + 3),
-                16777215);
+
+        // Calculate position and render with scaling to reduce text size
+        float scale = 0.5f;
+        float x = xPosition + 19 - 2 - fr.getStringWidth(formatted) * scale;
+        float y = yPosition + 6 + 3;
+
+        GlStateManager.pushMatrix();
+        GlStateManager.translate(x, y, 0);
+        GlStateManager.scale(scale, scale, 1.0f);
+        fr.drawStringWithShadow(formatted, 0, 0, 16777215);
+        GlStateManager.popMatrix();
+
         GlStateManager.enableLighting();
         GlStateManager.enableDepth();
-        // Note: vanilla also enables blend here, but only after the damage bar
 
         // Cancel the original method to prevent it from rendering "1"
         ci.cancel();
+    }
+
+    /**
+     * Check if we're currently rendering in an AE2 pattern terminal context.
+     */
+    private boolean isInPatternTerminalContext() {
+        Minecraft mc = Minecraft.getMinecraft();
+        GuiScreen screen = mc.currentScreen;
+        if (screen == null) {
+            return false;
+        }
+
+        // Check if it's an AE2 pattern terminal or related GUI
+        String className = screen.getClass().getName();
+        return className.contains("GuiPatternTerm") ||
+               className.contains("GuiExpandedProcessingPatternTerm") ||
+               className.contains("GuiCraftingStatus") ||
+               className.contains("GuiMEMonitorable");
     }
 
     /**
