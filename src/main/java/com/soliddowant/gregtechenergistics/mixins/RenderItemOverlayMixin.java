@@ -16,17 +16,20 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.item.ItemStack;
 
 /**
- * Mixin to show fluid quantity (in buckets) instead of "1" for fluid encoder items
+ * Mixin to show fluid quantity (in buckets) instead of "1" for fluid encoder
+ * items
  * in AE2 pattern terminal displays.
  *
- * This hooks into AE2's StackSizeRenderer which is used to render quantity overlays
+ * This hooks into AE2's StackSizeRenderer which is used to render quantity
+ * overlays
  * in ME terminals and pattern terminals.
  */
 @Mixin(value = StackSizeRenderer.class, remap = false)
 public class RenderItemOverlayMixin {
 
     @Inject(method = "renderStackSize", at = @At("HEAD"), cancellable = true)
-    private void onRenderStackSize(FontRenderer fontRenderer, IAEItemStack aeStack, int xPos, int yPos, CallbackInfo ci) {
+    private void onRenderStackSize(FontRenderer fontRenderer, IAEItemStack aeStack, int xPos, int yPos,
+            CallbackInfo ci) {
         if (aeStack == null) {
             return;
         }
@@ -64,7 +67,8 @@ public class RenderItemOverlayMixin {
         GlStateManager.pushMatrix();
         GlStateManager.scale(scaleFactor, scaleFactor, scaleFactor);
 
-        final int X = (int) (((float) xPos + offset + 16.0f - fontRenderer.getStringWidth(formatted) * scaleFactor) * inverseScaleFactor);
+        final int X = (int) (((float) xPos + offset + 16.0f - fontRenderer.getStringWidth(formatted) * scaleFactor)
+                * inverseScaleFactor);
         final int Y = (int) (((float) yPos + offset + 16.0f - 7.0f * scaleFactor) * inverseScaleFactor);
 
         fontRenderer.drawStringWithShadow(formatted, X, Y, 16777215);
@@ -82,7 +86,7 @@ public class RenderItemOverlayMixin {
 
     /**
      * Format fluid amount (in millibuckets) to a readable bucket format.
-     * Uses AE2's ReadableNumberConverter for consistency with other AE2 displays.
+     * Uses AE2's ReadableNumberConverter for large numbers (1000+).
      *
      * Examples:
      * - 11mb -> "0.011"
@@ -92,35 +96,24 @@ public class RenderItemOverlayMixin {
     private String formatFluidAmount(int amountMb) {
         double buckets = amountMb / 1000.0;
 
-        if (buckets >= 10000) {
-            // Use AE2's converter for large numbers (shows as K, M, etc.)
+        // Use AE2's converter for 1000+ (handles K, M, G, etc.)
+        if (buckets >= 1000) {
             return ReadableNumberConverter.INSTANCE.toWideReadableForm((long) buckets);
-        } else if (buckets >= 1000) {
-            // 1000-9999 buckets: show as X.XK or XK
-            double k = buckets / 1000;
-            if (k == Math.floor(k)) {
-                return String.format("%.0fK", k);
-            } else {
-                return String.format("%.1fK", k);
-            }
-        } else if (buckets >= 100) {
-            // 100-999 buckets: one decimal
-            return String.format("%.1f", buckets);
-        } else if (buckets >= 10) {
-            // 10-99 buckets: one decimal
-            return String.format("%.1f", buckets);
-        } else if (buckets >= 1) {
-            // 1-9.99 buckets: two decimals
-            return String.format("%.2f", buckets);
-        } else {
-            // Sub-bucket amounts: show enough precision
-            String result = String.format("%.3f", buckets);
-            // Remove trailing zeros but keep at least one decimal place
-            result = result.replaceAll("0+$", "");
-            if (result.endsWith(".")) {
-                result = result + "0";
-            }
-            return result;
         }
+
+        // Below 1000: show appropriate decimal precision
+        if (buckets >= 10) {
+            return String.format("%.1f", buckets); // 10-999: "24.0"
+        }
+
+        if (buckets >= 1) {
+            return String.format("%.2f", buckets); // 1-9.99: "6.00", "5.21"
+        }
+
+        // Sub-bucket: "0.011", "0.01", "0.5"
+        String result = String.format("%.3f", buckets);
+        result = result.replaceAll("0+$", ""); // Remove trailing zeros
+        return result.endsWith(".") ? result + "0" : result; // Keep at least one decimal
+
     }
 }
