@@ -141,6 +141,9 @@ public class FluidEncoderBakedModel implements IBakedModel {
             fluidStack = FluidEncoderBehaviour.getFluidStack(currentStack);
         }
 
+        // Clean up thread-local to prevent memory leaks
+        CURRENT_STACK.remove();
+
         return getQuadsForFluid(fluidStack, side, rand);
     }
 
