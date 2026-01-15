@@ -1,6 +1,7 @@
 package com.soliddowant.gregtechenergistics.networking;
 
 import java.util.function.Function;
+import java.util.function.IntFunction;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -79,23 +80,25 @@ public class JEIPacket extends PacketCompressedNBT {
         super.deserialize(tag);
 
         if (tag.hasKey("InputItems"))
-            this.inputItems = deserializeItemStackArray(tag.getTagList("InputItems", 10));
+            this.inputItems = deserializeArray(tag.getTagList("InputItems", 10), ItemStack::new, ItemStack[]::new);
         if (tag.hasKey("InputFluids"))
-            this.inputFluids = deserializeFluidStackArray(tag.getTagList("InputFluids", 10));
+            this.inputFluids = deserializeArray(tag.getTagList("InputFluids", 10), FluidStack::loadFluidStackFromNBT, FluidStack[]::new);
         if (tag.hasKey("OutputItems"))
-            this.outputItems = deserializeItemStackArray(tag.getTagList("OutputItems", 10));
+            this.outputItems = deserializeArray(tag.getTagList("OutputItems", 10), ItemStack::new, ItemStack[]::new);
         if (tag.hasKey("OutputFluids"))
-            this.outputFluids = deserializeFluidStackArray(tag.getTagList("OutputFluids", 10));
+            this.outputFluids = deserializeArray(tag.getTagList("OutputFluids", 10), FluidStack::loadFluidStackFromNBT, FluidStack[]::new);
         if (tag.hasKey("IsCraftingRecipe"))
             this.isCraftingRecipe = tag.getBoolean("IsCraftingRecipe");
     }
 
     @Nullable
-    protected ItemStack[] deserializeItemStackArray(@Nullable NBTTagList tags) {
+    protected <T> T[] deserializeArray(@Nullable NBTTagList tags,
+            @Nonnull Function<NBTTagCompound, T> deserializer,
+            @Nonnull IntFunction<T[]> arrayConstructor) {
         if (tags == null || tags.isEmpty())
             return null;
 
-        ItemStack[] extractedItems = new ItemStack[tags.tagCount()];
+        T[] extracted = arrayConstructor.apply(tags.tagCount());
         for (int i = 0; i < tags.tagCount(); i++) {
             NBTBase tag = tags.get(i);
             if (!(tag instanceof NBTTagCompound))
@@ -104,36 +107,13 @@ public class JEIPacket extends PacketCompressedNBT {
             NBTTagCompound compound = (NBTTagCompound) tag;
             // Empty compound means null/empty slot
             if (compound.isEmpty()) {
-                extractedItems[i] = null;
+                extracted[i] = null;
             } else {
-                extractedItems[i] = new ItemStack(compound);
+                extracted[i] = deserializer.apply(compound);
             }
         }
 
-        return extractedItems;
-    }
-
-    @Nullable
-    protected FluidStack[] deserializeFluidStackArray(@Nullable NBTTagList tags) {
-        if (tags == null || tags.isEmpty())
-            return null;
-
-        FluidStack[] extractedItems = new FluidStack[tags.tagCount()];
-        for (int i = 0; i < tags.tagCount(); i++) {
-            NBTBase tag = tags.get(i);
-            if (!(tag instanceof NBTTagCompound))
-                continue;
-
-            NBTTagCompound compound = (NBTTagCompound) tag;
-            // Empty compound means null/empty slot
-            if (compound.isEmpty()) {
-                extractedItems[i] = null;
-            } else {
-                extractedItems[i] = FluidStack.loadFluidStackFromNBT(compound);
-            }
-        }
-
-        return extractedItems;
+        return extracted;
     }
 
     public static class JEIHandler extends PacketCompressedNBT.Handler<JEIPacket> {
