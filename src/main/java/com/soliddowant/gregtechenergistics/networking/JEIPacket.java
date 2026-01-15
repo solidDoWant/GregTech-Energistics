@@ -1,8 +1,7 @@
 package com.soliddowant.gregtechenergistics.networking;
 
-import java.util.Collection;
-import java.util.LinkedList;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -17,17 +16,17 @@ import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 public class JEIPacket extends PacketCompressedNBT {
-    public Collection<ItemStack> inputItems;
-    public Collection<ItemStack> outputItems;
-    public Collection<FluidStack> inputFluids;
-    public Collection<FluidStack> outputFluids;
+    public ItemStack[] inputItems;
+    public ItemStack[] outputItems;
+    public FluidStack[] inputFluids;
+    public FluidStack[] outputFluids;
     public boolean isCraftingRecipe;
 
     public JEIPacket() {
     }
 
-    public JEIPacket(Collection<ItemStack> inputItems, Collection<ItemStack> outputItems,
-            Collection<FluidStack> inputFluids, Collection<FluidStack> outputFluids, boolean isCraftingRecipe) {
+    public JEIPacket(ItemStack[] inputItems, ItemStack[] outputItems,
+            FluidStack[] inputFluids, FluidStack[] outputFluids, boolean isCraftingRecipe) {
         this.inputItems = inputItems;
         this.outputItems = outputItems;
         this.inputFluids = inputFluids;
@@ -55,15 +54,19 @@ public class JEIPacket extends PacketCompressedNBT {
     }
 
     @Nullable
-    protected <T> NBTTagList serializeArray(@Nullable Collection<T> serializableItems,
+    protected <T> NBTTagList serializeArray(@Nullable T[] serializableItems,
             @Nonnull Function<T, NBTTagCompound> serializer) {
-        if (serializableItems == null || serializableItems.isEmpty())
+        if (serializableItems == null || serializableItems.length == 0)
             return null;
 
         NBTTagList tags = new NBTTagList();
         for (T stack : serializableItems) {
-            if (stack == null)
+            if (stack == null) {
+                // Add empty tag to preserve slot index
+                tags.appendTag(new NBTTagCompound());
                 continue;
+            }
+
             tags.appendTag(serializer.apply(stack));
         }
 
@@ -78,35 +81,43 @@ public class JEIPacket extends PacketCompressedNBT {
         super.deserialize(tag);
 
         if (tag.hasKey("InputItems"))
-            this.inputItems = deserializeArray(tag.getTagList("InputItems", 10), ItemStack::new);
+            this.inputItems = deserializeArray(tag.getTagList("InputItems", 10), ItemStack::new, ItemStack[]::new);
         if (tag.hasKey("InputFluids"))
-            this.inputFluids = deserializeArray(tag.getTagList("InputFluids", 10), FluidStack::loadFluidStackFromNBT);
+            this.inputFluids = deserializeArray(tag.getTagList("InputFluids", 10), FluidStack::loadFluidStackFromNBT,
+                    FluidStack[]::new);
         if (tag.hasKey("OutputItems"))
-            this.outputItems = deserializeArray(tag.getTagList("OutputItems", 10), ItemStack::new);
+            this.outputItems = deserializeArray(tag.getTagList("OutputItems", 10), ItemStack::new, ItemStack[]::new);
         if (tag.hasKey("OutputFluids"))
-            this.outputFluids = deserializeArray(tag.getTagList("OutputFluids", 10), FluidStack::loadFluidStackFromNBT);
+            this.outputFluids = deserializeArray(tag.getTagList("OutputFluids", 10), FluidStack::loadFluidStackFromNBT,
+                    FluidStack[]::new);
         if (tag.hasKey("IsCraftingRecipe"))
             this.isCraftingRecipe = tag.getBoolean("IsCraftingRecipe");
     }
 
     @Nullable
-    protected <T> Collection<T> deserializeArray(@Nullable NBTTagList tags,
-            @Nonnull Function<NBTTagCompound, T> deserializer) {
+    protected <T> T[] deserializeArray(@Nullable NBTTagList tags,
+            @Nonnull Function<NBTTagCompound, T> deserializer,
+            @Nonnull IntFunction<T[]> arrayConstructor) {
         if (tags == null || tags.isEmpty())
             return null;
 
-        LinkedList<T> extractedItems = new LinkedList<>();
-        for (NBTBase tag : tags) {
+        T[] extracted = arrayConstructor.apply(tags.tagCount());
+        for (int i = 0; i < tags.tagCount(); i++) {
+            NBTBase tag = tags.get(i);
             if (!(tag instanceof NBTTagCompound))
                 continue;
 
-            extractedItems.add(deserializer.apply((NBTTagCompound) tag));
+            NBTTagCompound compound = (NBTTagCompound) tag;
+            // Empty compound means null/empty slot
+            if (compound.isEmpty()) {
+                extracted[i] = null;
+                continue;
+            }
+
+            extracted[i] = deserializer.apply(compound);
         }
 
-        if (extractedItems.isEmpty())
-            return null;
-
-        return extractedItems;
+        return extracted;
     }
 
     public static class JEIHandler extends PacketCompressedNBT.Handler<JEIPacket> {
