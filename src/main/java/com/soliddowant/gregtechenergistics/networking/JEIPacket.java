@@ -64,9 +64,10 @@ public class JEIPacket extends PacketCompressedNBT {
             if (stack == null) {
                 // Add empty tag to preserve slot index
                 tags.appendTag(new NBTTagCompound());
-            } else {
-                tags.appendTag(serializer.apply(stack));
+                continue;
             }
+
+            tags.appendTag(serializer.apply(stack));
         }
 
         if (tags.isEmpty())
@@ -82,11 +83,13 @@ public class JEIPacket extends PacketCompressedNBT {
         if (tag.hasKey("InputItems"))
             this.inputItems = deserializeArray(tag.getTagList("InputItems", 10), ItemStack::new, ItemStack[]::new);
         if (tag.hasKey("InputFluids"))
-            this.inputFluids = deserializeArray(tag.getTagList("InputFluids", 10), FluidStack::loadFluidStackFromNBT, FluidStack[]::new);
+            this.inputFluids = deserializeArray(tag.getTagList("InputFluids", 10), FluidStack::loadFluidStackFromNBT,
+                    FluidStack[]::new);
         if (tag.hasKey("OutputItems"))
             this.outputItems = deserializeArray(tag.getTagList("OutputItems", 10), ItemStack::new, ItemStack[]::new);
         if (tag.hasKey("OutputFluids"))
-            this.outputFluids = deserializeArray(tag.getTagList("OutputFluids", 10), FluidStack::loadFluidStackFromNBT, FluidStack[]::new);
+            this.outputFluids = deserializeArray(tag.getTagList("OutputFluids", 10), FluidStack::loadFluidStackFromNBT,
+                    FluidStack[]::new);
         if (tag.hasKey("IsCraftingRecipe"))
             this.isCraftingRecipe = tag.getBoolean("IsCraftingRecipe");
     }
@@ -108,9 +111,10 @@ public class JEIPacket extends PacketCompressedNBT {
             // Empty compound means null/empty slot
             if (compound.isEmpty()) {
                 extracted[i] = null;
-            } else {
-                extracted[i] = deserializer.apply(compound);
+                continue;
             }
+
+            extracted[i] = deserializer.apply(compound);
         }
 
         return extracted;

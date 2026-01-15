@@ -1,14 +1,21 @@
 package com.soliddowant.gregtechenergistics.integration.jei;
 
+import java.util.Map.Entry;
+import java.util.function.Function;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import com.soliddowant.gregtechenergistics.items.MetaItems;
+import com.soliddowant.gregtechenergistics.items.behaviors.FluidEncoderBehaviour;
+import com.soliddowant.gregtechenergistics.networking.JEIPacket;
+import com.soliddowant.gregtechenergistics.networking.NetworkHandler;
+
 import appeng.container.implementations.ContainerPatternTerm;
 import appeng.helpers.IContainerCraftingPacket;
 import appeng.util.Platform;
 import appeng.util.helpers.ItemHandlerUtil;
 import appeng.util.inv.WrapperInvItemHandler;
-import com.soliddowant.gregtechenergistics.items.MetaItems;
-import com.soliddowant.gregtechenergistics.items.behaviors.FluidEncoderBehaviour;
-import com.soliddowant.gregtechenergistics.networking.JEIPacket;
-import com.soliddowant.gregtechenergistics.networking.NetworkHandler;
 import mezz.jei.api.gui.IGuiIngredient;
 import mezz.jei.api.gui.IGuiIngredientGroup;
 import mezz.jei.api.gui.IRecipeLayout;
@@ -21,9 +28,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.items.IItemHandler;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPatternTerm> {
     @Nonnull
     @Override
@@ -34,17 +38,16 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
     @Override
     @Nullable
     public IRecipeTransferError transferRecipe(@Nonnull ContainerPatternTerm container,
-                                               @Nonnull IRecipeLayout recipeLayout, @Nonnull EntityPlayer player,
-                                               boolean maxTransfer, boolean doTransfer) {
+            @Nonnull IRecipeLayout recipeLayout, @Nonnull EntityPlayer player,
+            boolean maxTransfer, boolean doTransfer) {
         if (doTransfer)
             performTransfer(container, recipeLayout, player, maxTransfer);
 
         return null;
     }
 
-    @SuppressWarnings("unused")
     protected void performTransfer(ContainerPatternTerm container, IRecipeLayout recipeLayout, EntityPlayer player,
-                                   boolean maxTransfer) {
+            boolean maxTransfer) {
         boolean isCraftingRecipe = recipeLayout.getRecipeCategory().getUid().equals(VanillaRecipeCategoryUid.CRAFTING);
 
         ItemStack[] inputItems = new ItemStack[9];
@@ -52,15 +55,12 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
         FluidStack[] inputFluids = new FluidStack[9];
         FluidStack[] outputFluids = new FluidStack[3];
 
-        if (isCraftingRecipe) {
-            // Crafting recipes: preserve slot indices (with JEI's 1-based offset)
-            performItemTransferWithSlots(recipeLayout.getItemStacks(), inputItems, outputItems, true);
-            performFluidTransferWithSlots(recipeLayout.getFluidStacks(), inputFluids, outputFluids, true);
-        } else {
-            // Processing recipes: fill sequentially (ignore slot indices)
-            performItemTransferWithSlots(recipeLayout.getItemStacks(), inputItems, outputItems, false);
-            performFluidTransferWithSlots(recipeLayout.getFluidStacks(), inputFluids, outputFluids, false);
-        }
+        // Crafting recipes: preserve slot indices (with JEI's 1-based offset)
+        // Processing recipes: fill sequentially (ignore slot indices)
+        performTransferWithSlots(recipeLayout.getItemStacks(), inputItems, outputItems, isCraftingRecipe,
+                this::getFirstItemStack);
+        performTransferWithSlots(recipeLayout.getFluidStacks(), inputFluids, outputFluids, isCraftingRecipe,
+                this::getFirstFluidStack);
 
         NetworkHandler.ServerHandlerChannel.sendToServer(
                 new JEIPacket(
@@ -68,74 +68,85 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
                         outputItems,
                         inputFluids,
                         outputFluids,
-                        isCraftingRecipe
-                )
-        );
+                        isCraftingRecipe));
     }
 
-    protected void performItemTransferWithSlots(IGuiIngredientGroup<ItemStack> itemStacks,
-                                                ItemStack[] inputs, ItemStack[] outputs, boolean preserveSlots) {
+    protected <T> void performTransferWithSlots(IGuiIngredientGroup<T> ingredientGroup,
+            T[] inputs, T[] outputs, boolean preserveSlots, Function<Iterable<T>, T> getFirstStack) {
         if (preserveSlots) {
-            // Crafting mode: preserve exact slot positions (with JEI 1-based offset correction)
-            for (final var entry : itemStacks.getGuiIngredients().entrySet()) {
+            // Crafting mode: preserve exact slot positions (with JEI 1-based offset
+            // correction)
+            for (final var entry : ingredientGroup.getGuiIngredients().entrySet()) {
                 Integer jeiSlotIndex = entry.getKey();
-                IGuiIngredient<ItemStack> ingredientEntry = entry.getValue();
+                IGuiIngredient<T> ingredientEntry = entry.getValue();
 
                 if (ingredientEntry == null)
                     continue;
 
-                ItemStack currentStack = getFirstItemStack(ingredientEntry.getAllIngredients());
+                T currentStack = getFirstStack.apply(ingredientEntry.getAllIngredients());
 
-                if (currentStack != null) {
-                    // JEI uses 1-based indexing, convert to 0-based for array indexing
-                    int slotIndex = jeiSlotIndex - 1;
+                if (currentStack == null)
+                    continue;
 
-                    if (ingredientEntry.isInput() && slotIndex >= 0 && slotIndex < inputs.length) {
+                // JEI uses 1-based indexing, convert to 0-based for array indexing
+                int slotIndex = jeiSlotIndex - 1;
+
+                // Range check the slot index
+                if (slotIndex < 0)
+                    continue;
+
+                if (ingredientEntry.isInput()) {
+                    if (slotIndex < inputs.length)
                         inputs[slotIndex] = currentStack;
-                    } else if (!ingredientEntry.isInput() && slotIndex >= 0 && slotIndex < outputs.length) {
+                } else {
+                    if (slotIndex < outputs.length)
                         outputs[slotIndex] = currentStack;
-                    }
                 }
             }
-        } else {
-            // Processing mode: fill sequentially, ignore JEI's slot indices
-            int inputIndex = 0;
-            int outputIndex = 0;
 
-            for (final var entry : itemStacks.getGuiIngredients().entrySet()) {
-                IGuiIngredient<ItemStack> ingredientEntry = entry.getValue();
+            return;
+        }
 
-                if (ingredientEntry == null)
-                    continue;
+        // Processing mode: fill sequentially, ignore JEI's slot indices
+        int inputIndex = 0;
+        int outputIndex = 0;
 
-                ItemStack currentStack = getFirstItemStack(ingredientEntry.getAllIngredients());
+        for (final var entry : ingredientGroup.getGuiIngredients().entrySet()) {
+            IGuiIngredient<T> ingredientEntry = entry.getValue();
 
-                if (currentStack != null) {
-                    if (ingredientEntry.isInput() && inputIndex < inputs.length) {
-                        inputs[inputIndex++] = currentStack;
-                    } else if (!ingredientEntry.isInput() && outputIndex < outputs.length) {
-                        outputs[outputIndex++] = currentStack;
-                    }
-                }
+            if (ingredientEntry == null)
+                continue;
+
+            T currentStack = getFirstStack.apply(ingredientEntry.getAllIngredients());
+
+            if (currentStack == null)
+                continue;
+
+            if (ingredientEntry.isInput()) {
+                if (inputIndex < inputs.length)
+                    inputs[inputIndex++] = currentStack;
+            } else {
+                if (outputIndex < outputs.length)
+                    outputs[outputIndex++] = currentStack;
             }
         }
     }
 
     @Nullable
     protected ItemStack getFirstItemStack(@Nullable Iterable<ItemStack> stackList) {
-        if(stackList == null)
+        if (stackList == null)
             return null;
 
         // First try to get prioritized ItemStacks (i.e. pure AE2 crystals)
         ItemStack firstValidItem = null;
-        for(ItemStack stack : stackList) {
+        for (ItemStack stack : stackList) {
             if (stack == null || stack.isEmpty())
                 continue;
 
             if (Platform.isRecipePrioritized(stack))
                 return stack;
 
-            if(firstValidItem == null)
+            if (firstValidItem == null)
                 firstValidItem = stack;
         }
 
@@ -143,61 +154,13 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
         return firstValidItem;
     }
 
-    protected void performFluidTransferWithSlots(IGuiIngredientGroup<FluidStack> fluidStacks,
-                                                 FluidStack[] inputs, FluidStack[] outputs, boolean preserveSlots) {
-        if (preserveSlots) {
-            // Crafting mode: preserve exact slot positions (with JEI 1-based offset correction)
-            for (final var entry : fluidStacks.getGuiIngredients().entrySet()) {
-                Integer jeiSlotIndex = entry.getKey();
-                IGuiIngredient<FluidStack> ingredientEntry = entry.getValue();
-
-                if (ingredientEntry == null)
-                    continue;
-
-                FluidStack currentStack = getFirstFluidStack(ingredientEntry.getAllIngredients());
-
-                if (currentStack != null) {
-                    // JEI uses 1-based indexing, convert to 0-based for array indexing
-                    int slotIndex = jeiSlotIndex - 1;
-
-                    if (ingredientEntry.isInput() && slotIndex >= 0 && slotIndex < inputs.length) {
-                        inputs[slotIndex] = currentStack;
-                    } else if (!ingredientEntry.isInput() && slotIndex >= 0 && slotIndex < outputs.length) {
-                        outputs[slotIndex] = currentStack;
-                    }
-                }
-            }
-        } else {
-            // Processing mode: fill sequentially, ignore JEI's slot indices
-            int inputIndex = 0;
-            int outputIndex = 0;
-
-            for (final var entry : fluidStacks.getGuiIngredients().entrySet()) {
-                IGuiIngredient<FluidStack> ingredientEntry = entry.getValue();
-
-                if (ingredientEntry == null)
-                    continue;
-
-                FluidStack currentStack = getFirstFluidStack(ingredientEntry.getAllIngredients());
-
-                if (currentStack != null) {
-                    if (ingredientEntry.isInput() && inputIndex < inputs.length) {
-                        inputs[inputIndex++] = currentStack;
-                    } else if (!ingredientEntry.isInput() && outputIndex < outputs.length) {
-                        outputs[outputIndex++] = currentStack;
-                    }
-                }
-            }
-        }
-    }
-
     @Nullable
     protected FluidStack getFirstFluidStack(@Nullable Iterable<FluidStack> stackList) {
-        if(stackList == null)
+        if (stackList == null)
             return null;
 
-        for(FluidStack stack : stackList)
-            if(stack != null && stack.amount > 0)
+        for (FluidStack stack : stackList)
+            if (stack != null && stack.amount > 0)
                 return stack;
 
         return null;
@@ -212,17 +175,18 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
 
     public static void transferToTerminal(JEIPacket message, Container con) {
         // Get information about the crafting terminal, and do some checks
-        if(!(con instanceof IContainerCraftingPacket))
+        if (!(con instanceof IContainerCraftingPacket))
             return;
         IContainerCraftingPacket cct = (IContainerCraftingPacket) con;
         if (cct.getNetworkNode() == null && !cct.getActionSource().machine().isPresent())
             return;
 
-        if(cct instanceof ContainerPatternTerm)
+        if (cct instanceof ContainerPatternTerm)
             ((ContainerPatternTerm) cct).getPart().setCraftingRecipe(message.isCraftingRecipe);
 
         IItemHandler craftMatrix = cct.getInventoryByName("crafting");
-        // Should always be 9, but craftMatrix.getSlots() is the real limiting factor regardless of what it returns
+        // Should always be 9, but craftMatrix.getSlots() is the real limiting factor
+        // regardless of what it returns
         int inputAreaSize = craftMatrix.getSlots();
 
         IItemHandler outputInv = cct.getInventoryByName("output");
@@ -231,26 +195,29 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
         if (!(con instanceof ContainerPatternTerm))
             return;
 
-        ItemStack[] inputStacks = mergeStacks(message.inputItems, message.inputFluids, inputAreaSize, message.isCraftingRecipe);
+        ItemStack[] inputStacks = mergeStacks(message.inputItems, message.inputFluids, inputAreaSize,
+                message.isCraftingRecipe);
 
-        for(int i = 0; i < inputStacks.length && i < inputAreaSize; i++) {
+        for (int i = 0; i < inputStacks.length && i < inputAreaSize; i++) {
             ItemStack stack = inputStacks[i];
             ItemHandlerUtil.setStackInSlot(craftMatrix, i, stack != null ? stack : ItemStack.EMPTY);
         }
 
-        if(message.isCraftingRecipe)
+        if (message.isCraftingRecipe)
             con.onCraftMatrixChanged(new WrapperInvItemHandler(craftMatrix));
         else {
-            ItemStack[] outputStacks = mergeStacks(message.outputItems, message.outputFluids, outputAreaSize, message.isCraftingRecipe);
+            ItemStack[] outputStacks = mergeStacks(message.outputItems, message.outputFluids, outputAreaSize,
+                    message.isCraftingRecipe);
 
-            for(int i = 0; i < outputStacks.length && i < outputAreaSize; i++) {
+            for (int i = 0; i < outputStacks.length && i < outputAreaSize; i++) {
                 ItemStack stack = outputStacks[i];
                 ItemHandlerUtil.setStackInSlot(outputInv, i, stack != null ? stack : ItemStack.EMPTY);
             }
         }
     }
 
-    protected static ItemStack[] mergeStacks(ItemStack[] items, FluidStack[] fluids, int maxCount, boolean preserveSlots) {
+    protected static ItemStack[] mergeStacks(ItemStack[] items, FluidStack[] fluids, int maxCount,
+            boolean preserveSlots) {
         ItemStack[] result = new ItemStack[maxCount];
 
         if (preserveSlots) {
