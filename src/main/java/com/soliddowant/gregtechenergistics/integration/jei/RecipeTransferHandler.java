@@ -23,8 +23,6 @@ import net.minecraftforge.items.IItemHandler;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.Collection;
-import java.util.LinkedList;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -49,35 +47,80 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
     @SuppressWarnings("unused")
     protected void performTransfer(ContainerPatternTerm container, IRecipeLayout recipeLayout, EntityPlayer player,
                                    boolean maxTransfer) {
-        // Collect inputs
-        LinkedList<ItemStack> inputItemTags = new LinkedList<>();
-        LinkedList<ItemStack> outputItemTags = new LinkedList<>();
-        performItemTransfer(
-                recipeLayout.getItemStacks(),
-                stack -> {if(inputItemTags.size() < 9 && stack != null) inputItemTags.add(stack);},
-                stack -> {if(outputItemTags.size() < 3 && stack != null) outputItemTags.add(stack);}
-                );
-
-        // Collect outputs
-        LinkedList<FluidStack> inputFluidTags = new LinkedList<>();
-        LinkedList<FluidStack> outputFluidTags = new LinkedList<>();
-        performFluidTransfer(
-                recipeLayout.getFluidStacks(),
-                stack -> {if(inputItemTags.size() + inputFluidTags.size() < 9 && stack != null) inputFluidTags.add(stack);},
-                stack -> {if(outputItemTags.size() + outputFluidTags.size() <= 3 && stack != null) outputFluidTags.add(stack);}
-                );
-
         boolean isCraftingRecipe = recipeLayout.getRecipeCategory().getUid().equals(VanillaRecipeCategoryUid.CRAFTING);
+
+        ItemStack[] inputItems = new ItemStack[9];
+        ItemStack[] outputItems = new ItemStack[3];
+        FluidStack[] inputFluids = new FluidStack[9];
+        FluidStack[] outputFluids = new FluidStack[3];
+
+        if (isCraftingRecipe) {
+            // Crafting recipes: preserve slot indices (with JEI's 1-based offset)
+            performItemTransferWithSlots(recipeLayout.getItemStacks(), inputItems, outputItems, true);
+            performFluidTransferWithSlots(recipeLayout.getFluidStacks(), inputFluids, outputFluids, true);
+        } else {
+            // Processing recipes: fill sequentially (ignore slot indices)
+            performItemTransferWithSlots(recipeLayout.getItemStacks(), inputItems, outputItems, false);
+            performFluidTransferWithSlots(recipeLayout.getFluidStacks(), inputFluids, outputFluids, false);
+        }
 
         NetworkHandler.ServerHandlerChannel.sendToServer(
                 new JEIPacket(
-                        inputItemTags,
-                        outputItemTags,
-                        inputFluidTags,
-                        outputFluidTags,
+                        inputItems,
+                        outputItems,
+                        inputFluids,
+                        outputFluids,
                         isCraftingRecipe
                 )
         );
+    }
+
+    protected void performItemTransferWithSlots(IGuiIngredientGroup<ItemStack> itemStacks,
+                                                ItemStack[] inputs, ItemStack[] outputs, boolean preserveSlots) {
+        if (preserveSlots) {
+            // Crafting mode: preserve exact slot positions (with JEI 1-based offset correction)
+            for (final var entry : itemStacks.getGuiIngredients().entrySet()) {
+                Integer jeiSlotIndex = entry.getKey();
+                IGuiIngredient<ItemStack> ingredientEntry = entry.getValue();
+
+                if (ingredientEntry == null)
+                    continue;
+
+                ItemStack currentStack = getFirstItemStack(ingredientEntry.getAllIngredients());
+
+                if (currentStack != null) {
+                    // JEI uses 1-based indexing, convert to 0-based for array indexing
+                    int slotIndex = jeiSlotIndex - 1;
+
+                    if (ingredientEntry.isInput() && slotIndex >= 0 && slotIndex < inputs.length) {
+                        inputs[slotIndex] = currentStack;
+                    } else if (!ingredientEntry.isInput() && slotIndex >= 0 && slotIndex < outputs.length) {
+                        outputs[slotIndex] = currentStack;
+                    }
+                }
+            }
+        } else {
+            // Processing mode: fill sequentially, ignore JEI's slot indices
+            int inputIndex = 0;
+            int outputIndex = 0;
+
+            for (final var entry : itemStacks.getGuiIngredients().entrySet()) {
+                IGuiIngredient<ItemStack> ingredientEntry = entry.getValue();
+
+                if (ingredientEntry == null)
+                    continue;
+
+                ItemStack currentStack = getFirstItemStack(ingredientEntry.getAllIngredients());
+
+                if (currentStack != null) {
+                    if (ingredientEntry.isInput() && inputIndex < inputs.length) {
+                        inputs[inputIndex++] = currentStack;
+                    } else if (!ingredientEntry.isInput() && outputIndex < outputs.length) {
+                        outputs[outputIndex++] = currentStack;
+                    }
+                }
+            }
+        }
     }
 
     protected void performItemTransfer(IGuiIngredientGroup<ItemStack> itemStacks, Consumer<ItemStack> addInput,
@@ -105,6 +148,54 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
 
         // If that fails, get the first valid item. This may be null.
         return firstValidItem;
+    }
+
+    protected void performFluidTransferWithSlots(IGuiIngredientGroup<FluidStack> fluidStacks,
+                                                 FluidStack[] inputs, FluidStack[] outputs, boolean preserveSlots) {
+        if (preserveSlots) {
+            // Crafting mode: preserve exact slot positions (with JEI 1-based offset correction)
+            for (final var entry : fluidStacks.getGuiIngredients().entrySet()) {
+                Integer jeiSlotIndex = entry.getKey();
+                IGuiIngredient<FluidStack> ingredientEntry = entry.getValue();
+
+                if (ingredientEntry == null)
+                    continue;
+
+                FluidStack currentStack = getFirstFluidStack(ingredientEntry.getAllIngredients());
+
+                if (currentStack != null) {
+                    // JEI uses 1-based indexing, convert to 0-based for array indexing
+                    int slotIndex = jeiSlotIndex - 1;
+
+                    if (ingredientEntry.isInput() && slotIndex >= 0 && slotIndex < inputs.length) {
+                        inputs[slotIndex] = currentStack;
+                    } else if (!ingredientEntry.isInput() && slotIndex >= 0 && slotIndex < outputs.length) {
+                        outputs[slotIndex] = currentStack;
+                    }
+                }
+            }
+        } else {
+            // Processing mode: fill sequentially, ignore JEI's slot indices
+            int inputIndex = 0;
+            int outputIndex = 0;
+
+            for (final var entry : fluidStacks.getGuiIngredients().entrySet()) {
+                IGuiIngredient<FluidStack> ingredientEntry = entry.getValue();
+
+                if (ingredientEntry == null)
+                    continue;
+
+                FluidStack currentStack = getFirstFluidStack(ingredientEntry.getAllIngredients());
+
+                if (currentStack != null) {
+                    if (ingredientEntry.isInput() && inputIndex < inputs.length) {
+                        inputs[inputIndex++] = currentStack;
+                    } else if (!ingredientEntry.isInput() && outputIndex < outputs.length) {
+                        outputs[outputIndex++] = currentStack;
+                    }
+                }
+            }
+        }
     }
 
     protected void performFluidTransfer(IGuiIngredientGroup<FluidStack> fluidStacks, Consumer<FluidStack> addInput,
@@ -158,58 +249,81 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
         if (!(con instanceof ContainerPatternTerm))
             return;
 
-        LinkedList<ItemStack> inputStacks = collectStacks(message.inputItems, message.inputFluids, inputAreaSize);
+        ItemStack[] inputStacks = mergeStacks(message.inputItems, message.inputFluids, inputAreaSize, message.isCraftingRecipe);
 
-        int inputIndex = 0;
-        for(ItemStack inputStack : inputStacks)
-            ItemHandlerUtil.setStackInSlot(craftMatrix, inputIndex++, inputStack);
+        for(int i = 0; i < inputStacks.length && i < inputAreaSize; i++) {
+            ItemStack stack = inputStacks[i];
+            ItemHandlerUtil.setStackInSlot(craftMatrix, i, stack != null ? stack : ItemStack.EMPTY);
+        }
 
         if(message.isCraftingRecipe)
             con.onCraftMatrixChanged(new WrapperInvItemHandler(craftMatrix));
         else {
-            LinkedList<ItemStack> outputStacks = collectStacks(message.outputItems, message.outputFluids, outputAreaSize);
+            ItemStack[] outputStacks = mergeStacks(message.outputItems, message.outputFluids, outputAreaSize, message.isCraftingRecipe);
 
-            int outputIndex = 0;
-            for (ItemStack outputStack : outputStacks)
-                ItemHandlerUtil.setStackInSlot(outputInv, outputIndex++, outputStack);
+            for(int i = 0; i < outputStacks.length && i < outputAreaSize; i++) {
+                ItemStack stack = outputStacks[i];
+                ItemHandlerUtil.setStackInSlot(outputInv, i, stack != null ? stack : ItemStack.EMPTY);
+            }
         }
     }
 
-    protected static LinkedList<ItemStack> collectStacks(Collection<ItemStack> items, Collection<FluidStack> fluids, int maxCount) {
-        int addedStackCount = 0;
-        LinkedList<ItemStack> itemStacks = new LinkedList<>();
-        if(items != null)
-            for (ItemStack item : items) {
-                if(item == null)
-                    continue;
+    protected static ItemStack[] mergeStacks(ItemStack[] items, FluidStack[] fluids, int maxCount, boolean preserveSlots) {
+        ItemStack[] result = new ItemStack[maxCount];
 
-                if (addedStackCount >= maxCount)
-                    break;
-
-                itemStacks.add(item);
-                addedStackCount++;
+        if (preserveSlots) {
+            // Crafting mode: preserve slot indices, fluids only fill empty slots
+            // First pass: add items preserving their slot indices
+            if (items != null) {
+                for (int i = 0; i < items.length && i < maxCount; i++) {
+                    ItemStack item = items[i];
+                    if (item != null && !item.isEmpty()) {
+                        result[i] = item;
+                    }
+                }
             }
 
-        if(fluids != null)
-            for (FluidStack fluid : fluids) {
-                if(fluid == null || fluid.amount == 0)
-                    continue;
+            // Second pass: add fluids as fluid encoders preserving their slot indices
+            if (fluids != null) {
+                for (int i = 0; i < fluids.length && i < maxCount; i++) {
+                    FluidStack fluid = fluids[i];
+                    // Only add fluid encoder if slot is empty and fluid is valid
+                    if (fluid != null && fluid.amount > 0 && result[i] == null) {
+                        ItemStack fluidEncoder = MetaItems.FLUID_ENCODER.getStackForm();
+                        FluidEncoderBehaviour.setItemStackFluid(fluidEncoder, fluid);
+                        FluidEncoderBehaviour.setItemStackFluidAmount(fluidEncoder, fluid.amount);
+                        result[i] = fluidEncoder;
+                    }
+                }
+            }
+        } else {
+            // Processing mode: append fluids after items sequentially
+            int currentIndex = 0;
 
-                if (addedStackCount >= maxCount)
-                    break;
-
-                ItemStack fluidEncoder = MetaItems.FLUID_ENCODER.getStackForm();
-                FluidEncoderBehaviour.setItemStackFluid(fluidEncoder, fluid);
-                FluidEncoderBehaviour.setItemStackFluidAmount(fluidEncoder, fluid.amount);
-                itemStacks.add(fluidEncoder);
-                addedStackCount++;
+            // First pass: add items sequentially
+            if (items != null) {
+                for (int i = 0; i < items.length && currentIndex < maxCount; i++) {
+                    ItemStack item = items[i];
+                    if (item != null && !item.isEmpty()) {
+                        result[currentIndex++] = item;
+                    }
+                }
             }
 
-        // Blank out the table
-        for(; addedStackCount < maxCount; addedStackCount++) {
-            itemStacks.add(ItemStack.EMPTY);
+            // Second pass: add fluids as fluid encoders sequentially after items
+            if (fluids != null) {
+                for (int i = 0; i < fluids.length && currentIndex < maxCount; i++) {
+                    FluidStack fluid = fluids[i];
+                    if (fluid != null && fluid.amount > 0) {
+                        ItemStack fluidEncoder = MetaItems.FLUID_ENCODER.getStackForm();
+                        FluidEncoderBehaviour.setItemStackFluid(fluidEncoder, fluid);
+                        FluidEncoderBehaviour.setItemStackFluidAmount(fluidEncoder, fluid.amount);
+                        result[currentIndex++] = fluidEncoder;
+                    }
+                }
+            }
         }
 
-        return itemStacks;
+        return result;
     }
 }
