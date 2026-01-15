@@ -23,8 +23,6 @@ import net.minecraftforge.items.IItemHandler;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPatternTerm> {
     @Nonnull
@@ -123,11 +121,6 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
         }
     }
 
-    protected void performItemTransfer(IGuiIngredientGroup<ItemStack> itemStacks, Consumer<ItemStack> addInput,
-                                       Consumer<ItemStack> addOutput) {
-        performInternalTransfer(itemStacks, addInput, addOutput, this::getFirstItemStack);
-    }
-
     @Nullable
     protected ItemStack getFirstItemStack(@Nullable Iterable<ItemStack> stackList) {
         if(stackList == null)
@@ -198,11 +191,6 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
         }
     }
 
-    protected void performFluidTransfer(IGuiIngredientGroup<FluidStack> fluidStacks, Consumer<FluidStack> addInput,
-                                        Consumer<FluidStack> addOutput) {
-        performInternalTransfer(fluidStacks, addInput, addOutput, this::getFirstFluidStack);
-    }
-
     @Nullable
     protected FluidStack getFirstFluidStack(@Nullable Iterable<FluidStack> stackList) {
         if(stackList == null)
@@ -215,17 +203,11 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
         return null;
     }
 
-    protected <T> void performInternalTransfer(@Nonnull IGuiIngredientGroup<T> stacks, Consumer<T> addInput,
-                                               Consumer<T> addOutput, Function<Iterable<T>, T> getStack) {
-        for (final IGuiIngredient<T> ingredientEntry : stacks.getGuiIngredients().values()) {
-            if (ingredientEntry == null)
-                continue;
-
-            T currentStack = getStack.apply(ingredientEntry.getAllIngredients());
-
-            if(currentStack != null)
-                (ingredientEntry.isInput() ? addInput : addOutput).accept(currentStack);
-        }
+    protected static ItemStack createFluidEncoder(FluidStack fluid) {
+        ItemStack fluidEncoder = MetaItems.FLUID_ENCODER.getStackForm();
+        FluidEncoderBehaviour.setItemStackFluid(fluidEncoder, fluid);
+        FluidEncoderBehaviour.setItemStackFluidAmount(fluidEncoder, fluid.amount);
+        return fluidEncoder;
     }
 
     public static void transferToTerminal(JEIPacket message, Container con) {
@@ -289,10 +271,7 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
                     FluidStack fluid = fluids[i];
                     // Only add fluid encoder if slot is empty and fluid is valid
                     if (fluid != null && fluid.amount > 0 && result[i] == null) {
-                        ItemStack fluidEncoder = MetaItems.FLUID_ENCODER.getStackForm();
-                        FluidEncoderBehaviour.setItemStackFluid(fluidEncoder, fluid);
-                        FluidEncoderBehaviour.setItemStackFluidAmount(fluidEncoder, fluid.amount);
-                        result[i] = fluidEncoder;
+                        result[i] = createFluidEncoder(fluid);
                     }
                 }
             }
@@ -315,10 +294,7 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
                 for (int i = 0; i < fluids.length && currentIndex < maxCount; i++) {
                     FluidStack fluid = fluids[i];
                     if (fluid != null && fluid.amount > 0) {
-                        ItemStack fluidEncoder = MetaItems.FLUID_ENCODER.getStackForm();
-                        FluidEncoderBehaviour.setItemStackFluid(fluidEncoder, fluid);
-                        FluidEncoderBehaviour.setItemStackFluidAmount(fluidEncoder, fluid.amount);
-                        result[currentIndex++] = fluidEncoder;
+                        result[currentIndex++] = createFluidEncoder(fluid);
                     }
                 }
             }
