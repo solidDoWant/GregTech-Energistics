@@ -1,5 +1,6 @@
 package com.soliddowant.gregtechenergistics.items;
 
+import com.soliddowant.gregtechenergistics.items.behaviors.ExtendedPatternTerminalBehavior;
 import com.soliddowant.gregtechenergistics.items.behaviors.FluidEncoderBehaviour;
 import com.soliddowant.gregtechenergistics.items.behaviors.StockerTerminalBehavior;
 
@@ -34,6 +35,8 @@ public class MetaItem1 extends StandardModMetaItem {
 				.addComponents(new FluidEncoderBehaviour()).setMaxStackSize(1);
 		MetaItems.STOCKER_TERMINAL = addItem(10, "stocker.terminal")
 				.addComponents(new StockerTerminalBehavior());
+		MetaItems.EXTENDED_PATTERN_TERMINAL = addItem(11, "extended.pattern.terminal")
+				.addComponents(new ExtendedPatternTerminalBehavior());
 	}
 
 	@SuppressWarnings("OptionalGetWithoutIsPresent") // If these items are missing the mod should probably fail to load
@@ -100,6 +103,16 @@ public class MetaItem1 extends StandardModMetaItem {
 				.outputs(MetaItems.STOCKER_TERMINAL.getStackForm())
 				.duration(200)
 				.EUt((int) GTValues.V[GTValues.MV])
+				.buildAndRegister();
+
+		RecipeMaps.ASSEMBLER_RECIPES.recipeBuilder()
+				.input("itemIlluminatedPanel", 1)
+				.inputs(
+						Api.INSTANCE.definitions().materials().calcProcessor().maybeStack(1).get(),
+						MetaItems.AE2_STOCKER_HV.getStackForm())
+				.outputs(MetaItems.EXTENDED_PATTERN_TERMINAL.getStackForm())
+				.duration(200)
+				.EUt((int) GTValues.V[GTValues.HV])
 				.buildAndRegister();
 	}
 }

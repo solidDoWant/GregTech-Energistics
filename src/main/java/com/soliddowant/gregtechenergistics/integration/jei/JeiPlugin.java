@@ -3,6 +3,7 @@ package com.soliddowant.gregtechenergistics.integration.jei;
 import appeng.container.implementations.ContainerPatternTerm;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableTable;
+import com.soliddowant.gregtechenergistics.gui.ExtendedPatternContainer;
 import mezz.jei.collect.Table;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.IModRegistry;
@@ -35,6 +36,8 @@ public class JeiPlugin implements IModPlugin {
 
         collectedRegistry.put(ContainerPatternTerm.class, Constants.UNIVERSAL_RECIPE_TRANSFER_UID,
                 new RecipeTransferHandler());
+        collectedRegistry.put(ExtendedPatternContainer.class, Constants.UNIVERSAL_RECIPE_TRANSFER_UID,
+                new ExtendedRecipeTransferHandler());
         ReflectionHelper.setPrivateValue(RecipeTransferRegistry.class,
                 (RecipeTransferRegistry) registry.getRecipeTransferRegistry(), collectedRegistry,
                 "recipeTransferHandlers", null);
