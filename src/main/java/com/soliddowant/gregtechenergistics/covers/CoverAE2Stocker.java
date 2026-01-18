@@ -1202,8 +1202,12 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     /// but two non-compatible item stacks
     /// need to be inserted into it, this will pass despite being a conflict.
     protected boolean isInputSpaceAvailable() {
+        // If we don't have a valid pattern with inputs, we can't check space availability
+        if (patternInputItems == null && patternInputFluids == null)
+            return false;
+
         // If items need to be inserted but the machine can't handle items, fail
-        if (!patternInputItems.isEmpty() && machineItemInputHandler == null)
+        if (patternInputItems != null && !patternInputItems.isEmpty() && machineItemInputHandler == null)
             return false;
 
         if (isMissingItemInputSpace())
@@ -1217,6 +1221,10 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     }
 
     protected boolean isMissingFluidInputSpace() {
+        // If we don't have fluid inputs, we don't need space for them
+        if (patternInputFluids == null)
+            return false;
+
         // If fluids need to be inserted but the machine can't handle fluids, fail
         if (!patternInputFluids.isEmpty() && machineFluidInputHandler == null)
             return true;
@@ -1232,6 +1240,10 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     }
 
     protected boolean isMissingItemInputSpace() {
+        // If we don't have item inputs, we don't need space for them
+        if (patternInputItems == null)
+            return false;
+
         for (IAEItemStack iaeItemStack : patternInputItems) {
             int targetInsertingCount = (int) iaeItemStack.getStackSize();
             int neededSpace = targetInsertingCount;
