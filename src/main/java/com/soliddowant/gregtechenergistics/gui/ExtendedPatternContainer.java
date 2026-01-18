@@ -1,5 +1,7 @@
 package com.soliddowant.gregtechenergistics.gui;
 
+import static appeng.helpers.ItemStackHelper.stackWriteToNBT;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -8,10 +10,9 @@ import com.soliddowant.gregtechenergistics.parts.ExtendedPatternTerminalPart;
 
 import appeng.api.AEApi;
 import appeng.api.definitions.IDefinitions;
-import appeng.api.util.AEPartLocation;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.security.IActionSource;
-import appeng.api.storage.data.IAEItemStack;
+import appeng.api.util.AEPartLocation;
 import appeng.container.AEBaseContainer;
 import appeng.container.ContainerOpenContext;
 import appeng.container.slot.IOptionalSlotHost;
@@ -31,14 +32,12 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
 import net.minecraftforge.items.IItemHandler;
 
-import static appeng.helpers.ItemStackHelper.stackWriteToNBT;
-
 public class ExtendedPatternContainer extends AEBaseContainer implements IContainerCraftingPacket, IOptionalSlotHost {
     protected final ExtendedPatternTerminalPart part;
 
-    protected IItemHandler crafting;  // 20 input slots (5x4)
-    protected SlotFakeCraftingMatrix[] craftingSlots;  // 20 slots
-    protected OptionalSlotFake[] outputSlots;  // 12 slots
+    protected IItemHandler crafting; // 20 input slots (5x4)
+    protected SlotFakeCraftingMatrix[] craftingSlots; // 20 slots
+    protected OptionalSlotFake[] outputSlots; // 12 slots
     protected SlotRestrictedInput patternSlotIN;
     protected SlotRestrictedInput patternSlotOUT;
 
@@ -47,8 +46,8 @@ public class ExtendedPatternContainer extends AEBaseContainer implements IContai
         this.part = part;
 
         // Initialize slot arrays
-        this.craftingSlots = new SlotFakeCraftingMatrix[20];  // 5x4 input grid
-        this.outputSlots = new OptionalSlotFake[12];  // 12 output slots
+        this.craftingSlots = new SlotFakeCraftingMatrix[20]; // 5x4 input grid
+        this.outputSlots = new OptionalSlotFake[12]; // 12 output slots
 
         final IItemHandler patternInv = this.part.getInventoryByName("pattern");
         final IItemHandler output = this.part.getInventoryByName("output");
@@ -57,8 +56,8 @@ public class ExtendedPatternContainer extends AEBaseContainer implements IContai
         // Add crafting input slots (5x4 grid)
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 5; x++) {
-                this.addSlotToContainer(this.craftingSlots[x + y * 5] =
-                    new SlotFakeCraftingMatrix(this.crafting, x + y * 5, 8 + x * 18, 25 + y * 18));
+                this.addSlotToContainer(this.craftingSlots[x + y * 5] = new SlotFakeCraftingMatrix(this.crafting,
+                        x + y * 5, 9 + x * 18, 84 + y * 18));
             }
         }
 
@@ -66,28 +65,30 @@ public class ExtendedPatternContainer extends AEBaseContainer implements IContai
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 3; x++) {
                 int index = x + y * 3;
-                this.addSlotToContainer(this.outputSlots[index] =
-                    new SlotPatternOutputs(output, this, index, 110 + x * 18, 25 + y * 18, 0, 0, 1));
+                this.addSlotToContainer(this.outputSlots[index] = new SlotPatternOutputs(output, this, index,
+                        117 + x * 18, 84 + y * 18, 0, 0, 1));
                 this.outputSlots[index].setRenderDisabled(false);
                 this.outputSlots[index].setIIcon(-1);
             }
         }
 
         // Add pattern slots (blank in, encoded out)
-        this.addSlotToContainer(this.patternSlotIN =
-            new SlotRestrictedInput(SlotRestrictedInput.PlacableItemType.BLANK_PATTERN, patternInv, 0, 8, 115, this.getInventoryPlayer()));
-        this.addSlotToContainer(this.patternSlotOUT =
-            new SlotRestrictedInput(SlotRestrictedInput.PlacableItemType.ENCODED_PATTERN, patternInv, 1, 26, 115, this.getInventoryPlayer()));
+        this.addSlotToContainer(this.patternSlotIN = new SlotRestrictedInput(
+                SlotRestrictedInput.PlacableItemType.BLANK_PATTERN, patternInv, 0, 184, 88, this.getInventoryPlayer()));
+        this.addSlotToContainer(
+                this.patternSlotOUT = new SlotRestrictedInput(SlotRestrictedInput.PlacableItemType.ENCODED_PATTERN,
+                        patternInv, 1, 184, 131, this.getInventoryPlayer()));
 
         this.patternSlotOUT.setStackLimit(1);
 
         // Bind player inventory (positioned at bottom of GUI)
-        this.bindPlayerInventory(ip, 0, 175);
+        this.bindPlayerInventory(ip, 1, 167);
     }
 
     public static ExtendedPatternContainer getServerGuiContainer(AEPartLocation side, EntityPlayer player, World world,
             int x, int y, int z) {
-        ExtendedPatternTerminalPart part = GuiProxy.getPartAtLocation(world, x, y, z, side, ExtendedPatternTerminalPart.class);
+        ExtendedPatternTerminalPart part = GuiProxy.getPartAtLocation(world, x, y, z, side,
+                ExtendedPatternTerminalPart.class);
         if (part == null)
             return null;
 
@@ -207,8 +208,8 @@ public class ExtendedPatternContainer extends AEBaseContainer implements IContai
 
         encodedValue.setTag("in", tagIn);
         encodedValue.setTag("out", tagOut);
-        encodedValue.setBoolean("crafting", false);  // Always processing mode
-        encodedValue.setBoolean("substitute", false);  // No substitution in processing
+        encodedValue.setBoolean("crafting", false); // Always processing mode
+        encodedValue.setBoolean("substitute", false); // No substitution in processing
 
         output.setTagCompound(encodedValue);
 

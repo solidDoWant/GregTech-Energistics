@@ -48,11 +48,11 @@ public class ExtendedPatternGuiContainer extends AEBaseGui {
         super.initGui();
 
         // Encode button
-        this.encodeBtn = new GuiImgButton(this.guiLeft + 50, this.guiTop + 115, Settings.ACTIONS, ActionItems.ENCODE);
+        this.encodeBtn = new GuiImgButton(this.guiLeft + 184, this.guiTop + 108, Settings.ACTIONS, ActionItems.ENCODE);
         this.buttonList.add(this.encodeBtn);
 
         // Clear button
-        this.clearBtn = new GuiImgButton(this.guiLeft + 68, this.guiTop + 115, Settings.ACTIONS, ActionItems.CLOSE);
+        this.clearBtn = new GuiImgButton(this.guiLeft + 100, this.guiTop + 83, Settings.ACTIONS, ActionItems.CLOSE);
         this.clearBtn.setHalfSize(true);
         this.buttonList.add(this.clearBtn);
     }
@@ -82,13 +82,13 @@ public class ExtendedPatternGuiContainer extends AEBaseGui {
                 8, 6, 4210752);
 
         // Draw labels
-        this.fontRenderer.drawString("Inputs (5x4)", 8, 14, 4210752);
-        this.fontRenderer.drawString("Outputs", 110, 14, 4210752);
+        this.fontRenderer.drawString("Inputs", 8, 72, 4210752);
+        this.fontRenderer.drawString("Outputs", 110, 72, 4210752);
 
         // Draw player inventory label
         this.fontRenderer.drawString(
                 I18n.format("container.inventory"),
-                8, this.ySize - 94, 4210752);
+                8, 157, 4210752);
     }
 
     @Override
