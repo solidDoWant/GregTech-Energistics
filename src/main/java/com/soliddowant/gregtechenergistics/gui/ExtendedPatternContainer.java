@@ -12,8 +12,9 @@ import appeng.api.AEApi;
 import appeng.api.definitions.IDefinitions;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.security.IActionSource;
+import appeng.api.storage.channels.IItemStorageChannel;
 import appeng.api.util.AEPartLocation;
-import appeng.container.AEBaseContainer;
+import appeng.container.implementations.ContainerMEMonitorable;
 import appeng.container.ContainerOpenContext;
 import appeng.container.slot.IOptionalSlotHost;
 import appeng.container.slot.OptionalSlotFake;
@@ -32,7 +33,7 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
 import net.minecraftforge.items.IItemHandler;
 
-public class ExtendedPatternContainer extends AEBaseContainer implements IContainerCraftingPacket, IOptionalSlotHost {
+public class ExtendedPatternContainer extends ContainerMEMonitorable implements IContainerCraftingPacket, IOptionalSlotHost {
     protected final ExtendedPatternTerminalPart part;
 
     protected IItemHandler crafting; // 20 input slots (5x4)
@@ -42,7 +43,7 @@ public class ExtendedPatternContainer extends AEBaseContainer implements IContai
     protected SlotRestrictedInput patternSlotOUT;
 
     public ExtendedPatternContainer(final InventoryPlayer ip, final ExtendedPatternTerminalPart part) {
-        super(ip, part);
+        super(ip, part);  // ContainerMEMonitorable constructor - part is now ITerminalHost
         this.part = part;
 
         // Initialize slot arrays
@@ -137,10 +138,8 @@ public class ExtendedPatternContainer extends AEBaseContainer implements IContai
         return new PlayerSource(this.getPlayerInv().player, this.part);
     }
 
-    @Override
-    public ItemStack[] getViewCells() {
-        return new ItemStack[0];
-    }
+    // getViewCells() is inherited from ContainerMEMonitorable parent class
+    // It automatically reads from the view cell slots that were created in the parent constructor
 
     public boolean isSlotEnabled(int idx) {
         return true;

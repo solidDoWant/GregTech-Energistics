@@ -11,7 +11,7 @@ import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.api.parts.IPartModel;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.parts.PartModel;
-import appeng.parts.reporting.AbstractPartDisplay;
+import appeng.parts.reporting.AbstractPartTerminal;
 import appeng.tile.inventory.AppEngInternalInventory;
 import appeng.util.inv.IAEAppEngInventory;
 import appeng.util.inv.InvOperation;
@@ -24,7 +24,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.IItemHandler;
 
-public class ExtendedPatternTerminalPart extends AbstractPartDisplay implements IAEAppEngInventory {
+public class ExtendedPatternTerminalPart extends AbstractPartTerminal implements IAEAppEngInventory {
     public static ResourceLocation[] MODELS = new ResourceLocation[] {
             new ResourceLocation(Tags.MODID, "part/extendedpattern.terminal/on"), // 0
             new ResourceLocation(Tags.MODID, "part/extendedpattern.terminal/off"), // 1
@@ -130,6 +130,8 @@ public class ExtendedPatternTerminalPart extends AbstractPartDisplay implements 
 
         this.getHost().markForSave();
     }
+
+    // getInventory() is already provided by AbstractPartTerminal parent class
 
     @Override
     public IItemHandler getInventoryByName(final String name) {
