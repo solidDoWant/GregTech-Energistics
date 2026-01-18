@@ -43,7 +43,7 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable implements 
     protected SlotRestrictedInput patternSlotOUT;
 
     public ExtendedPatternContainer(final InventoryPlayer ip, final ExtendedPatternTerminalPart part) {
-        super(ip, part);  // ContainerMEMonitorable constructor - part is now ITerminalHost
+        super(ip, part, false);  // Pass false to prevent parent from binding player inventory
         this.part = part;
 
         // Initialize slot arrays

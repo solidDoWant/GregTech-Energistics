@@ -114,16 +114,16 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
     }
 
     @Override
-    public void drawBG(final int offsetX, final int offsetY, final int mouseX, final int mouseY) {
-        // Draw the inherited terminal background (item grid, scrollbar, etc.)
-        super.drawBG(offsetX, offsetY, mouseX, mouseY);
+    protected String getBackground() {
+        // Return our custom texture that includes both terminal and pattern areas
+        return "guis/extendedpattern.png";
+    }
 
-        // Calculate where the reserved space (pattern area) starts
-        int reservedStart = this.ySize - getReservedSpaceViaReflection();
-
-        // Draw the pattern encoding area background
-        this.bindTexture(BACKGROUND_TEXTURE);
-        this.drawTexturedModalRect(offsetX, offsetY + reservedStart, 0, reservedStart, this.xSize, getReservedSpaceViaReflection());
+    @Override
+    public void bindTexture(final String file) {
+        // Use our mod ID instead of AE2's mod ID for texture loading
+        final ResourceLocation loc = new ResourceLocation(Tags.MODID, "textures/" + file);
+        this.mc.getTextureManager().bindTexture(loc);
     }
 
     protected void bindTexture(final ResourceLocation loc) {
