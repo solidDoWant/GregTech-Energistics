@@ -28,8 +28,16 @@ public class AE2PatternSlotWidget extends CallbackSlotWidget {
 	}
 
 	protected void setData(@Nonnull ItemStack slotStack) {
-		//noinspection ConstantConditions
-		craftingDetails = getPattern().getPatternForItem(slotStack, world);
+		ItemEncodedPattern pattern = getPattern();
+		if (pattern == null) {
+			clearData();
+			return;
+		}
+		craftingDetails = pattern.getPatternForItem(slotStack, world);
+		if (craftingDetails == null) {
+			clearData();
+			return;
+		}
 		inputItems = craftingDetails.getCondensedInputs();
 		outputItems = craftingDetails.getOutputs();
 	}
