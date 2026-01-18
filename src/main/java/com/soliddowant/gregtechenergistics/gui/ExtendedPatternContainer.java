@@ -216,18 +216,20 @@ public class ExtendedPatternContainer extends AEBaseContainer implements IContai
     }
 
     protected ItemStack[] getInputs() {
-        final ItemStack[] input = new ItemStack[craftingSlots.length];
+        // For processing mode, only return non-empty inputs (compacted)
+        final java.util.List<ItemStack> inputList = new java.util.ArrayList<>();
         boolean hasValue = false;
 
         for (int x = 0; x < this.craftingSlots.length; x++) {
-            input[x] = this.craftingSlots[x].getStack();
-            if (!input[x].isEmpty()) {
+            ItemStack stack = this.craftingSlots[x].getStack();
+            if (!stack.isEmpty()) {
+                inputList.add(stack);
                 hasValue = true;
             }
         }
 
         if (hasValue) {
-            return input;
+            return inputList.toArray(new ItemStack[0]);
         }
 
         return null;

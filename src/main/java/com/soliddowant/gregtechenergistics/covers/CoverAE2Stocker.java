@@ -1086,14 +1086,17 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
         IItemList<IAEItemStack> storedItems = attachedAE2ItemInventory.getStorageList();
         IItemList<IAEFluidStack> storedFluids = attachedAE2FluidInventory.getStorageList();
 
-        for (IAEItemStack outputItem : patternOutputItems)
-            if (getStorageCount(outputItem, storedItems) < stockCount)
-                return false;
+        if (patternOutputItems != null) {
+            for (IAEItemStack outputItem : patternOutputItems)
+                if (getStorageCount(outputItem, storedItems) < stockCount)
+                    return false;
+        }
 
-        if (shouldUseFluids())
+        if (shouldUseFluids() && patternOutputFluids != null) {
             for (IAEFluidStack outputFluid : patternOutputFluids)
                 if (getStorageCount(outputFluid, storedFluids) < stockCount)
                     return false;
+        }
 
         return true;
     }
@@ -1114,12 +1117,15 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
 
         LinkedList<Long> outputAvailableCounts = new LinkedList<>();
 
-        for (IAEItemStack outputItem : patternOutputItems)
-            outputAvailableCounts.add(getStorageCount(outputItem, storedItems));
+        if (patternOutputItems != null) {
+            for (IAEItemStack outputItem : patternOutputItems)
+                outputAvailableCounts.add(getStorageCount(outputItem, storedItems));
+        }
 
-        if (shouldUseFluids())
+        if (shouldUseFluids() && patternOutputFluids != null) {
             for (IAEFluidStack outputFluid : patternOutputFluids)
                 outputAvailableCounts.add(getStorageCount(outputFluid, storedFluids));
+        }
 
         return outputAvailableCounts;
     }
@@ -1259,23 +1265,27 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     }
 
     protected boolean isMissingFluidOutputSpace() {
-        for (IAEFluidStack outputFluid : patternOutputFluids) {
-            IAEFluidStack remainingFluid = attachedAE2FluidInventory.injectItems(outputFluid, Actionable.SIMULATE,
-                    machineActionSource);
+        if (patternOutputFluids != null) {
+            for (IAEFluidStack outputFluid : patternOutputFluids) {
+                IAEFluidStack remainingFluid = attachedAE2FluidInventory.injectItems(outputFluid, Actionable.SIMULATE,
+                        machineActionSource);
 
-            if (remainingFluid != null && remainingFluid.getStackSize() > 0)
-                return true;
+                if (remainingFluid != null && remainingFluid.getStackSize() > 0)
+                    return true;
+            }
         }
         return false;
     }
 
     protected boolean isMissingItemOutputSpace() {
-        for (IAEItemStack outputItem : patternOutputItems) {
-            IAEItemStack remainingItems = attachedAE2ItemInventory.injectItems(outputItem, Actionable.SIMULATE,
-                    machineActionSource);
+        if (patternOutputItems != null) {
+            for (IAEItemStack outputItem : patternOutputItems) {
+                IAEItemStack remainingItems = attachedAE2ItemInventory.injectItems(outputItem, Actionable.SIMULATE,
+                        machineActionSource);
 
-            if (remainingItems != null && remainingItems.getStackSize() > 0)
-                return true;
+                if (remainingItems != null && remainingItems.getStackSize() > 0)
+                    return true;
+            }
         }
 
         return false;

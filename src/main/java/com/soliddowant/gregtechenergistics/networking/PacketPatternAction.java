@@ -44,7 +44,7 @@ public class PacketPatternAction implements IMessage {
                     ExtendedPatternContainer patternContainer = (ExtendedPatternContainer) container;
                     switch (message.action) {
                         case ENCODE:
-                            patternContainer.encodeAndMoveToInventory();
+                            patternContainer.encode();
                             break;
                         case CLEAR:
                             patternContainer.clear();
