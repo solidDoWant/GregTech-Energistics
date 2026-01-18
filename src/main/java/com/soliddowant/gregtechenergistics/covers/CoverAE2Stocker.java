@@ -1083,6 +1083,11 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     /// Returns true if there are at least stockCount items in the AE2 grid for each
     /// output.
     protected boolean isFullyStocked() {
+        // If we don't have a valid pattern with outputs, we can't be "fully stocked"
+        if (patternOutputItems == null && patternOutputFluids == null) {
+            return false;
+        }
+
         IItemList<IAEItemStack> storedItems = attachedAE2ItemInventory.getStorageList();
         IItemList<IAEFluidStack> storedFluids = attachedAE2FluidInventory.getStorageList();
 

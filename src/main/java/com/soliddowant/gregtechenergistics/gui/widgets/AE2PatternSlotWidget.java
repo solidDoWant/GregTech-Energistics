@@ -35,6 +35,8 @@ public class AE2PatternSlotWidget extends CallbackSlotWidget {
 		}
 		craftingDetails = pattern.getPatternForItem(slotStack, world);
 		if (craftingDetails == null) {
+			// AE2 couldn't parse the pattern - log a warning for debugging
+			appeng.core.AELog.warn("AE2PatternSlotWidget: Failed to parse pattern. Pattern may have too many inputs for AE2 to handle.");
 			clearData();
 			return;
 		}
