@@ -1,15 +1,20 @@
 package com.soliddowant.gregtechenergistics.gui.widgets;
 
+import appeng.api.AEApi;
 import appeng.api.networking.crafting.ICraftingPatternDetails;
+import appeng.api.storage.channels.IItemStorageChannel;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.items.misc.ItemEncodedPattern;
 import com.soliddowant.gregtechenergistics.render.Textures;
 import gregtech.api.gui.widgets.SlotWidget;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 
 public class AE2PatternSlotWidget extends CallbackSlotWidget {
 	protected ICraftingPatternDetails craftingDetails;
@@ -33,13 +38,27 @@ public class AE2PatternSlotWidget extends CallbackSlotWidget {
 			clearData();
 			return;
 		}
+
+		// Try AE2's parser first
 		craftingDetails = pattern.getPatternForItem(slotStack, world);
+
 		if (craftingDetails == null) {
-			// AE2 couldn't parse the pattern - log a warning for debugging
-			appeng.core.AELog.warn("AE2PatternSlotWidget: Failed to parse pattern. Pattern may have too many inputs for AE2 to handle.");
+			// AE2 couldn't parse - try reading NBT directly for extended patterns
+			NBTTagCompound tag = slotStack.getTagCompound();
+			if (tag != null && tag.hasKey("in") && tag.hasKey("out")) {
+				inputItems = parseItemsFromNBT(tag.getTagList("in", 10));
+				outputItems = parseItemsFromNBT(tag.getTagList("out", 10));
+
+				// Only accept if we successfully parsed both inputs and outputs
+				if (inputItems != null && outputItems != null) {
+					return;
+				}
+			}
 			clearData();
 			return;
 		}
+
+		// AE2 parsed successfully - use its data
 		inputItems = craftingDetails.getCondensedInputs();
 		outputItems = craftingDetails.getOutputs();
 	}
@@ -78,5 +97,33 @@ public class AE2PatternSlotWidget extends CallbackSlotWidget {
 	@Nullable
 	public IAEItemStack[] getOutputItems() {
 		return outputItems;
+	}
+
+	/**
+	 * Parse IAEItemStack array from NBT tag list.
+	 * Used for extended patterns that AE2 cannot parse natively.
+	 */
+	@Nullable
+	protected IAEItemStack[] parseItemsFromNBT(@Nonnull NBTTagList tagList) {
+		if (tagList.tagCount() == 0) {
+			return new IAEItemStack[0];
+		}
+
+		ArrayList<IAEItemStack> items = new ArrayList<>();
+		IItemStorageChannel itemChannel = AEApi.instance().storage().getStorageChannel(IItemStorageChannel.class);
+
+		for (int i = 0; i < tagList.tagCount(); i++) {
+			NBTTagCompound itemTag = tagList.getCompoundTagAt(i);
+			ItemStack stack = new ItemStack(itemTag);
+
+			if (!stack.isEmpty()) {
+				IAEItemStack aeStack = itemChannel.createStack(stack);
+				if (aeStack != null) {
+					items.add(aeStack);
+				}
+			}
+		}
+
+		return items.isEmpty() ? null : items.toArray(new IAEItemStack[0]);
 	}
 }

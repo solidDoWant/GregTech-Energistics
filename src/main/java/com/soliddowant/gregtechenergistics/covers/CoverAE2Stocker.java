@@ -1149,30 +1149,39 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     /// isn't a way to tell
     /// if the machine is still running from a cover.
     protected boolean areAllInputsAvailable() {
-        if (!upgradeSlotWidget.hasStack()) {
-            for (IAEItemStack inputItem : getRemainingInputItems())
-                if (!isItemAvailableForExtraction(inputItem))
+        // If we don't have a valid pattern with inputs, we can't check availability
+        List<IAEItemStack> remainingItems = getRemainingInputItems();
+        List<IAEFluidStack> remainingFluids = getRemainingInputFluids();
+
+        if (remainingItems == null && remainingFluids == null)
+            return false;
+
+        if (remainingItems != null) {
+            if (!upgradeSlotWidget.hasStack()) {
+                for (IAEItemStack inputItem : remainingItems)
+                    if (!isItemAvailableForExtraction(inputItem))
+                        return false;
+            } else {
+                missingInputItems = new LinkedList<>();
+                for (IAEItemStack inputItem : remainingItems) {
+                    long availableCount = getItemAvailableCount(inputItem);
+                    long requiredCount = inputItem.getStackSize();
+
+                    if (availableCount >= requiredCount)
+                        continue;
+
+                    IAEItemStack missingItemStack = inputItem.copy();
+                    missingItemStack.setStackSize(requiredCount - availableCount);
+                    missingInputItems.add(missingItemStack);
+                }
+
+                if (!missingInputItems.isEmpty())
                     return false;
-        } else {
-            missingInputItems = new LinkedList<>();
-            for (IAEItemStack inputItem : getRemainingInputItems()) {
-                long availableCount = getItemAvailableCount(inputItem);
-                long requiredCount = inputItem.getStackSize();
-
-                if (availableCount >= requiredCount)
-                    continue;
-
-                IAEItemStack missingItemStack = inputItem.copy();
-                missingItemStack.setStackSize(requiredCount - availableCount);
-                missingInputItems.add(missingItemStack);
             }
-
-            if (!missingInputItems.isEmpty())
-                return false;
         }
 
-        if (shouldUseFluids())
-            for (IAEFluidStack inputFluid : getRemainingInputFluids())
+        if (shouldUseFluids() && remainingFluids != null)
+            for (IAEFluidStack inputFluid : remainingFluids)
                 if (!isFluidAvailableForExtraction(inputFluid))
                     return false;
 
