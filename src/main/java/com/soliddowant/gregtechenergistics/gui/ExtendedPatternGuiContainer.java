@@ -20,21 +20,23 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 
 public class ExtendedPatternGuiContainer extends AEBaseGui {
-    private static final ResourceLocation BACKGROUND_TEXTURE =
-        new ResourceLocation(Tags.MODID, "textures/guis/extendedpattern.png");
+    private static final ResourceLocation BACKGROUND_TEXTURE = new ResourceLocation(Tags.MODID,
+            "textures/guis/extendedpattern.png");
 
     private GuiImgButton encodeBtn;
     private GuiImgButton clearBtn;
 
     public ExtendedPatternGuiContainer(final InventoryPlayer inventoryPlayer, final ExtendedPatternTerminalPart part) {
         super(new ExtendedPatternContainer(inventoryPlayer, part));
-        this.xSize = 195;
-        this.ySize = 257;  // Increased height for 4 rows of inputs + larger spacing
+        this.xSize = 247;
+        this.ySize = 249; // Increased height for 4 rows of inputs + larger spacing
     }
 
-    public static ExtendedPatternGuiContainer getClientGuiContainer(AEPartLocation side, EntityPlayer player, World world,
+    public static ExtendedPatternGuiContainer getClientGuiContainer(AEPartLocation side, EntityPlayer player,
+            World world,
             int x, int y, int z) {
-        ExtendedPatternTerminalPart part = GuiProxy.getPartAtLocation(world, x, y, z, side, ExtendedPatternTerminalPart.class);
+        ExtendedPatternTerminalPart part = GuiProxy.getPartAtLocation(world, x, y, z, side,
+                ExtendedPatternTerminalPart.class);
         if (part == null)
             return null;
 
@@ -62,13 +64,13 @@ public class ExtendedPatternGuiContainer extends AEBaseGui {
         if (this.encodeBtn == btn) {
             // Encode the pattern
             NetworkHandler.ServerHandlerChannel.sendToServer(
-                new PacketPatternAction(PacketPatternAction.Action.ENCODE));
+                    new PacketPatternAction(PacketPatternAction.Action.ENCODE));
         }
 
         if (this.clearBtn == btn) {
             // Clear all slots
             NetworkHandler.ServerHandlerChannel.sendToServer(
-                new PacketPatternAction(PacketPatternAction.Action.CLEAR));
+                    new PacketPatternAction(PacketPatternAction.Action.CLEAR));
         }
     }
 
@@ -76,8 +78,8 @@ public class ExtendedPatternGuiContainer extends AEBaseGui {
     public void drawFG(final int offsetX, final int offsetY, final int mouseX, final int mouseY) {
         // Draw title
         this.fontRenderer.drawString(
-            I18n.format("gui.gregtechenergistics.extendedpattern.title"),
-            8, 6, 4210752);
+                I18n.format("gui.gregtechenergistics.extendedpattern.title"),
+                8, 6, 4210752);
 
         // Draw labels
         this.fontRenderer.drawString("Inputs (5x4)", 8, 14, 4210752);
@@ -85,8 +87,8 @@ public class ExtendedPatternGuiContainer extends AEBaseGui {
 
         // Draw player inventory label
         this.fontRenderer.drawString(
-            I18n.format("container.inventory"),
-            8, this.ySize - 94, 4210752);
+                I18n.format("container.inventory"),
+                8, this.ySize - 94, 4210752);
     }
 
     @Override
