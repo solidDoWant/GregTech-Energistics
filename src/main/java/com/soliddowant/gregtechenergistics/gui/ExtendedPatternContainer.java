@@ -168,6 +168,12 @@ public class ExtendedPatternContainer extends AEBaseContainer implements IContai
             return;
         }
 
+        // AE2's pattern rendering may have issues with >9 inputs due to 3x3 grid assumptions
+        // Log a warning but allow encoding anyway since the pattern data itself is valid
+        if (in.length > 9) {
+            appeng.core.AELog.warn("Extended Pattern: Encoding pattern with %d inputs. AE2's pattern preview may not display correctly for patterns with >9 inputs.", in.length);
+        }
+
         // first check the output slots, should either be null, or a pattern
         if (!output.isEmpty() && !this.isPattern(output)) {
             return;
@@ -211,6 +217,22 @@ public class ExtendedPatternContainer extends AEBaseContainer implements IContai
         encodedValue.setBoolean("substitute", false);  // No substitution in processing
 
         output.setTagCompound(encodedValue);
+
+        // Verify the pattern can be parsed by AE2
+        if (output.getItem() instanceof appeng.api.implementations.ICraftingPatternItem) {
+            appeng.api.implementations.ICraftingPatternItem patternItem =
+                (appeng.api.implementations.ICraftingPatternItem) output.getItem();
+            appeng.api.networking.crafting.ICraftingPatternDetails details =
+                patternItem.getPatternForItem(output, this.getPlayerInv().player.world);
+
+            if (details == null) {
+                appeng.core.AELog.error("Extended Pattern: Failed to create valid pattern - AE2 could not parse the encoded NBT");
+                return;
+            } else {
+                appeng.core.AELog.info("Extended Pattern: Successfully encoded pattern with %d inputs and %d outputs",
+                    details.getInputs().length, details.getOutputs().length);
+            }
+        }
 
         patternSlotOUT.putStack(output);
     }
