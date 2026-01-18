@@ -3,6 +3,8 @@ package com.soliddowant.gregtechenergistics.gui;
 import java.io.IOException;
 
 import com.soliddowant.gregtechenergistics.Tags;
+import com.soliddowant.gregtechenergistics.networking.NetworkHandler;
+import com.soliddowant.gregtechenergistics.networking.PacketPatternAction;
 import com.soliddowant.gregtechenergistics.parts.ExtendedPatternTerminalPart;
 
 import appeng.api.config.ActionItems;
@@ -10,9 +12,6 @@ import appeng.api.config.Settings;
 import appeng.api.util.AEPartLocation;
 import appeng.client.gui.AEBaseGui;
 import appeng.client.gui.widgets.GuiImgButton;
-import appeng.core.AELog;
-import appeng.core.sync.network.NetworkHandler;
-import appeng.core.sync.packets.PacketValueConfig;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.EntityPlayer;
@@ -30,7 +29,7 @@ public class ExtendedPatternGuiContainer extends AEBaseGui {
     public ExtendedPatternGuiContainer(final InventoryPlayer inventoryPlayer, final ExtendedPatternTerminalPart part) {
         super(new ExtendedPatternContainer(inventoryPlayer, part));
         this.xSize = 195;
-        this.ySize = 240;
+        this.ySize = 257;  // Increased height for 4 rows of inputs + larger spacing
     }
 
     public static ExtendedPatternGuiContainer getClientGuiContainer(AEPartLocation side, EntityPlayer player, World world,
@@ -47,11 +46,11 @@ public class ExtendedPatternGuiContainer extends AEBaseGui {
         super.initGui();
 
         // Encode button
-        this.encodeBtn = new GuiImgButton(this.guiLeft + 50, this.guiTop + 120, Settings.ACTIONS, ActionItems.ENCODE);
+        this.encodeBtn = new GuiImgButton(this.guiLeft + 50, this.guiTop + 115, Settings.ACTIONS, ActionItems.ENCODE);
         this.buttonList.add(this.encodeBtn);
 
         // Clear button
-        this.clearBtn = new GuiImgButton(this.guiLeft + 68, this.guiTop + 120, Settings.ACTIONS, ActionItems.CLOSE);
+        this.clearBtn = new GuiImgButton(this.guiLeft + 68, this.guiTop + 115, Settings.ACTIONS, ActionItems.CLOSE);
         this.clearBtn.setHalfSize(true);
         this.buttonList.add(this.clearBtn);
     }
@@ -62,14 +61,14 @@ public class ExtendedPatternGuiContainer extends AEBaseGui {
 
         if (this.encodeBtn == btn) {
             // Encode the pattern
-            NetworkHandler.instance().sendToServer(
-                new PacketValueConfig("PatternTerminal.Encode", "1"));
+            NetworkHandler.ServerHandlerChannel.sendToServer(
+                new PacketPatternAction(PacketPatternAction.Action.ENCODE));
         }
 
         if (this.clearBtn == btn) {
             // Clear all slots
-            NetworkHandler.instance().sendToServer(
-                new PacketValueConfig("PatternTerminal.Clear", "1"));
+            NetworkHandler.ServerHandlerChannel.sendToServer(
+                new PacketPatternAction(PacketPatternAction.Action.CLEAR));
         }
     }
 
@@ -81,8 +80,8 @@ public class ExtendedPatternGuiContainer extends AEBaseGui {
             8, 6, 4210752);
 
         // Draw labels
-        this.fontRenderer.drawString("Inputs", 8, 14, 4210752);
-        this.fontRenderer.drawString("Outputs", 98, 14, 4210752);
+        this.fontRenderer.drawString("Inputs (5x4)", 8, 14, 4210752);
+        this.fontRenderer.drawString("Outputs", 110, 14, 4210752);
 
         // Draw player inventory label
         this.fontRenderer.drawString(

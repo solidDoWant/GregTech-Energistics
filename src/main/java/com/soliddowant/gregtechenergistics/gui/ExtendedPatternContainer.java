@@ -36,8 +36,8 @@ import static appeng.helpers.ItemStackHelper.stackWriteToNBT;
 public class ExtendedPatternContainer extends AEBaseContainer implements IContainerCraftingPacket, IOptionalSlotHost {
     protected final ExtendedPatternTerminalPart part;
 
-    protected IItemHandler crafting;  // 9 input slots (3x3)
-    protected SlotFakeCraftingMatrix[] craftingSlots;  // 9 slots
+    protected IItemHandler crafting;  // 20 input slots (5x4)
+    protected SlotFakeCraftingMatrix[] craftingSlots;  // 20 slots
     protected OptionalSlotFake[] outputSlots;  // 12 slots
     protected SlotRestrictedInput patternSlotIN;
     protected SlotRestrictedInput patternSlotOUT;
@@ -47,18 +47,18 @@ public class ExtendedPatternContainer extends AEBaseContainer implements IContai
         this.part = part;
 
         // Initialize slot arrays
-        this.craftingSlots = new SlotFakeCraftingMatrix[9];  // 3x3 input grid
+        this.craftingSlots = new SlotFakeCraftingMatrix[20];  // 5x4 input grid
         this.outputSlots = new OptionalSlotFake[12];  // 12 output slots
 
         final IItemHandler patternInv = this.part.getInventoryByName("pattern");
         final IItemHandler output = this.part.getInventoryByName("output");
         this.crafting = this.part.getInventoryByName("crafting");
 
-        // Add crafting input slots (3x3 grid)
-        for (int y = 0; y < 3; y++) {
-            for (int x = 0; x < 3; x++) {
-                this.addSlotToContainer(this.craftingSlots[x + y * 3] =
-                    new SlotFakeCraftingMatrix(this.crafting, x + y * 3, 8 + x * 18, 25 + y * 18));
+        // Add crafting input slots (5x4 grid)
+        for (int y = 0; y < 4; y++) {
+            for (int x = 0; x < 5; x++) {
+                this.addSlotToContainer(this.craftingSlots[x + y * 5] =
+                    new SlotFakeCraftingMatrix(this.crafting, x + y * 5, 8 + x * 18, 25 + y * 18));
             }
         }
 
@@ -67,7 +67,7 @@ public class ExtendedPatternContainer extends AEBaseContainer implements IContai
             for (int x = 0; x < 3; x++) {
                 int index = x + y * 3;
                 this.addSlotToContainer(this.outputSlots[index] =
-                    new SlotPatternOutputs(output, this, index, 98 + x * 18, 25 + y * 18, 0, 0, 1));
+                    new SlotPatternOutputs(output, this, index, 110 + x * 18, 25 + y * 18, 0, 0, 1));
                 this.outputSlots[index].setRenderDisabled(false);
                 this.outputSlots[index].setIIcon(-1);
             }
@@ -75,14 +75,14 @@ public class ExtendedPatternContainer extends AEBaseContainer implements IContai
 
         // Add pattern slots (blank in, encoded out)
         this.addSlotToContainer(this.patternSlotIN =
-            new SlotRestrictedInput(SlotRestrictedInput.PlacableItemType.BLANK_PATTERN, patternInv, 0, 8, 120, this.getInventoryPlayer()));
+            new SlotRestrictedInput(SlotRestrictedInput.PlacableItemType.BLANK_PATTERN, patternInv, 0, 8, 115, this.getInventoryPlayer()));
         this.addSlotToContainer(this.patternSlotOUT =
-            new SlotRestrictedInput(SlotRestrictedInput.PlacableItemType.ENCODED_PATTERN, patternInv, 1, 26, 120, this.getInventoryPlayer()));
+            new SlotRestrictedInput(SlotRestrictedInput.PlacableItemType.ENCODED_PATTERN, patternInv, 1, 26, 115, this.getInventoryPlayer()));
 
         this.patternSlotOUT.setStackLimit(1);
 
         // Bind player inventory (positioned at bottom of GUI)
-        this.bindPlayerInventory(ip, 0, 158);
+        this.bindPlayerInventory(ip, 0, 175);
     }
 
     public static ExtendedPatternContainer getServerGuiContainer(AEPartLocation side, EntityPlayer player, World world,

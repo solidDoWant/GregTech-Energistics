@@ -48,9 +48,9 @@ public class ExtendedRecipeTransferHandler implements IRecipeTransferHandler<Ext
         // Extended pattern terminal only supports processing mode
         boolean isCraftingRecipe = false;
 
-        ItemStack[] inputItems = new ItemStack[9];   // 3x3 grid
+        ItemStack[] inputItems = new ItemStack[20];  // 5x4 grid
         ItemStack[] outputItems = new ItemStack[12]; // 12 output slots
-        FluidStack[] inputFluids = new FluidStack[9];
+        FluidStack[] inputFluids = new FluidStack[20];
         FluidStack[] outputFluids = new FluidStack[12];
 
         // Fill sequentially for processing mode

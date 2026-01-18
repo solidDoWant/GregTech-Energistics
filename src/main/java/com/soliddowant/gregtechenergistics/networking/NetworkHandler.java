@@ -22,5 +22,6 @@ public class NetworkHandler {
 
 		ServerHandlerChannel = NetworkRegistry.INSTANCE.newSimpleChannel(CHANNEL_BASE_NAME + "_server_handler");
 		ServerHandlerChannel.registerMessage(JEIPacket.JEIHandler.class, JEIPacket.class, 0, Side.SERVER);
+		ServerHandlerChannel.registerMessage(PacketPatternAction.Handler.class, PacketPatternAction.class, 1, Side.SERVER);
 	}
 }

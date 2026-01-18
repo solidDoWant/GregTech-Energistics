@@ -36,13 +36,13 @@ public class ExtendedPatternTerminalPart extends AbstractPartDisplay implements 
     public static final IPartModel MODELS_HAS_CHANNEL = new PartModel(MODEL_BASE, MODEL_ON, MODEL_STATUS_HAS_CHANNEL);
 
     // Pattern encoding inventories
-    protected AppEngInternalInventory crafting;  // 9 input slots (3x3)
+    protected AppEngInternalInventory crafting;  // 20 input slots (5x4)
     protected AppEngInternalInventory output;    // 12 output slots (4x3)
     protected AppEngInternalInventory pattern;   // 2 slots (blank in, encoded out)
 
     public ExtendedPatternTerminalPart(final ItemStack is) {
         super(is);
-        this.crafting = new AppEngInternalInventory(this, 9);   // 3x3 grid
+        this.crafting = new AppEngInternalInventory(this, 20);  // 5x4 grid
         this.output = new AppEngInternalInventory(this, 12);    // 12 outputs
         this.pattern = new AppEngInternalInventory(this, 2);    // blank/encoded patterns
     }
