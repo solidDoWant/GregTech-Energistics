@@ -21,6 +21,7 @@ cover.stocker.status=Status: %s
 cover.stocker.status.running=Running
 cover.stocker.status.other_disabled=Disabled by other cover
 cover.stocker.status.pattern_not_inserted=Missing pattern
+cover.stocker.status.invalid_pattern=Invalid pattern
 cover.stocker.status.grid_disconnected=Connection problem
 cover.stocker.status.fully_stocked=Fully stocked
 cover.stocker.status.missing_inputs=Missing inputs

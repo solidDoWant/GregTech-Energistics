@@ -10,6 +10,7 @@ public enum CoverStatus implements IStringSerializable {
     RUNNING("cover.stocker.status.running"),
     OTHER_DISABLED("cover.stocker.status.other_disabled"),
     PATTERN_NOT_INSERTED("cover.stocker.status.pattern_not_inserted"),
+    INVALID_PATTERN("cover.stocker.status.invalid_pattern"),
     GRID_DISCONNECTED("cover.stocker.status.grid_disconnected"),
     FULLY_STOCKED("cover.stocker.status.fully_stocked"),
     MISSING_INPUTS("cover.stocker.status.missing_inputs"),

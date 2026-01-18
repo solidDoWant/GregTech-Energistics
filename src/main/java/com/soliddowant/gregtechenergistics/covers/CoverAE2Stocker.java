@@ -126,6 +126,7 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     protected boolean shouldInsert = true;
     protected boolean isGridConnected = false;
     protected boolean useFluids = false;
+    protected boolean hasValidPattern = false;
     protected List<IAEFluidStack> patternInputFluids;
     protected List<IAEItemStack> patternInputItems;
     protected List<IAEFluidStack> remainingInputFluids;
@@ -409,6 +410,11 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
         updatePatternInputFluids();
         updatePatternOutputItems();
         updatePatternOutputFluids();
+
+        // Validate pattern once when it changes instead of every tick
+        // For a pattern to be valid, it must have at least one input and one output
+        hasValidPattern = (patternInputItems != null || patternInputFluids != null) &&
+                (patternOutputItems != null || patternOutputFluids != null);
     }
 
     protected void updatePatternInputFluids() {
@@ -529,6 +535,8 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
             return CoverStatus.OTHER_DISABLED;
         if (!isPatternAvailable())
             return CoverStatus.PATTERN_NOT_INSERTED;
+        if (!hasValidPattern)
+            return CoverStatus.INVALID_PATTERN;
         if (!isGridConnected())
             return CoverStatus.GRID_DISCONNECTED;
         if (isFullyStocked())
@@ -1083,11 +1091,6 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     /// Returns true if there are at least stockCount items in the AE2 grid for each
     /// output.
     protected boolean isFullyStocked() {
-        // If we don't have a valid pattern with outputs, we can't be "fully stocked"
-        if (patternOutputItems == null && patternOutputFluids == null) {
-            return false;
-        }
-
         IItemList<IAEItemStack> storedItems = attachedAE2ItemInventory.getStorageList();
         IItemList<IAEFluidStack> storedFluids = attachedAE2FluidInventory.getStorageList();
 
@@ -1149,41 +1152,60 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     /// isn't a way to tell
     /// if the machine is still running from a cover.
     protected boolean areAllInputsAvailable() {
-        // If we don't have a valid pattern with inputs, we can't check availability
+        return areAllInputItemsAvailable() && areAllInputFluidsAvailable();
+    }
+
+    protected boolean areAllInputItemsAvailable() {
         List<IAEItemStack> remainingItems = getRemainingInputItems();
-        List<IAEFluidStack> remainingFluids = getRemainingInputFluids();
 
-        if (remainingItems == null && remainingFluids == null)
-            return false;
+        // If there are no remaining items, all items are available
+        if (remainingItems == null)
+            return true;
 
-        if (remainingItems != null) {
-            if (!upgradeSlotWidget.hasStack()) {
-                for (IAEItemStack inputItem : remainingItems)
-                    if (!isItemAvailableForExtraction(inputItem))
-                        return false;
-            } else {
-                missingInputItems = new LinkedList<>();
-                for (IAEItemStack inputItem : remainingItems) {
-                    long availableCount = getItemAvailableCount(inputItem);
-                    long requiredCount = inputItem.getStackSize();
-
-                    if (availableCount >= requiredCount)
-                        continue;
-
-                    IAEItemStack missingItemStack = inputItem.copy();
-                    missingItemStack.setStackSize(requiredCount - availableCount);
-                    missingInputItems.add(missingItemStack);
-                }
-
-                if (!missingInputItems.isEmpty())
+        // If crafting items is not supported, just check availability
+        // without tracking missing items
+        if (!upgradeSlotWidget.hasStack())
+            for (IAEItemStack inputItem : remainingItems)
+                if (!isItemAvailableForExtraction(inputItem))
                     return false;
-            }
+
+        // Crafting items is supported, track missing items if any
+        // are not available
+        missingInputItems = new LinkedList<>();
+        for (IAEItemStack inputItem : remainingItems) {
+            long availableCount = getItemAvailableCount(inputItem);
+            long requiredCount = inputItem.getStackSize();
+
+            if (availableCount >= requiredCount)
+                continue;
+
+            IAEItemStack missingItemStack = inputItem.copy();
+            missingItemStack.setStackSize(requiredCount - availableCount);
+            missingInputItems.add(missingItemStack);
         }
 
-        if (shouldUseFluids() && remainingFluids != null)
-            for (IAEFluidStack inputFluid : remainingFluids)
-                if (!isFluidAvailableForExtraction(inputFluid))
-                    return false;
+        if (!missingInputItems.isEmpty())
+            return false;
+
+        return true;
+    }
+
+    protected boolean areAllInputFluidsAvailable() {
+        // If fluids are not used, all fluids are available
+        if (!shouldUseFluids())
+            return true;
+
+        List<IAEFluidStack> remainingFluids = getRemainingInputFluids();
+
+        // If there are no remaining fluids, all fluids are available
+        if (remainingFluids == null)
+            return true;
+
+        // Check availability of all remaining fluids
+        // Fluid autocrafting is not supported, so no tracking of missing fluids
+        for (IAEFluidStack inputFluid : remainingFluids)
+            if (!isFluidAvailableForExtraction(inputFluid))
+                return false;
 
         return true;
     }
@@ -1211,10 +1233,6 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     /// but two non-compatible item stacks
     /// need to be inserted into it, this will pass despite being a conflict.
     protected boolean isInputSpaceAvailable() {
-        // If we don't have a valid pattern with inputs, we can't check space availability
-        if (patternInputItems == null && patternInputFluids == null)
-            return false;
-
         // If items need to be inserted but the machine can't handle items, fail
         if (patternInputItems != null && !patternInputItems.isEmpty() && machineItemInputHandler == null)
             return false;
