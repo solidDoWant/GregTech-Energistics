@@ -86,8 +86,6 @@ public class ItemEncodedPatternMixin {
         ItemStack outputStack = new ItemStack(firstOutput);
 
         if (!outputStack.isEmpty()) {
-            appeng.core.AELog.info("Extended Pattern: Providing output icon for pattern with %d inputs",
-                tag.getTagList("in", 10).tagCount());
             cir.setReturnValue(outputStack);
         }
     }
