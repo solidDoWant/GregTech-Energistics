@@ -16,6 +16,7 @@ import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 
@@ -68,15 +69,12 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
     public void initGui() {
         super.initGui();
 
-        // Calculate where the reserved space (pattern area) starts
-        int reservedStart = this.guiTop + (this.ySize - getReservedSpaceViaReflection());
-
-        // Encode button - positioned relative to pattern area
-        this.encodeBtn = new GuiImgButton(this.guiLeft + 184, reservedStart + 24, Settings.ACTIONS, ActionItems.ENCODE);
+        // Encode button - positioned in the pattern area
+        this.encodeBtn = new GuiImgButton(this.guiLeft + 184, this.guiTop + this.ySize - 53, Settings.ACTIONS, ActionItems.ENCODE);
         this.buttonList.add(this.encodeBtn);
 
-        // Clear button - positioned relative to pattern area
-        this.clearBtn = new GuiImgButton(this.guiLeft + 100, reservedStart - 1, Settings.ACTIONS, ActionItems.CLOSE);
+        // Clear button - positioned above the input slots
+        this.clearBtn = new GuiImgButton(this.guiLeft + 100, this.guiTop + this.ySize - 86, Settings.ACTIONS, ActionItems.CLOSE);
         this.clearBtn.setHalfSize(true);
         this.buttonList.add(this.clearBtn);
     }
@@ -103,14 +101,67 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
         // Draw inherited terminal features (search box, item grid, etc.)
         super.drawFG(offsetX, offsetY, mouseX, mouseY);
 
-        // Draw pattern area labels
-        this.fontRenderer.drawString("Inputs", 8, 72, 4210752);
-        this.fontRenderer.drawString("Outputs", 110, 72, 4210752);
+        // Draw pattern area labels - positioned relative to reserved space
+        int patternAreaY = this.ySize - getReservedSpaceViaReflection();
+        this.fontRenderer.drawString("Inputs", 8, patternAreaY - 12, 4210752);
+        this.fontRenderer.drawString("Outputs", 110, patternAreaY - 12, 4210752);
 
         // Draw player inventory label
         this.fontRenderer.drawString(
                 I18n.format("container.inventory"),
-                8, 157, 4210752);
+                8, this.ySize - 96 + 3, 4210752);
+    }
+
+    @Override
+    public void drawBG(final int offsetX, final int offsetY, final int mouseX, final int mouseY) {
+        // Bind and draw our complete custom texture
+        this.bindTexture(BACKGROUND_TEXTURE);
+        this.drawTexturedModalRect(offsetX, offsetY, 0, 0, this.xSize, this.ySize);
+
+        // Call parent to handle view cell updates and search field rendering
+        // Use reflection to access private searchField and render it
+        try {
+            java.lang.reflect.Field searchField = this.getClass().getSuperclass().getDeclaredField("searchField");
+            searchField.setAccessible(true);
+            Object field = searchField.get(this);
+            if (field != null) {
+                ((appeng.client.gui.widgets.MEGuiTextField) field).drawTextBox();
+            }
+        } catch (Exception e) {
+            // Silently fail if we can't access searchField
+        }
+
+        // Let parent handle view cell repository updates via reflection
+        try {
+            java.lang.reflect.Field viewCellField = this.getClass().getSuperclass().getDeclaredField("viewCell");
+            viewCellField.setAccessible(true);
+            boolean viewCell = viewCellField.getBoolean(this);
+
+            if (viewCell) {
+                java.lang.reflect.Field myCurrentViewCellsField = this.getClass().getSuperclass().getDeclaredField("myCurrentViewCells");
+                myCurrentViewCellsField.setAccessible(true);
+                ItemStack[] myCurrentViewCells = (ItemStack[]) myCurrentViewCellsField.get(this);
+
+                java.lang.reflect.Field monitorableContainerField = this.getClass().getSuperclass().getDeclaredField("monitorableContainer");
+                monitorableContainerField.setAccessible(true);
+                appeng.container.implementations.ContainerMEMonitorable monitorableContainer =
+                    (appeng.container.implementations.ContainerMEMonitorable) monitorableContainerField.get(this);
+
+                boolean update = false;
+                for (int i = 0; i < 5; i++) {
+                    if (myCurrentViewCells[i] != monitorableContainer.getCellViewSlot(i).getStack()) {
+                        update = true;
+                        myCurrentViewCells[i] = monitorableContainer.getCellViewSlot(i).getStack();
+                    }
+                }
+
+                if (update) {
+                    this.repo.setViewCell(myCurrentViewCells);
+                }
+            }
+        } catch (Exception e) {
+            // Silently fail if we can't access view cell fields
+        }
     }
 
     @Override
@@ -120,10 +171,12 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
     }
 
     @Override
-    public void bindTexture(final String file) {
-        // Use our mod ID instead of AE2's mod ID for texture loading
-        final ResourceLocation loc = new ResourceLocation(Tags.MODID, "textures/" + file);
-        this.mc.getTextureManager().bindTexture(loc);
+    protected void repositionSlot(final appeng.container.slot.AppEngSlot s) {
+        // Calculate offset for player-side vs pattern-side slots
+        final int offsetPlayerSide = s.isPlayerSide() ? 5 : 3;
+
+        // Reposition relative to the GUI size (pattern area is at bottom)
+        s.yPos = s.getY() + this.ySize - 78 - offsetPlayerSide;
     }
 
     protected void bindTexture(final ResourceLocation loc) {
