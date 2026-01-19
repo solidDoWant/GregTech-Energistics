@@ -12,6 +12,7 @@ import appeng.api.config.Settings;
 import appeng.api.util.AEPartLocation;
 import appeng.client.gui.implementations.GuiMEMonitorable;
 import appeng.client.gui.widgets.GuiImgButton;
+import appeng.client.gui.widgets.GuiTabButton;
 import appeng.client.gui.widgets.MEGuiTextField;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.resources.I18n;
@@ -68,12 +69,21 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
 
         // Move buttons to the correct positions
         for (GuiButton settingsButton : this.buttonList) {
-            // Cast to GuiImgButton and continue if the cast fails
+            if (settingsButton instanceof GuiTabButton) {
+                // This is the crafting status button
+                GuiTabButton tabBtn = (GuiTabButton) settingsButton;
+
+                tabBtn.x = this.guiLeft + 170;
+                tabBtn.y = this.guiTop - 4;
+            }
+
+            // All remaining buttons that need updating are GuiImgButtons
             if (!(settingsButton instanceof GuiImgButton))
                 continue;
 
             GuiImgButton imgBtn = (GuiImgButton) settingsButton;
             Settings buttonSetting = imgBtn.getSetting();
+
             if (buttonSetting == Settings.ACTIONS)
                 continue;
 
