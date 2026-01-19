@@ -126,6 +126,7 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     protected boolean shouldInsert = true;
     protected boolean isGridConnected = false;
     protected boolean useFluids = false;
+    protected boolean hasValidPattern = false;
     protected List<IAEFluidStack> patternInputFluids;
     protected List<IAEItemStack> patternInputItems;
     protected List<IAEFluidStack> remainingInputFluids;
@@ -409,6 +410,11 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
         updatePatternInputFluids();
         updatePatternOutputItems();
         updatePatternOutputFluids();
+
+        // Validate pattern once when it changes instead of every tick
+        // For a pattern to be valid, it must have at least one input and one output
+        hasValidPattern = (patternInputItems != null || patternInputFluids != null) &&
+                (patternOutputItems != null || patternOutputFluids != null);
     }
 
     protected void updatePatternInputFluids() {
@@ -529,6 +535,8 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
             return CoverStatus.OTHER_DISABLED;
         if (!isPatternAvailable())
             return CoverStatus.PATTERN_NOT_INSERTED;
+        if (!hasValidPattern)
+            return CoverStatus.INVALID_PATTERN;
         if (!isGridConnected())
             return CoverStatus.GRID_DISCONNECTED;
         if (isFullyStocked())
@@ -1086,14 +1094,17 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
         IItemList<IAEItemStack> storedItems = attachedAE2ItemInventory.getStorageList();
         IItemList<IAEFluidStack> storedFluids = attachedAE2FluidInventory.getStorageList();
 
-        for (IAEItemStack outputItem : patternOutputItems)
-            if (getStorageCount(outputItem, storedItems) < stockCount)
-                return false;
+        if (patternOutputItems != null) {
+            for (IAEItemStack outputItem : patternOutputItems)
+                if (getStorageCount(outputItem, storedItems) < stockCount)
+                    return false;
+        }
 
-        if (shouldUseFluids())
+        if (shouldUseFluids() && patternOutputFluids != null) {
             for (IAEFluidStack outputFluid : patternOutputFluids)
                 if (getStorageCount(outputFluid, storedFluids) < stockCount)
                     return false;
+        }
 
         return true;
     }
@@ -1114,12 +1125,15 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
 
         LinkedList<Long> outputAvailableCounts = new LinkedList<>();
 
-        for (IAEItemStack outputItem : patternOutputItems)
-            outputAvailableCounts.add(getStorageCount(outputItem, storedItems));
+        if (patternOutputItems != null) {
+            for (IAEItemStack outputItem : patternOutputItems)
+                outputAvailableCounts.add(getStorageCount(outputItem, storedItems));
+        }
 
-        if (shouldUseFluids())
+        if (shouldUseFluids() && patternOutputFluids != null) {
             for (IAEFluidStack outputFluid : patternOutputFluids)
                 outputAvailableCounts.add(getStorageCount(outputFluid, storedFluids));
+        }
 
         return outputAvailableCounts;
     }
@@ -1138,32 +1152,62 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     /// isn't a way to tell
     /// if the machine is still running from a cover.
     protected boolean areAllInputsAvailable() {
+        return areAllInputItemsAvailable() && areAllInputFluidsAvailable();
+    }
+
+    protected boolean areAllInputItemsAvailable() {
+        List<IAEItemStack> remainingItems = getRemainingInputItems();
+
+        // If there are no remaining items, all items are available
+        if (remainingItems == null)
+            return true;
+
+        // If crafting items is not supported, just check availability
+        // without tracking missing items
         if (!upgradeSlotWidget.hasStack()) {
-            for (IAEItemStack inputItem : getRemainingInputItems())
+            for (IAEItemStack inputItem : remainingItems)
                 if (!isItemAvailableForExtraction(inputItem))
                     return false;
-        } else {
-            missingInputItems = new LinkedList<>();
-            for (IAEItemStack inputItem : getRemainingInputItems()) {
-                long availableCount = getItemAvailableCount(inputItem);
-                long requiredCount = inputItem.getStackSize();
-
-                if (availableCount >= requiredCount)
-                    continue;
-
-                IAEItemStack missingItemStack = inputItem.copy();
-                missingItemStack.setStackSize(requiredCount - availableCount);
-                missingInputItems.add(missingItemStack);
-            }
-
-            if (!missingInputItems.isEmpty())
-                return false;
+            return true;
         }
 
-        if (shouldUseFluids())
-            for (IAEFluidStack inputFluid : getRemainingInputFluids())
-                if (!isFluidAvailableForExtraction(inputFluid))
-                    return false;
+        // Crafting items is supported, track missing items if any
+        // are not available
+        missingInputItems = new LinkedList<>();
+        for (IAEItemStack inputItem : remainingItems) {
+            long availableCount = getItemAvailableCount(inputItem);
+            long requiredCount = inputItem.getStackSize();
+
+            if (availableCount >= requiredCount)
+                continue;
+
+            IAEItemStack missingItemStack = inputItem.copy();
+            missingItemStack.setStackSize(requiredCount - availableCount);
+            missingInputItems.add(missingItemStack);
+        }
+
+        if (!missingInputItems.isEmpty())
+            return false;
+
+        return true;
+    }
+
+    protected boolean areAllInputFluidsAvailable() {
+        // If fluids are not used, all fluids are available
+        if (!shouldUseFluids())
+            return true;
+
+        List<IAEFluidStack> remainingFluids = getRemainingInputFluids();
+
+        // If there are no remaining fluids, all fluids are available
+        if (remainingFluids == null)
+            return true;
+
+        // Check availability of all remaining fluids
+        // Fluid autocrafting is not supported, so no tracking of missing fluids
+        for (IAEFluidStack inputFluid : remainingFluids)
+            if (!isFluidAvailableForExtraction(inputFluid))
+                return false;
 
         return true;
     }
@@ -1192,7 +1236,7 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     /// need to be inserted into it, this will pass despite being a conflict.
     protected boolean isInputSpaceAvailable() {
         // If items need to be inserted but the machine can't handle items, fail
-        if (!patternInputItems.isEmpty() && machineItemInputHandler == null)
+        if (patternInputItems != null && !patternInputItems.isEmpty() && machineItemInputHandler == null)
             return false;
 
         if (isMissingItemInputSpace())
@@ -1206,6 +1250,10 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     }
 
     protected boolean isMissingFluidInputSpace() {
+        // If we don't have fluid inputs, we don't need space for them
+        if (patternInputFluids == null)
+            return false;
+
         // If fluids need to be inserted but the machine can't handle fluids, fail
         if (!patternInputFluids.isEmpty() && machineFluidInputHandler == null)
             return true;
@@ -1221,6 +1269,10 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     }
 
     protected boolean isMissingItemInputSpace() {
+        // If we don't have item inputs, we don't need space for them
+        if (patternInputItems == null)
+            return false;
+
         for (IAEItemStack iaeItemStack : patternInputItems) {
             int targetInsertingCount = (int) iaeItemStack.getStackSize();
             int neededSpace = targetInsertingCount;
@@ -1259,23 +1311,27 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     }
 
     protected boolean isMissingFluidOutputSpace() {
-        for (IAEFluidStack outputFluid : patternOutputFluids) {
-            IAEFluidStack remainingFluid = attachedAE2FluidInventory.injectItems(outputFluid, Actionable.SIMULATE,
-                    machineActionSource);
+        if (patternOutputFluids != null) {
+            for (IAEFluidStack outputFluid : patternOutputFluids) {
+                IAEFluidStack remainingFluid = attachedAE2FluidInventory.injectItems(outputFluid, Actionable.SIMULATE,
+                        machineActionSource);
 
-            if (remainingFluid != null && remainingFluid.getStackSize() > 0)
-                return true;
+                if (remainingFluid != null && remainingFluid.getStackSize() > 0)
+                    return true;
+            }
         }
         return false;
     }
 
     protected boolean isMissingItemOutputSpace() {
-        for (IAEItemStack outputItem : patternOutputItems) {
-            IAEItemStack remainingItems = attachedAE2ItemInventory.injectItems(outputItem, Actionable.SIMULATE,
-                    machineActionSource);
+        if (patternOutputItems != null) {
+            for (IAEItemStack outputItem : patternOutputItems) {
+                IAEItemStack remainingItems = attachedAE2ItemInventory.injectItems(outputItem, Actionable.SIMULATE,
+                        machineActionSource);
 
-            if (remainingItems != null && remainingItems.getStackSize() > 0)
-                return true;
+                if (remainingItems != null && remainingItems.getStackSize() > 0)
+                    return true;
+            }
         }
 
         return false;

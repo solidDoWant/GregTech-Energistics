@@ -184,9 +184,14 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 
 					for (int x = 0; x < current.patternInventory.getInventory().getSlots(); x++) {
 						final String which = Integer.toString(x);
-						if (invData.hasKey(which))
-							current.patternInventory.getInventory().setStackInSlot(x,
-									new ItemStack(invData.getCompoundTag(which)));
+						if (invData.hasKey(which)) {
+							NBTTagCompound stackNBT = invData.getCompoundTag(which);
+							// If the NBT is empty, it means the slot should be cleared
+							if (stackNBT.isEmpty())
+								current.patternInventory.getInventory().setStackInSlot(x, ItemStack.EMPTY);
+							else
+								current.patternInventory.getInventory().setStackInSlot(x, new ItemStack(stackNBT));
+						}
 					}
 
 					current.availableCount = invData.getLong("availableCount");

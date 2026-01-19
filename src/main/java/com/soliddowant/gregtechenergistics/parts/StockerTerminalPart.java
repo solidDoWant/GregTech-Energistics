@@ -45,7 +45,8 @@ public class StockerTerminalPart extends AbstractPartDisplay {
 
         if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
             BlockPos bPos = this.getTile().getPos();
-            player.openGui(GregTechEnergisticsMod.instance, GuiProxy.getOrdinalFromGuiId(0) | this.getSide().ordinal(),
+            player.openGui(GregTechEnergisticsMod.instance,
+                    GuiProxy.getOrdinalFromGuiId(GuiProxy.GUI_STOCKER_TERMINAL) | this.getSide().ordinal(),
                     player.getEntityWorld(), bPos.getX(), bPos.getY(), bPos.getZ());
         }
 

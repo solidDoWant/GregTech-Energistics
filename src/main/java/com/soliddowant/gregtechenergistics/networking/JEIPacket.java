@@ -6,6 +6,8 @@ import java.util.function.IntFunction;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.soliddowant.gregtechenergistics.gui.ExtendedPatternContainer;
+import com.soliddowant.gregtechenergistics.integration.jei.ExtendedRecipeTransferHandler;
 import com.soliddowant.gregtechenergistics.integration.jei.RecipeTransferHandler;
 
 import net.minecraft.item.ItemStack;
@@ -123,7 +125,14 @@ public class JEIPacket extends PacketCompressedNBT {
     public static class JEIHandler extends PacketCompressedNBT.Handler<JEIPacket> {
         @Override
         protected void handle(JEIPacket message, MessageContext context) {
-            RecipeTransferHandler.transferToTerminal(message, context.getServerHandler().player.openContainer);
+            // Check if this is an extended pattern container
+            if (context.getServerHandler().player.openContainer instanceof ExtendedPatternContainer) {
+                ExtendedRecipeTransferHandler.transferToExtendedTerminal(message,
+                        context.getServerHandler().player.openContainer);
+            } else {
+                RecipeTransferHandler.transferToTerminal(message,
+                        context.getServerHandler().player.openContainer);
+            }
         }
     }
 }

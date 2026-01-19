@@ -15,6 +15,7 @@ public final class MetaItems {
     public static MetaItem<?>.MetaValueItem MACHINE_STATUS;
     public static MetaItem<?>.MetaValueItem FLUID_ENCODER;
     public static MetaItem<?>.MetaValueItem STOCKER_TERMINAL;
+    public static MetaItem<?>.MetaValueItem EXTENDED_PATTERN_TERMINAL;
     public static MetaItem1 metaItem1;
 
     private MetaItems() {

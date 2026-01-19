@@ -21,6 +21,7 @@ cover.stocker.status=Status: %s
 cover.stocker.status.running=Running
 cover.stocker.status.other_disabled=Disabled by other cover
 cover.stocker.status.pattern_not_inserted=Missing pattern
+cover.stocker.status.invalid_pattern=Invalid pattern
 cover.stocker.status.grid_disconnected=Connection problem
 cover.stocker.status.fully_stocked=Fully stocked
 cover.stocker.status.missing_inputs=Missing inputs
@@ -46,3 +47,9 @@ metaitem.fluid.encoder.amount=%s mb
 metaitem.fluid.encoder.fluid=Fluid:
 
 metaitem.stocker.terminal.name=Stocker Terminal
+
+metaitem.extended.pattern.terminal.name=Extended Pattern Terminal
+metaitem.extended.pattern.terminal.tooltip=Encodes patterns with up to 20 inputs and 12 outputs
+gui.gregtechenergistics.extendedpattern.title=Terminal
+gui.gregtechenergistics.extendedpattern.inputs=Inputs
+gui.gregtechenergistics.extendedpattern.outputs=Outputs

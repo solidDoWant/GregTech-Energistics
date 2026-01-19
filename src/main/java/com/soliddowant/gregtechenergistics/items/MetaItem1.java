@@ -1,5 +1,6 @@
 package com.soliddowant.gregtechenergistics.items;
 
+import com.soliddowant.gregtechenergistics.items.behaviors.ExtendedPatternTerminalBehavior;
 import com.soliddowant.gregtechenergistics.items.behaviors.FluidEncoderBehaviour;
 import com.soliddowant.gregtechenergistics.items.behaviors.StockerTerminalBehavior;
 
@@ -34,6 +35,8 @@ public class MetaItem1 extends StandardModMetaItem {
 				.addComponents(new FluidEncoderBehaviour()).setMaxStackSize(1);
 		MetaItems.STOCKER_TERMINAL = addItem(10, "stocker.terminal")
 				.addComponents(new StockerTerminalBehavior());
+		MetaItems.EXTENDED_PATTERN_TERMINAL = addItem(11, "extended.pattern.terminal")
+				.addComponents(new ExtendedPatternTerminalBehavior());
 	}
 
 	@SuppressWarnings("OptionalGetWithoutIsPresent") // If these items are missing the mod should probably fail to load
