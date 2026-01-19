@@ -114,12 +114,52 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
 
     @Override
     public void drawBG(final int offsetX, final int offsetY, final int mouseX, final int mouseY) {
-        // Bind and draw our complete custom texture
-        this.bindTexture(BACKGROUND_TEXTURE);
-        this.drawTexturedModalRect(offsetX, offsetY, 0, 0, this.xSize, this.ySize);
+        // Get the number of rows in the item grid via reflection
+        int rows = 0;
+        try {
+            java.lang.reflect.Field rowsField = this.getClass().getSuperclass().getDeclaredField("rows");
+            rowsField.setAccessible(true);
+            rows = rowsField.getInt(this);
+        } catch (Exception e) {
+            // Default to 3 rows if we can't access the field
+            rows = 3;
+        }
 
-        // Call parent to handle view cell updates and search field rendering
-        // Use reflection to access private searchField and render it
+        // Bind our custom texture
+        this.bindTexture(BACKGROUND_TEXTURE);
+
+        final int x_width = 197;
+
+        // Draw top section (header with search box) - 18px tall
+        this.drawTexturedModalRect(offsetX, offsetY, 0, 0, x_width, 18);
+
+        // Draw view cells area on the right if present
+        try {
+            java.lang.reflect.Field viewCellField = this.getClass().getSuperclass().getDeclaredField("viewCell");
+            viewCellField.setAccessible(true);
+            boolean viewCell = viewCellField.getBoolean(this);
+
+            if (viewCell) {
+                this.drawTexturedModalRect(offsetX + x_width, offsetY, x_width, 0, 46, 128);
+            }
+        } catch (Exception e) {
+            // Ignore
+        }
+
+        // Draw repeating middle section (item grid rows) - each row is 18px
+        for (int x = 0; x < rows; x++) {
+            this.drawTexturedModalRect(offsetX, offsetY + 18 + x * 18, 0, 18, x_width, 18);
+        }
+
+        // Draw bottom section (pattern area + player inventory)
+        // This starts where the item grid ends and goes to the bottom
+        int bottomSectionStartY = offsetY + 18 + rows * 18;
+        int bottomSectionTextureY = 18 + 3 * 18; // After header (18) + 3 item rows (54) = 72
+        int bottomSectionHeight = this.ySize - 18 - rows * 18;
+
+        this.drawTexturedModalRect(offsetX, bottomSectionStartY, 0, bottomSectionTextureY, x_width, bottomSectionHeight);
+
+        // Handle view cell updates and search field via parent logic
         try {
             java.lang.reflect.Field searchField = this.getClass().getSuperclass().getDeclaredField("searchField");
             searchField.setAccessible(true);
@@ -128,10 +168,10 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
                 ((appeng.client.gui.widgets.MEGuiTextField) field).drawTextBox();
             }
         } catch (Exception e) {
-            // Silently fail if we can't access searchField
+            // Ignore
         }
 
-        // Let parent handle view cell repository updates via reflection
+        // Handle view cell repository updates
         try {
             java.lang.reflect.Field viewCellField = this.getClass().getSuperclass().getDeclaredField("viewCell");
             viewCellField.setAccessible(true);
@@ -160,7 +200,7 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
                 }
             }
         } catch (Exception e) {
-            // Silently fail if we can't access view cell fields
+            // Ignore
         }
     }
 
