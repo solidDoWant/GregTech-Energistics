@@ -62,6 +62,26 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
         this.clearBtn = new GuiImgButton(this.guiLeft + 100, this.guiTop + 83, Settings.ACTIONS, ActionItems.CLOSE);
         this.clearBtn.setHalfSize(true);
         this.buttonList.add(this.clearBtn);
+
+        // Move settings buttons to the correct positions
+        for (GuiButton settingsButton : this.buttonList) {
+            // Cast to GuiImgButton and continue if the cast fails
+            if (!(settingsButton instanceof GuiImgButton))
+                continue;
+
+            GuiImgButton imgBtn = (GuiImgButton) settingsButton;
+            Settings buttonSetting = imgBtn.getSetting();
+            if (buttonSetting == Settings.ACTIONS)
+                continue;
+
+            // Shift the buttons to the correct position relative to the scrolling display
+            settingsButton.x = this.guiLeft - 18;
+            settingsButton.y -= 3 + 2 * 18;
+
+            // Hide the terminal style button because it has no effect here
+            if (buttonSetting == Settings.TERMINAL_STYLE)
+                settingsButton.visible = false;
+        }
     }
 
     @Override
