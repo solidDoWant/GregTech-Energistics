@@ -177,12 +177,13 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable
     public void encodeAndMoveToInventory() {
         encode();
         ItemStack output = this.patternSlotOUT.getStack();
-        if (!output.isEmpty()) {
-            if (!getPlayerInv().addItemStackToInventory(output)) {
-                getPlayerInv().player.dropItem(output, false);
-            }
-            this.patternSlotOUT.putStack(ItemStack.EMPTY);
-        }
+        if (output.isEmpty())
+            return;
+
+        if (!getPlayerInv().addItemStackToInventory(output))
+            getPlayerInv().player.dropItem(output, false);
+
+        this.patternSlotOUT.putStack(ItemStack.EMPTY);
     }
 
     public void encode() {

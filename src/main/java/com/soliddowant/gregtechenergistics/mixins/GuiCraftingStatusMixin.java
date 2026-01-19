@@ -1,7 +1,5 @@
 package com.soliddowant.gregtechenergistics.mixins;
 
-import java.io.IOException;
-
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -62,14 +60,16 @@ public abstract class GuiCraftingStatusMixin extends AEBaseGui {
     private void onConstructed(InventoryPlayer inventoryPlayer, ITerminalHost te, CallbackInfo ci) {
         final Object target = this.status.getTarget();
 
-        if (target instanceof ExtendedPatternTerminalPart) {
-            if (this.myIcon == null || this.myIcon.isEmpty()) {
-                this.myIcon = MetaItems.EXTENDED_PATTERN_TERMINAL.getStackForm();
-                this.originalGui = GuiBridge.GUI_PATTERN_TERMINAL; // Placeholder, won't be used
-                this.gtce_isExtendedPatternTerminal = true;
-                this.gtce_extendedPart = (ExtendedPatternTerminalPart) target;
-            }
-        }
+        if (!(target instanceof ExtendedPatternTerminalPart))
+            return;
+
+        if (this.myIcon != null && !this.myIcon.isEmpty())
+            return;
+
+        this.myIcon = MetaItems.EXTENDED_PATTERN_TERMINAL.getStackForm();
+        this.originalGui = GuiBridge.GUI_PATTERN_TERMINAL; // Dummy value to avoid NPEs
+        this.gtce_isExtendedPatternTerminal = true;
+        this.gtce_extendedPart = (ExtendedPatternTerminalPart) target;
     }
 
     @Inject(method = "initGui", at = @At("TAIL"), remap = true)
@@ -85,7 +85,7 @@ public abstract class GuiCraftingStatusMixin extends AEBaseGui {
     }
 
     @Inject(method = "actionPerformed", at = @At("HEAD"), cancellable = true, remap = true)
-    private void onActionPerformed(GuiButton btn, CallbackInfo ci) throws IOException {
+    private void onActionPerformed(GuiButton btn, CallbackInfo ci) {
         if (btn == this.originalGuiBtn && this.gtce_isExtendedPatternTerminal && this.gtce_extendedPart != null) {
             final IPartHost host = this.gtce_extendedPart.getHost();
             if (host == null)
