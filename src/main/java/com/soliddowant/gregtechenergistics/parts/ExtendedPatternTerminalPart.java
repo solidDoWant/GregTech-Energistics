@@ -13,6 +13,7 @@ import appeng.api.storage.data.IAEItemStack;
 import appeng.parts.PartModel;
 import appeng.parts.reporting.AbstractPartTerminal;
 import appeng.tile.inventory.AppEngInternalInventory;
+import appeng.util.Platform;
 import appeng.util.inv.IAEAppEngInventory;
 import appeng.util.inv.InvOperation;
 import net.minecraft.entity.player.EntityPlayer;
@@ -21,7 +22,6 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.Vec3d;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.IItemHandler;
 
 public class ExtendedPatternTerminalPart extends AbstractPartTerminal implements IAEAppEngInventory {
@@ -55,10 +55,9 @@ public class ExtendedPatternTerminalPart extends AbstractPartTerminal implements
 
     @Override
     public boolean onPartActivate(final EntityPlayer player, final EnumHand hand, final Vec3d pos) {
-        if (super.onPartActivate(player, hand, pos))
-            return false;
-
-        if (FMLCommonHandler.instance().getEffectiveSide().isServer()) {
+        // Don't call super - AbstractPartTerminal.onPartActivate() opens the wrong GUI (GUI_ME)
+        // We need to open our custom ExtendedPattern GUI instead
+        if (Platform.isServer()) {
             player.openGui(GregTechEnergisticsMod.instance,
                     GuiProxy.getOrdinalFromGuiId(1) | this.getSide().ordinal(),
                     player.getEntityWorld(),
