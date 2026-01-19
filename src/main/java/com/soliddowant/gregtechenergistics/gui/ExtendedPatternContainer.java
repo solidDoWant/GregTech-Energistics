@@ -85,6 +85,12 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable
         // Bind player inventory (positioned at bottom of GUI) - using original absolute
         // position
         this.bindPlayerInventory(ip, 1, 167);
+
+        // Fix the view cell slot positions after parent constructor
+        for (int y = 0; y < 5; y++) {
+            this.cellView[y].xPos = 223;
+            this.cellView[y].yPos = y * 18 + 28;
+        }
     }
 
     public static ExtendedPatternContainer getServerGuiContainer(AEPartLocation side, EntityPlayer player, World world,
