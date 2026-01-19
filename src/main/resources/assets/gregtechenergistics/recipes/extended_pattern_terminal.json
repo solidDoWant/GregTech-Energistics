@@ -22,7 +22,7 @@
     "ingredients": [
         {
             "type": "appliedenergistics2:part",
-            "part": "part.crafting_terminal"
+            "part": "part.pattern_terminal"
         },
         {
             "type": "appliedenergistics2:part",
