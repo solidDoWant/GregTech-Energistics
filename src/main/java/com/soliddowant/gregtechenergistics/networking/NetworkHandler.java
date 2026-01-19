@@ -1,5 +1,7 @@
 package com.soliddowant.gregtechenergistics.networking;
 
+import com.soliddowant.gregtechenergistics.Tags;
+
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;

@@ -74,9 +74,11 @@ public abstract class GuiCraftingStatusMixin extends AEBaseGui {
 
     @Inject(method = "initGui", at = @At("TAIL"), remap = true)
     private void onInitGui(CallbackInfo ci) {
-        // If originalGuiBtn wasn't created but we have a valid myIcon, create the button manually
+        // If originalGuiBtn wasn't created but we have a valid myIcon, create the
+        // button manually
         if (this.originalGuiBtn == null && this.gtce_isExtendedPatternTerminal && !this.myIcon.isEmpty()) {
-            this.originalGuiBtn = new GuiTabButton(this.guiLeft + 213, this.guiTop - 4, this.myIcon, this.myIcon.getDisplayName(), this.itemRender);
+            this.originalGuiBtn = new GuiTabButton(this.guiLeft + 213, this.guiTop - 4, this.myIcon,
+                    this.myIcon.getDisplayName(), this.itemRender);
             this.originalGuiBtn.setHideEdge(13);
             this.buttonList.add(this.originalGuiBtn);
         }
@@ -86,10 +88,12 @@ public abstract class GuiCraftingStatusMixin extends AEBaseGui {
     private void onActionPerformed(GuiButton btn, CallbackInfo ci) throws IOException {
         if (btn == this.originalGuiBtn && this.gtce_isExtendedPatternTerminal && this.gtce_extendedPart != null) {
             final IPartHost host = this.gtce_extendedPart.getHost();
-            if (host == null) return;
+            if (host == null)
+                return;
 
             final TileEntity tile = host.getTile();
-            if (tile == null) return;
+            if (tile == null)
+                return;
 
             final BlockPos pos = tile.getPos();
             final AEPartLocation side = this.gtce_extendedPart.getSide();
@@ -97,7 +101,7 @@ public abstract class GuiCraftingStatusMixin extends AEBaseGui {
             // Send packet to server to open the GUI properly
             NetworkHandler.ServerHandlerChannel.sendToServer(
                     new PacketOpenExtendedPatternTerminal(pos, side));
-            
+
             ci.cancel();
         }
     }
