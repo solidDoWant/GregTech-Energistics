@@ -10,6 +10,7 @@ import com.soliddowant.gregtechenergistics.gui.ExtendedPatternContainer;
 import com.soliddowant.gregtechenergistics.integration.jei.ExtendedRecipeTransferHandler;
 import com.soliddowant.gregtechenergistics.integration.jei.RecipeTransferHandler;
 
+import appeng.helpers.ItemStackHelper;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
@@ -41,9 +42,9 @@ public class JEIPacket extends PacketCompressedNBT {
         NBTTagCompound recipeTag = super.serialize();
 
         NBTTagList tags;
-        if ((tags = serializeArray(inputItems, ItemStack::serializeNBT)) != null)
+        if ((tags = serializeArray(inputItems, JEIPacket::serializeItemStack)) != null)
             recipeTag.setTag("InputItems", tags);
-        if ((tags = serializeArray(outputItems, ItemStack::serializeNBT)) != null)
+        if ((tags = serializeArray(outputItems, JEIPacket::serializeItemStack)) != null)
             recipeTag.setTag("OutputItems", tags);
         if ((tags = serializeArray(inputFluids, stack -> stack.writeToNBT(new NBTTagCompound()))) != null)
             recipeTag.setTag("InputFluids", tags);
@@ -53,6 +54,12 @@ public class JEIPacket extends PacketCompressedNBT {
         recipeTag.setBoolean("IsCraftingRecipe", isCraftingRecipe);
 
         return recipeTag;
+    }
+
+    private static NBTTagCompound serializeItemStack(ItemStack stack) {
+        NBTTagCompound compound = new NBTTagCompound();
+        ItemStackHelper.stackWriteToNBT(stack, compound);
+        return compound;
     }
 
     @Nullable
@@ -83,12 +90,14 @@ public class JEIPacket extends PacketCompressedNBT {
         super.deserialize(tag);
 
         if (tag.hasKey("InputItems"))
-            this.inputItems = deserializeArray(tag.getTagList("InputItems", 10), ItemStack::new, ItemStack[]::new);
+            this.inputItems = deserializeArray(tag.getTagList("InputItems", 10), ItemStackHelper::stackFromNBT,
+                    ItemStack[]::new);
         if (tag.hasKey("InputFluids"))
             this.inputFluids = deserializeArray(tag.getTagList("InputFluids", 10), FluidStack::loadFluidStackFromNBT,
                     FluidStack[]::new);
         if (tag.hasKey("OutputItems"))
-            this.outputItems = deserializeArray(tag.getTagList("OutputItems", 10), ItemStack::new, ItemStack[]::new);
+            this.outputItems = deserializeArray(tag.getTagList("OutputItems", 10), ItemStackHelper::stackFromNBT,
+                    ItemStack[]::new);
         if (tag.hasKey("OutputFluids"))
             this.outputFluids = deserializeArray(tag.getTagList("OutputFluids", 10), FluidStack::loadFluidStackFromNBT,
                     FluidStack[]::new);

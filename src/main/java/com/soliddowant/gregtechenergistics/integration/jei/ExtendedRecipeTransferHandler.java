@@ -163,10 +163,54 @@ public class ExtendedRecipeTransferHandler implements IRecipeTransferHandler<Ext
         ItemStack[] outputStacks = mergeStacks(message.outputItems, message.outputFluids, outputAreaSize,
                 message.isCraftingRecipe);
 
+        // Consolidate identical output items
+        outputStacks = consolidateStacks(outputStacks, outputAreaSize);
+
         for (int i = 0; i < outputStacks.length && i < outputAreaSize; i++) {
             ItemStack stack = outputStacks[i];
             ItemHandlerUtil.setStackInSlot(outputInv, i, stack != null ? stack : ItemStack.EMPTY);
         }
+    }
+
+    protected static ItemStack[] consolidateStacks(ItemStack[] stacks, int maxCount) {
+        if (stacks == null || stacks.length == 0) {
+            return stacks;
+        }
+
+        List<ItemStack> consolidated = new ArrayList<>();
+
+        for (ItemStack stack : stacks) {
+            if (stack == null || stack.isEmpty()) {
+                continue;
+            }
+
+            // Try to find an existing stack to merge with
+            boolean merged = false;
+            for (ItemStack existing : consolidated) {
+                if (ItemStack.areItemsEqual(stack, existing) &&
+                        ItemStack.areItemStackTagsEqual(stack, existing)) {
+                    // Calculate new count, checking for overflow
+                    long newCount = (long) existing.getCount() + stack.getCount();
+                    if (newCount <= Integer.MAX_VALUE) {
+                        existing.setCount((int) newCount);
+                        merged = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!merged) {
+                consolidated.add(stack.copy());
+            }
+        }
+
+        // Convert back to array
+        ItemStack[] result = new ItemStack[maxCount];
+        for (int i = 0; i < consolidated.size() && i < maxCount; i++) {
+            result[i] = consolidated.get(i);
+        }
+
+        return result;
     }
 
     protected static ItemStack[] mergeStacks(ItemStack[] items, FluidStack[] fluids, int maxCount,
