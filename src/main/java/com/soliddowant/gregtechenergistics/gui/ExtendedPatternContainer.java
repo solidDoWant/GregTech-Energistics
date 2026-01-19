@@ -12,10 +12,9 @@ import appeng.api.AEApi;
 import appeng.api.definitions.IDefinitions;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.security.IActionSource;
-import appeng.api.storage.channels.IItemStorageChannel;
 import appeng.api.util.AEPartLocation;
-import appeng.container.implementations.ContainerMEMonitorable;
 import appeng.container.ContainerOpenContext;
+import appeng.container.implementations.ContainerMEMonitorable;
 import appeng.container.slot.IOptionalSlotHost;
 import appeng.container.slot.OptionalSlotFake;
 import appeng.container.slot.SlotFakeCraftingMatrix;
@@ -33,7 +32,8 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
 import net.minecraftforge.items.IItemHandler;
 
-public class ExtendedPatternContainer extends ContainerMEMonitorable implements IContainerCraftingPacket, IOptionalSlotHost {
+public class ExtendedPatternContainer extends ContainerMEMonitorable
+        implements IContainerCraftingPacket, IOptionalSlotHost {
     protected final ExtendedPatternTerminalPart part;
 
     protected IItemHandler crafting; // 20 input slots (5x4)
@@ -43,7 +43,7 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable implements 
     protected SlotRestrictedInput patternSlotOUT;
 
     public ExtendedPatternContainer(final InventoryPlayer ip, final ExtendedPatternTerminalPart part) {
-        super(ip, part, false);  // Pass false to prevent parent from binding player inventory
+        super(ip, part, false); // Pass false to prevent parent from binding player inventory
         this.part = part;
 
         // Initialize slot arrays
@@ -58,7 +58,7 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable implements 
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 5; x++) {
                 this.addSlotToContainer(this.craftingSlots[x + y * 5] = new SlotFakeCraftingMatrix(this.crafting,
-                        x + y * 5, 8 + x * 18, 25 + y * 18));
+                        x + y * 5, 9 + x * 18, 84 + y * 18));
             }
         }
 
@@ -67,7 +67,7 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable implements 
             for (int x = 0; x < 3; x++) {
                 int index = x + y * 3;
                 this.addSlotToContainer(this.outputSlots[index] = new SlotPatternOutputs(output, this, index,
-                        110 + x * 18, 25 + y * 18, 0, 0, 1));
+                        117, 84, x, y, 1));
                 this.outputSlots[index].setRenderDisabled(false);
                 this.outputSlots[index].setIIcon(-1);
             }
@@ -75,15 +75,16 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable implements 
 
         // Add pattern slots (blank in, encoded out) - using original absolute positions
         this.addSlotToContainer(this.patternSlotIN = new SlotRestrictedInput(
-                SlotRestrictedInput.PlacableItemType.BLANK_PATTERN, patternInv, 0, 8, 115, this.getInventoryPlayer()));
+                SlotRestrictedInput.PlacableItemType.BLANK_PATTERN, patternInv, 0, 184, 88, this.getInventoryPlayer()));
         this.addSlotToContainer(
                 this.patternSlotOUT = new SlotRestrictedInput(SlotRestrictedInput.PlacableItemType.ENCODED_PATTERN,
-                        patternInv, 1, 26, 115, this.getInventoryPlayer()));
+                        patternInv, 1, 184, 131, this.getInventoryPlayer()));
 
         this.patternSlotOUT.setStackLimit(1);
 
-        // Bind player inventory (positioned at bottom of GUI) - using original absolute position
-        this.bindPlayerInventory(ip, 0, 175);
+        // Bind player inventory (positioned at bottom of GUI) - using original absolute
+        // position
+        this.bindPlayerInventory(ip, 1, 167);
     }
 
     public static ExtendedPatternContainer getServerGuiContainer(AEPartLocation side, EntityPlayer player, World world,
@@ -139,7 +140,8 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable implements 
     }
 
     // getViewCells() is inherited from ContainerMEMonitorable parent class
-    // It automatically reads from the view cell slots that were created in the parent constructor
+    // It automatically reads from the view cell slots that were created in the
+    // parent constructor
 
     public boolean isSlotEnabled(int idx) {
         return true;

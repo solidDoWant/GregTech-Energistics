@@ -46,8 +46,8 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
         super.initGui();
 
         // Force our GUI to use the fixed size from our texture
-        this.ySize = 257;
-        this.xSize = 195;
+        this.ySize = 247;
+        this.xSize = 249;
 
         // Recalculate guiTop based on our fixed size
         final int unusedSpace = this.height - this.ySize;
@@ -55,11 +55,11 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
         this.guiLeft = (this.width - this.xSize) / 2;
 
         // Encode button - positioned at original location
-        this.encodeBtn = new GuiImgButton(this.guiLeft + 50, this.guiTop + 115, Settings.ACTIONS, ActionItems.ENCODE);
+        this.encodeBtn = new GuiImgButton(this.guiLeft + 184, this.guiTop + 108, Settings.ACTIONS, ActionItems.ENCODE);
         this.buttonList.add(this.encodeBtn);
 
         // Clear button - positioned at original location
-        this.clearBtn = new GuiImgButton(this.guiLeft + 68, this.guiTop + 115, Settings.ACTIONS, ActionItems.CLOSE);
+        this.clearBtn = new GuiImgButton(this.guiLeft + 100, this.guiTop + 83, Settings.ACTIONS, ActionItems.CLOSE);
         this.clearBtn.setHalfSize(true);
         this.buttonList.add(this.clearBtn);
     }
@@ -89,8 +89,8 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
                 8, 6, 4210752);
 
         // Draw labels at original positions
-        this.fontRenderer.drawString("Inputs (5x4)", 8, 14, 4210752);
-        this.fontRenderer.drawString("Outputs", 110, 14, 4210752);
+        this.fontRenderer.drawString("Inputs", 8, 72, 4210752);
+        this.fontRenderer.drawString("Outputs", 110, 72, 4210752);
 
         // Draw player inventory label at original position
         this.fontRenderer.drawString(
@@ -126,14 +126,16 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
             boolean viewCell = viewCellField.getBoolean(this);
 
             if (viewCell) {
-                java.lang.reflect.Field myCurrentViewCellsField = this.getClass().getSuperclass().getDeclaredField("myCurrentViewCells");
+                java.lang.reflect.Field myCurrentViewCellsField = this.getClass().getSuperclass()
+                        .getDeclaredField("myCurrentViewCells");
                 myCurrentViewCellsField.setAccessible(true);
                 ItemStack[] myCurrentViewCells = (ItemStack[]) myCurrentViewCellsField.get(this);
 
-                java.lang.reflect.Field monitorableContainerField = this.getClass().getSuperclass().getDeclaredField("monitorableContainer");
+                java.lang.reflect.Field monitorableContainerField = this.getClass().getSuperclass()
+                        .getDeclaredField("monitorableContainer");
                 monitorableContainerField.setAccessible(true);
-                appeng.container.implementations.ContainerMEMonitorable monitorableContainer =
-                    (appeng.container.implementations.ContainerMEMonitorable) monitorableContainerField.get(this);
+                appeng.container.implementations.ContainerMEMonitorable monitorableContainer = (appeng.container.implementations.ContainerMEMonitorable) monitorableContainerField
+                        .get(this);
 
                 boolean update = false;
                 for (int i = 0; i < 5; i++) {
