@@ -147,8 +147,8 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
                 8, 6, 4210752);
 
         // Draw labels at original positions
-        this.fontRenderer.drawString("Inputs", 8, 72, 4210752);
-        this.fontRenderer.drawString("Outputs", 110, 72, 4210752);
+        this.fontRenderer.drawString(I18n.format("gui.gregtechenergistics.extendedpattern.inputs"), 8, 72, 4210752);
+        this.fontRenderer.drawString(I18n.format("gui.gregtechenergistics.extendedpattern.outputs"), 110, 72, 4210752);
 
         // Draw player inventory label at original position
         this.fontRenderer.drawString(

@@ -51,3 +51,5 @@ metaitem.stocker.terminal.name=Stocker Terminal
 metaitem.extended.pattern.terminal.name=Extended Pattern Terminal
 metaitem.extended.pattern.terminal.tooltip=Encodes patterns with up to 12 outputs
 gui.gregtechenergistics.extendedpattern.title=Terminal
+gui.gregtechenergistics.extendedpattern.inputs=Inputs
+gui.gregtechenergistics.extendedpattern.outputs=Outputs
