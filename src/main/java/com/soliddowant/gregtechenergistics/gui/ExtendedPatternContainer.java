@@ -204,7 +204,8 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable
         } else {
             // Output slot is empty, so try to consume a blank pattern from the input slot
             ItemStack removedBlankPattern = this.patternSlotIN.decrStackSize(1);
-            // If the output is _still_ empty or not a blank pattern, abort
+            // If no blank pattern was available, or removed item is not a blank pattern,
+            // abort
             if (removedBlankPattern.isEmpty() || !this.isPattern(removedBlankPattern))
                 return;
 
@@ -212,6 +213,14 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable
             Optional<ItemStack> maybePattern = AEApi.instance().definitions().items().encodedPattern().maybeStack(1);
             if (maybePattern.isPresent())
                 output = maybePattern.get();
+            else {
+                // Failed to create encoded pattern item
+                // Return the blank pattern back to input slot
+                ItemStack stack = this.patternSlotIN.getStack();
+                stack.grow(1);
+                this.patternSlotIN.putStack(stack);
+                return;
+            }
         }
 
         // Encode inputs/outputs into NBT
