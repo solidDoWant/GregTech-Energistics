@@ -167,4 +167,9 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
     protected void bindTexture(final ResourceLocation loc) {
         this.mc.getTextureManager().bindTexture(loc);
     }
+
+    @Override
+    protected int getMaxRows() {
+        return 3;
+    }
 }
