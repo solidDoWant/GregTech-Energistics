@@ -54,38 +54,36 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable implements 
         final IItemHandler output = this.part.getInventoryByName("output");
         this.crafting = this.part.getInventoryByName("crafting");
 
-        // Add crafting input slots (5x4 grid)
-        // Using negative Y coords that will be repositioned by the GUI
+        // Add crafting input slots (5x4 grid) - using original absolute positions
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 5; x++) {
                 this.addSlotToContainer(this.craftingSlots[x + y * 5] = new SlotFakeCraftingMatrix(this.crafting,
-                        x + y * 5, 9 + x * 18, -81 + y * 18));
+                        x + y * 5, 8 + x * 18, 25 + y * 18));
             }
         }
 
-        // Add output slots (4x3 grid = 12 slots)
+        // Add output slots (4x3 grid = 12 slots) - using original absolute positions
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 3; x++) {
                 int index = x + y * 3;
                 this.addSlotToContainer(this.outputSlots[index] = new SlotPatternOutputs(output, this, index,
-                        117 + x * 18, -81 + y * 18, 0, 0, 1));
+                        110 + x * 18, 25 + y * 18, 0, 0, 1));
                 this.outputSlots[index].setRenderDisabled(false);
                 this.outputSlots[index].setIIcon(-1);
             }
         }
 
-        // Add pattern slots (blank in, encoded out)
+        // Add pattern slots (blank in, encoded out) - using original absolute positions
         this.addSlotToContainer(this.patternSlotIN = new SlotRestrictedInput(
-                SlotRestrictedInput.PlacableItemType.BLANK_PATTERN, patternInv, 0, 184, -77, this.getInventoryPlayer()));
+                SlotRestrictedInput.PlacableItemType.BLANK_PATTERN, patternInv, 0, 8, 115, this.getInventoryPlayer()));
         this.addSlotToContainer(
                 this.patternSlotOUT = new SlotRestrictedInput(SlotRestrictedInput.PlacableItemType.ENCODED_PATTERN,
-                        patternInv, 1, 184, -34, this.getInventoryPlayer()));
+                        patternInv, 1, 26, 115, this.getInventoryPlayer()));
 
         this.patternSlotOUT.setStackLimit(1);
 
-        // Bind player inventory (using negative Y coord to be repositioned)
-        // 0 means it will be at ySize - 78 - 5 (for player side)
-        this.bindPlayerInventory(ip, 0, 0);
+        // Bind player inventory (positioned at bottom of GUI) - using original absolute position
+        this.bindPlayerInventory(ip, 0, 175);
     }
 
     public static ExtendedPatternContainer getServerGuiContainer(AEPartLocation side, EntityPlayer player, World world,

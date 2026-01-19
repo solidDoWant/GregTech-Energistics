@@ -1,7 +1,5 @@
 package com.soliddowant.gregtechenergistics.gui;
 
-import java.lang.reflect.Field;
-
 import com.soliddowant.gregtechenergistics.Tags;
 import com.soliddowant.gregtechenergistics.networking.NetworkHandler;
 import com.soliddowant.gregtechenergistics.networking.PacketPatternAction;
@@ -29,29 +27,7 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
 
     public ExtendedPatternGuiContainer(final InventoryPlayer inventoryPlayer, final ExtendedPatternTerminalPart part) {
         super(inventoryPlayer, part, new ExtendedPatternContainer(inventoryPlayer, part));
-        // Reserve space for pattern encoding area (from y=84 to bottom)
-        // This tells the parent to stop the item grid at this point
-        setReservedSpaceViaReflection(165);  // 249 - 84 = 165 pixels for pattern area + player inv
-    }
-
-    private void setReservedSpaceViaReflection(int space) {
-        try {
-            Field field = this.getClass().getSuperclass().getDeclaredField("reservedSpace");
-            field.setAccessible(true);
-            field.setInt(this, space);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set reservedSpace field", e);
-        }
-    }
-
-    private int getReservedSpaceViaReflection() {
-        try {
-            Field field = this.getClass().getSuperclass().getDeclaredField("reservedSpace");
-            field.setAccessible(true);
-            return field.getInt(this);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to get reservedSpace field", e);
-        }
+        // We'll set the fixed size in initGui() after parent calculates dynamic size
     }
 
     public static ExtendedPatternGuiContainer getClientGuiContainer(AEPartLocation side, EntityPlayer player,
@@ -69,12 +45,21 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
     public void initGui() {
         super.initGui();
 
-        // Encode button - positioned in the pattern area
-        this.encodeBtn = new GuiImgButton(this.guiLeft + 184, this.guiTop + this.ySize - 53, Settings.ACTIONS, ActionItems.ENCODE);
+        // Force our GUI to use the fixed size from our texture
+        this.ySize = 257;
+        this.xSize = 195;
+
+        // Recalculate guiTop based on our fixed size
+        final int unusedSpace = this.height - this.ySize;
+        this.guiTop = (int) Math.floor(unusedSpace / (unusedSpace < 0 ? 3.8f : 2.0f));
+        this.guiLeft = (this.width - this.xSize) / 2;
+
+        // Encode button - positioned at original location
+        this.encodeBtn = new GuiImgButton(this.guiLeft + 50, this.guiTop + 115, Settings.ACTIONS, ActionItems.ENCODE);
         this.buttonList.add(this.encodeBtn);
 
-        // Clear button - positioned above the input slots
-        this.clearBtn = new GuiImgButton(this.guiLeft + 100, this.guiTop + this.ySize - 86, Settings.ACTIONS, ActionItems.CLOSE);
+        // Clear button - positioned at original location
+        this.clearBtn = new GuiImgButton(this.guiLeft + 68, this.guiTop + 115, Settings.ACTIONS, ActionItems.CLOSE);
         this.clearBtn.setHalfSize(true);
         this.buttonList.add(this.clearBtn);
     }
@@ -98,68 +83,31 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
 
     @Override
     public void drawFG(final int offsetX, final int offsetY, final int mouseX, final int mouseY) {
-        // Draw inherited terminal features (search box, item grid, etc.)
-        super.drawFG(offsetX, offsetY, mouseX, mouseY);
+        // Draw title at original position
+        this.fontRenderer.drawString(
+                I18n.format("gui.gregtechenergistics.extendedpattern.title"),
+                8, 6, 4210752);
 
-        // Draw pattern area labels - positioned relative to reserved space
-        int patternAreaY = this.ySize - getReservedSpaceViaReflection();
-        this.fontRenderer.drawString("Inputs", 8, patternAreaY - 12, 4210752);
-        this.fontRenderer.drawString("Outputs", 110, patternAreaY - 12, 4210752);
+        // Draw labels at original positions
+        this.fontRenderer.drawString("Inputs (5x4)", 8, 14, 4210752);
+        this.fontRenderer.drawString("Outputs", 110, 14, 4210752);
 
-        // Draw player inventory label
+        // Draw player inventory label at original position
         this.fontRenderer.drawString(
                 I18n.format("container.inventory"),
-                8, this.ySize - 96 + 3, 4210752);
+                8, this.ySize - 94, 4210752);
+
+        // Let parent handle any additional rendering it needs to do
+        // Note: We don't call super.drawFG() because it would override our labels
     }
 
     @Override
     public void drawBG(final int offsetX, final int offsetY, final int mouseX, final int mouseY) {
-        // Get the number of rows in the item grid via reflection
-        int rows = 0;
-        try {
-            java.lang.reflect.Field rowsField = this.getClass().getSuperclass().getDeclaredField("rows");
-            rowsField.setAccessible(true);
-            rows = rowsField.getInt(this);
-        } catch (Exception e) {
-            // Default to 3 rows if we can't access the field
-            rows = 3;
-        }
-
-        // Bind our custom texture
+        // Draw our complete custom texture (fixed size, not dynamic)
         this.bindTexture(BACKGROUND_TEXTURE);
+        this.drawTexturedModalRect(offsetX, offsetY, 0, 0, this.xSize, this.ySize);
 
-        final int x_width = 197;
-
-        // Draw top section (header with search box) - 18px tall
-        this.drawTexturedModalRect(offsetX, offsetY, 0, 0, x_width, 18);
-
-        // Draw view cells area on the right if present
-        try {
-            java.lang.reflect.Field viewCellField = this.getClass().getSuperclass().getDeclaredField("viewCell");
-            viewCellField.setAccessible(true);
-            boolean viewCell = viewCellField.getBoolean(this);
-
-            if (viewCell) {
-                this.drawTexturedModalRect(offsetX + x_width, offsetY, x_width, 0, 46, 128);
-            }
-        } catch (Exception e) {
-            // Ignore
-        }
-
-        // Draw repeating middle section (item grid rows) - each row is 18px
-        for (int x = 0; x < rows; x++) {
-            this.drawTexturedModalRect(offsetX, offsetY + 18 + x * 18, 0, 18, x_width, 18);
-        }
-
-        // Draw bottom section (pattern area + player inventory)
-        // This starts where the item grid ends and goes to the bottom
-        int bottomSectionStartY = offsetY + 18 + rows * 18;
-        int bottomSectionTextureY = 18 + 3 * 18; // After header (18) + 3 item rows (54) = 72
-        int bottomSectionHeight = this.ySize - 18 - rows * 18;
-
-        this.drawTexturedModalRect(offsetX, bottomSectionStartY, 0, bottomSectionTextureY, x_width, bottomSectionHeight);
-
-        // Handle view cell updates and search field via parent logic
+        // Handle search field rendering via reflection
         try {
             java.lang.reflect.Field searchField = this.getClass().getSuperclass().getDeclaredField("searchField");
             searchField.setAccessible(true);
@@ -168,10 +116,10 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
                 ((appeng.client.gui.widgets.MEGuiTextField) field).drawTextBox();
             }
         } catch (Exception e) {
-            // Ignore
+            // Ignore - search field won't render but rest of GUI will work
         }
 
-        // Handle view cell repository updates
+        // Handle view cell repository updates via reflection
         try {
             java.lang.reflect.Field viewCellField = this.getClass().getSuperclass().getDeclaredField("viewCell");
             viewCellField.setAccessible(true);
@@ -200,7 +148,7 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
                 }
             }
         } catch (Exception e) {
-            // Ignore
+            // Ignore - view cells won't update but rest of GUI will work
         }
     }
 
@@ -212,11 +160,8 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
 
     @Override
     protected void repositionSlot(final appeng.container.slot.AppEngSlot s) {
-        // Calculate offset for player-side vs pattern-side slots
-        final int offsetPlayerSide = s.isPlayerSide() ? 5 : 3;
-
-        // Reposition relative to the GUI size (pattern area is at bottom)
-        s.yPos = s.getY() + this.ySize - 78 - offsetPlayerSide;
+        // Don't reposition - we use absolute positions in our container
+        // The slots are already at the correct positions
     }
 
     protected void bindTexture(final ResourceLocation loc) {
