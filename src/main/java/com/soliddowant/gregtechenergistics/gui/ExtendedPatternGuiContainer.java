@@ -115,7 +115,7 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
         // Draw player inventory label at original position
         this.fontRenderer.drawString(
                 I18n.format("container.inventory"),
-                8, this.ySize - 94, 4210752);
+                8, 157, 4210752);
 
         // Let parent handle any additional rendering it needs to do
         // Note: We don't call super.drawFG() because it would override our labels
