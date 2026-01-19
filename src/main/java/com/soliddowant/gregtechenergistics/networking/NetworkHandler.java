@@ -1,7 +1,5 @@
 package com.soliddowant.gregtechenergistics.networking;
 
-import com.soliddowant.gregtechenergistics.Tags;
-
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
@@ -22,6 +20,9 @@ public class NetworkHandler {
 
 		ServerHandlerChannel = NetworkRegistry.INSTANCE.newSimpleChannel(CHANNEL_BASE_NAME + "_server_handler");
 		ServerHandlerChannel.registerMessage(JEIPacket.JEIHandler.class, JEIPacket.class, 0, Side.SERVER);
-		ServerHandlerChannel.registerMessage(PacketPatternAction.Handler.class, PacketPatternAction.class, 1, Side.SERVER);
+		ServerHandlerChannel.registerMessage(PacketPatternAction.Handler.class, PacketPatternAction.class, 1,
+				Side.SERVER);
+		ServerHandlerChannel.registerMessage(PacketOpenExtendedPatternTerminal.Handler.class,
+				PacketOpenExtendedPatternTerminal.class, 2, Side.SERVER);
 	}
 }
