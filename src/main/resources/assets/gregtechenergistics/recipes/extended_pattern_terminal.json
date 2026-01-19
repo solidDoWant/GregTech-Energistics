@@ -5,7 +5,7 @@
             "values": [
                 {
                     "type": "appliedenergistics2:part_exists",
-                    "part": "part.crafting_terminal"
+                    "part": "part.pattern_terminal"
                 },
                 {
                     "type": "appliedenergistics2:material_exists",
@@ -22,11 +22,11 @@
     "ingredients": [
         {
             "type": "appliedenergistics2:part",
-            "part": "part.pattern_terminal"
+            "part": "material.engineering_processor"
         },
         {
             "type": "appliedenergistics2:part",
-            "part": "material.engineering_processor"
+            "part": "part.pattern_terminal"
         }
     ]
 }
