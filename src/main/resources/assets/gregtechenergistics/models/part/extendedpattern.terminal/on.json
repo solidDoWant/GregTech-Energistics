@@ -2,8 +2,8 @@
     "ae2_uvl_marker": true,
     "textures": {
         "lightsBright": "gregtechenergistics:parts/extendedpattern.terminal_bright",
-	    "lightsMedium": "gregtechenergistics:parts/extendedpattern.terminal_medium",
-	    "lightsDark": "gregtechenergistics:parts/extendedpattern.terminal_dark"
+        "lightsMedium": "gregtechenergistics:parts/extendedpattern.terminal_medium",
+        "lightsDark": "gregtechenergistics:parts/extendedpattern.terminal_dark"
     },
     "elements": [
         {

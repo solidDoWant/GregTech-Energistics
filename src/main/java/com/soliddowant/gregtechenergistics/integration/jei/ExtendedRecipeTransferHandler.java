@@ -48,7 +48,7 @@ public class ExtendedRecipeTransferHandler implements IRecipeTransferHandler<Ext
         // Extended pattern terminal only supports processing mode
         boolean isCraftingRecipe = false;
 
-        ItemStack[] inputItems = new ItemStack[20];  // 5x4 grid
+        ItemStack[] inputItems = new ItemStack[20]; // 5x4 grid
         ItemStack[] outputItems = new ItemStack[12]; // 12 output slots
         FluidStack[] inputFluids = new FluidStack[20];
         FluidStack[] outputFluids = new FluidStack[12];
@@ -136,7 +136,7 @@ public class ExtendedRecipeTransferHandler implements IRecipeTransferHandler<Ext
         return fluidEncoder;
     }
 
-    public static void transferToExtendedTerminal(JEIPacket message, Container con) {
+    public static void transferToExtendedTerminal(@Nonnull JEIPacket message, @Nonnull Container con) {
         // Get information about the crafting terminal, and do some checks
         if (!(con instanceof IContainerCraftingPacket))
             return;
@@ -145,10 +145,10 @@ public class ExtendedRecipeTransferHandler implements IRecipeTransferHandler<Ext
             return;
 
         IItemHandler craftMatrix = cct.getInventoryByName("crafting");
-        int inputAreaSize = craftMatrix.getSlots();  // Should be 9
+        int inputAreaSize = craftMatrix.getSlots(); // Should be 20
 
         IItemHandler outputInv = cct.getInventoryByName("output");
-        int outputAreaSize = outputInv.getSlots();  // Should be 12
+        int outputAreaSize = outputInv.getSlots(); // Should be 12
 
         if (!(con instanceof ExtendedPatternContainer))
             return;

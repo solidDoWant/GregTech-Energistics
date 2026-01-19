@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import com.soliddowant.gregtechenergistics.parts.ExtendedPatternTerminalPart;
 
 import appeng.api.AEApi;
@@ -45,7 +48,8 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable
     protected SlotRestrictedInput patternSlotIN;
     protected SlotRestrictedInput patternSlotOUT;
 
-    public ExtendedPatternContainer(final InventoryPlayer ip, final ExtendedPatternTerminalPart part) {
+    public ExtendedPatternContainer(@Nonnull final InventoryPlayer ip,
+            @Nonnull final ExtendedPatternTerminalPart part) {
         super(ip, part, false); // Pass false to prevent parent from binding player inventory
         this.part = part;
 
@@ -96,6 +100,7 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable
         }
     }
 
+    @Nullable
     public static ExtendedPatternContainer getServerGuiContainer(AEPartLocation side, EntityPlayer player, World world,
             int x, int y, int z) {
         ExtendedPatternTerminalPart part = GuiProxy.getPartAtLocation(world, x, y, z, side,
@@ -146,10 +151,7 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable
         if (name.equals("player")) {
             return new net.minecraftforge.items.wrapper.PlayerInvWrapper(this.getInventoryPlayer());
         }
-        if (this.part != null) {
-            return this.part.getInventoryByName(name);
-        }
-        return null;
+        return this.part.getInventoryByName(name);
     }
 
     @Override
@@ -167,10 +169,7 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable
         return new PlayerSource(this.getPlayerInv().player, this.part);
     }
 
-    // getViewCells() is inherited from ContainerMEMonitorable parent class
-    // It automatically reads from the view cell slots that were created in the
-    // parent constructor
-
+    @Override
     public boolean isSlotEnabled(int idx) {
         return true;
     }

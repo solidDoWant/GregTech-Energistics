@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.annotation.Nullable;
+
 import com.soliddowant.gregtechenergistics.covers.CoverAE2Stocker;
 import com.soliddowant.gregtechenergistics.covers.CoverStatus;
 import com.soliddowant.gregtechenergistics.networking.NetworkHandler;
@@ -51,6 +53,7 @@ public class StockerTerminalContainer extends AEBaseContainer {
         this.bindPlayerInventory(ip, 0, 222 - /* height of player inventory */82);
     }
 
+    @Nullable
     public static StockerTerminalContainer getServerGuiContainer(AEPartLocation side, EntityPlayer player, World world,
             int x, int y, int z) {
         StockerTerminalPart part = GuiProxy.getPartAtLocation(world, x, y, z, side, StockerTerminalPart.class);

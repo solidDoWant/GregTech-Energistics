@@ -2,6 +2,8 @@ package com.soliddowant.gregtechenergistics.gui;
 
 import java.lang.reflect.Field;
 
+import javax.annotation.Nonnull;
+
 import com.soliddowant.gregtechenergistics.Tags;
 import com.soliddowant.gregtechenergistics.networking.NetworkHandler;
 import com.soliddowant.gregtechenergistics.networking.PacketPatternAction;
@@ -29,7 +31,8 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
     private GuiImgButton encodeBtn;
     private GuiImgButton clearBtn;
 
-    public ExtendedPatternGuiContainer(final InventoryPlayer inventoryPlayer, final ExtendedPatternTerminalPart part) {
+    public ExtendedPatternGuiContainer(@Nonnull final InventoryPlayer inventoryPlayer,
+            @Nonnull final ExtendedPatternTerminalPart part) {
         super(inventoryPlayer, part, new ExtendedPatternContainer(inventoryPlayer, part));
         // We'll set the fixed size in initGui() after parent calculates dynamic size
     }
@@ -55,6 +58,7 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
 
         // Recalculate guiTop based on our fixed size
         final int unusedSpace = this.height - this.ySize;
+        // These contants are pulled from the parent class to keep the GUI centered
         this.guiTop = (int) Math.floor(unusedSpace / (unusedSpace < 0 ? 3.8f : 2.0f));
         this.guiLeft = (this.width - this.xSize) / 2;
 
