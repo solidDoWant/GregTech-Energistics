@@ -24,7 +24,10 @@ import appeng.helpers.IContainerCraftingPacket;
 import appeng.me.helpers.PlayerSource;
 import appeng.util.Platform;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.inventory.IContainerListener;
+import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
@@ -117,6 +120,25 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable
             return;
 
         super.detectAndSendChanges();
+    }
+
+    @Override
+    public void onSlotChange(final Slot s) {
+        // When an encoded pattern is placed in the output slot, sync all
+        // crafting/output slots to client
+        if (s == this.patternSlotOUT && Platform.isServer()) {
+            for (final IContainerListener listener : this.listeners) {
+                for (final Slot slot : this.inventorySlots) {
+                    if (slot instanceof OptionalSlotFake || slot instanceof SlotFakeCraftingMatrix) {
+                        listener.sendSlotContents(this, slot.slotNumber, slot.getStack());
+                    }
+                }
+                if (listener instanceof EntityPlayerMP) {
+                    ((EntityPlayerMP) listener).isChangingQuantityOnly = false;
+                }
+            }
+            this.detectAndSendChanges();
+        }
     }
 
     @Override

@@ -36,15 +36,15 @@ public class ExtendedPatternTerminalPart extends AbstractPartTerminal implements
     public static final IPartModel MODELS_HAS_CHANNEL = new PartModel(MODEL_BASE, MODEL_ON, MODEL_STATUS_HAS_CHANNEL);
 
     // Pattern encoding inventories
-    protected AppEngInternalInventory crafting;  // 20 input slots (5x4)
-    protected AppEngInternalInventory output;    // 12 output slots (4x3)
-    protected AppEngInternalInventory pattern;   // 2 slots (blank in, encoded out)
+    protected AppEngInternalInventory crafting; // 20 input slots (5x4)
+    protected AppEngInternalInventory output; // 12 output slots (4x3)
+    protected AppEngInternalInventory pattern; // 2 slots (blank in, encoded out)
 
     public ExtendedPatternTerminalPart(final ItemStack is) {
         super(is);
-        this.crafting = new AppEngInternalInventory(this, 20);  // 5x4 grid
-        this.output = new AppEngInternalInventory(this, 12);    // 12 outputs
-        this.pattern = new AppEngInternalInventory(this, 2);    // blank/encoded patterns
+        this.crafting = new AppEngInternalInventory(this, 20); // 5x4 grid
+        this.output = new AppEngInternalInventory(this, 12); // 12 outputs
+        this.pattern = new AppEngInternalInventory(this, 2); // blank/encoded patterns
     }
 
     @Nonnull
@@ -55,7 +55,8 @@ public class ExtendedPatternTerminalPart extends AbstractPartTerminal implements
 
     @Override
     public boolean onPartActivate(final EntityPlayer player, final EnumHand hand, final Vec3d pos) {
-        // Don't call super - AbstractPartTerminal.onPartActivate() opens the wrong GUI (GUI_ME)
+        // Don't call super - AbstractPartTerminal.onPartActivate() opens the wrong GUI
+        // (GUI_ME)
         // We need to open our custom ExtendedPattern GUI instead
         if (Platform.isServer()) {
             player.openGui(GregTechEnergisticsMod.instance,
@@ -104,20 +105,29 @@ public class ExtendedPatternTerminalPart extends AbstractPartTerminal implements
             // Pattern was placed in output slot - decode it back to inputs/outputs
             final ItemStack is = this.pattern.getStackInSlot(1);
             if (!is.isEmpty() && is.getItem() instanceof ICraftingPatternItem) {
-                final ICraftingPatternItem pattern = (ICraftingPatternItem) is.getItem();
-                final ICraftingPatternDetails details = pattern.getPatternForItem(is, this.getHost().getTile().getWorld());
+                final ICraftingPatternItem patternItem = (ICraftingPatternItem) is.getItem();
+                final ICraftingPatternDetails details = patternItem.getPatternForItem(is,
+                        this.getHost().getTile().getWorld());
                 if (details != null) {
-                    // Load inputs
-                    for (int x = 0; x < this.crafting.getSlots() && x < details.getInputs().length; x++) {
-                        final IAEItemStack item = details.getInputs()[x];
+                    final IAEItemStack[] patternInputs = details.getInputs();
+                    final IAEItemStack[] patternOutputs = details.getOutputs();
+
+                    // Load inputs - clear all slots, then populate with pattern data
+                    for (int x = 0; x < this.crafting.getSlots(); x++) {
+                        final IAEItemStack item;
+                        if (x < patternInputs.length) {
+                            item = patternInputs[x];
+                        } else {
+                            item = null;
+                        }
                         this.crafting.setStackInSlot(x, item == null ? ItemStack.EMPTY : item.createItemStack());
                     }
 
-                    // Load outputs
+                    // Load outputs - clear all slots, then populate with pattern data
                     for (int x = 0; x < this.output.getSlots(); x++) {
                         final IAEItemStack item;
-                        if (x < details.getOutputs().length) {
-                            item = details.getOutputs()[x];
+                        if (x < patternOutputs.length) {
+                            item = patternOutputs[x];
                         } else {
                             item = null;
                         }
