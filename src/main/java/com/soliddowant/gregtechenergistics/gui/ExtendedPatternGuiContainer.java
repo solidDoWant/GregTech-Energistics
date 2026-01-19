@@ -1,5 +1,7 @@
 package com.soliddowant.gregtechenergistics.gui;
 
+import java.lang.reflect.Field;
+
 import com.soliddowant.gregtechenergistics.Tags;
 import com.soliddowant.gregtechenergistics.networking.NetworkHandler;
 import com.soliddowant.gregtechenergistics.networking.PacketPatternAction;
@@ -10,6 +12,7 @@ import appeng.api.config.Settings;
 import appeng.api.util.AEPartLocation;
 import appeng.client.gui.implementations.GuiMEMonitorable;
 import appeng.client.gui.widgets.GuiImgButton;
+import appeng.client.gui.widgets.MEGuiTextField;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.EntityPlayer;
@@ -63,7 +66,7 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
         this.clearBtn.setHalfSize(true);
         this.buttonList.add(this.clearBtn);
 
-        // Move settings buttons to the correct positions
+        // Move buttons to the correct positions
         for (GuiButton settingsButton : this.buttonList) {
             // Cast to GuiImgButton and continue if the cast fails
             if (!(settingsButton instanceof GuiImgButton))
@@ -81,6 +84,31 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
             // Hide the terminal style button because it has no effect here
             if (buttonSetting == Settings.TERMINAL_STYLE)
                 settingsButton.visible = false;
+        }
+
+        // Set search field
+        this.updateSearchFieldPosition(82, 6);
+    }
+
+    // Sets the position of the search field via reflection. If it fails, the search
+    // field
+    // will remain at its default position, but at least the game won't crash.
+    protected void updateSearchFieldPosition(int x, int y) {
+        try {
+            Field searchField = this.getClass().getSuperclass().getDeclaredField("searchField");
+            searchField.setAccessible(true);
+            Object field = searchField.get(this);
+            if (field == null)
+                return;
+
+            if (!(field instanceof MEGuiTextField))
+                return;
+
+            MEGuiTextField textField = (MEGuiTextField) field;
+            textField.x = this.guiLeft + x;
+            textField.y = this.guiTop + y;
+        } catch (Exception e) {
+            // Ignore - search field position won't be set but the game won't crash
         }
     }
 
