@@ -54,10 +54,8 @@ public class ExtendedRecipeTransferHandler implements IRecipeTransferHandler<Ext
         FluidStack[] outputFluids = new FluidStack[12];
 
         // Fill sequentially for processing mode
-        performTransferWithSlots(recipeLayout.getItemStacks(), inputItems, outputItems, isCraftingRecipe,
-                this::getFirstItemStack);
-        performTransferWithSlots(recipeLayout.getFluidStacks(), inputFluids, outputFluids, isCraftingRecipe,
-                this::getFirstFluidStack);
+        performTransferWithSlots(recipeLayout.getItemStacks(), inputItems, outputItems, this::getFirstItemStack);
+        performTransferWithSlots(recipeLayout.getFluidStacks(), inputFluids, outputFluids, this::getFirstFluidStack);
 
         NetworkHandler.ServerHandlerChannel.sendToServer(
                 new JEIPacket(
@@ -69,7 +67,7 @@ public class ExtendedRecipeTransferHandler implements IRecipeTransferHandler<Ext
     }
 
     protected <T> void performTransferWithSlots(IGuiIngredientGroup<T> ingredientGroup,
-            T[] inputs, T[] outputs, boolean preserveSlots, Function<Iterable<T>, T> getFirstStack) {
+            T[] inputs, T[] outputs, Function<Iterable<T>, T> getFirstStack) {
         // Processing mode only: fill sequentially
         int inputIndex = 0;
         int outputIndex = 0;

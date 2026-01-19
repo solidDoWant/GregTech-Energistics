@@ -61,7 +61,7 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable
         final IItemHandler output = this.part.getInventoryByName("output");
         this.crafting = this.part.getInventoryByName("crafting");
 
-        // Add crafting input slots (5x4 grid) - using original absolute positions
+        // Add crafting input slots (5x4 grid)
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 5; x++) {
                 this.addSlotToContainer(this.craftingSlots[x + y * 5] = new SlotFakeCraftingMatrix(this.crafting,
@@ -69,7 +69,7 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable
             }
         }
 
-        // Add output slots (4x3 grid = 12 slots) - using original absolute positions
+        // Add output slots (4x3 grid = 12 slots)
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 3; x++) {
                 int index = x + y * 3;
@@ -80,7 +80,7 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable
             }
         }
 
-        // Add pattern slots (blank in, encoded out) - using original absolute positions
+        // Add pattern slots (blank in, encoded out)
         this.addSlotToContainer(this.patternSlotIN = new SlotRestrictedInput(
                 SlotRestrictedInput.PlacableItemType.BLANK_PATTERN, patternInv, 0, 184, 88, this.getInventoryPlayer()));
         this.addSlotToContainer(
@@ -89,8 +89,7 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable
 
         this.patternSlotOUT.setStackLimit(1);
 
-        // Bind player inventory (positioned at bottom of GUI) - using original absolute
-        // position
+        // Bind player inventory (positioned at bottom of GUI)
         this.bindPlayerInventory(ip, 1, 167);
 
         // Fix the view cell slot positions after parent constructor
@@ -192,35 +191,29 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable
         final ItemStack[] in = this.getInputs();
         final ItemStack[] out = this.getOutputs();
 
-        // if there is no input, this would be silly.
+        // No set inputs or outputs, nothing to do
         if (in == null || out == null) {
             return;
         }
 
-        // first check the output slots, should either be null, or a pattern
-        if (!output.isEmpty() && !this.isPattern(output)) {
-            return;
-        } // if nothing is there we should snag a new pattern.
-        else if (output.isEmpty()) {
-            output = this.patternSlotIN.getStack();
-            if (output.isEmpty() || !this.isPattern(output)) {
-                return; // no blanks.
-            }
+        if (!output.isEmpty()) {
+            // Verify that the output slot is either empty or a pattern
+            if (!this.isPattern(output))
+                return;
+        } else {
+            // Output slot is empty, so try to consume a blank pattern from the input slot
+            ItemStack removedBlankPattern = this.patternSlotIN.decrStackSize(1);
+            // If the output is _still_ empty or not a blank pattern, abort
+            if (removedBlankPattern.isEmpty() || !this.isPattern(removedBlankPattern))
+                return;
 
-            // remove one, and clear the input slot.
-            output.setCount(output.getCount() - 1);
-            if (output.getCount() == 0) {
-                this.patternSlotIN.putStack(ItemStack.EMPTY);
-            }
-
-            // add a new encoded pattern.
+            // Add a new encoded pattern item to the output slot
             Optional<ItemStack> maybePattern = AEApi.instance().definitions().items().encodedPattern().maybeStack(1);
-            if (maybePattern.isPresent()) {
+            if (maybePattern.isPresent())
                 output = maybePattern.get();
-            }
         }
 
-        // encode the slot.
+        // Encode inputs/outputs into NBT
         final NBTTagCompound encodedValue = new NBTTagCompound();
 
         final NBTTagList tagIn = new NBTTagList();

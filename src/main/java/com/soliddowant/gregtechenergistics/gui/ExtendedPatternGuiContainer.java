@@ -16,6 +16,7 @@ import appeng.client.gui.implementations.GuiMEMonitorable;
 import appeng.client.gui.widgets.GuiImgButton;
 import appeng.client.gui.widgets.GuiTabButton;
 import appeng.client.gui.widgets.MEGuiTextField;
+import appeng.container.implementations.ContainerMEMonitorable;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.EntityPlayer;
@@ -58,7 +59,7 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
 
         // Recalculate guiTop based on our fixed size
         final int unusedSpace = this.height - this.ySize;
-        // These contants are pulled from the parent class to keep the GUI centered
+        // These constants are pulled from the parent class to keep the GUI centered
         this.guiTop = (int) Math.floor(unusedSpace / (unusedSpace < 0 ? 3.8f : 2.0f));
         this.guiLeft = (this.width - this.xSize) / 2;
 
@@ -105,8 +106,7 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
     }
 
     // Sets the position of the search field via reflection. If it fails, the search
-    // field
-    // will remain at its default position, but at least the game won't crash.
+    // field will remain at its default position, but at least the game won't crash.
     protected void updateSearchFieldPosition(int x, int y) {
         try {
             Field searchField = this.getClass().getSuperclass().getDeclaredField("searchField");
@@ -158,20 +158,30 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
         this.fontRenderer.drawString(
                 I18n.format("container.inventory"),
                 8, 157, 4210752);
-
-        // Let parent handle any additional rendering it needs to do
-        // Note: We don't call super.drawFG() because it would override our labels
     }
 
+    // This is a reimplementation of the parent method to handle a GUI background
+    // image with a different size
+    // than the default terminal GUI. The parent function can handle a different
+    // image via `getBackground()`, but
+    // it assumes the image size is the same as the default terminal GUI and
+    // positions elements accordingly.
     @Override
     public void drawBG(final int offsetX, final int offsetY, final int mouseX, final int mouseY) {
         // Draw our complete custom texture (fixed size, not dynamic)
         this.bindTexture(BACKGROUND_TEXTURE);
         this.drawTexturedModalRect(offsetX, offsetY, 0, 0, this.xSize, this.ySize);
 
-        // Handle search field rendering via reflection
+        // Everything past this point is handling various elements exactly as the parent
+        drawSearchField();
+        updateViewCells();
+    }
+
+    protected void drawSearchField() {
+        // Handle search field rendering via reflection using the same logic as
+        // super().drawBG().
         try {
-            java.lang.reflect.Field searchField = this.getClass().getSuperclass().getDeclaredField("searchField");
+            Field searchField = this.getClass().getSuperclass().getDeclaredField("searchField");
             searchField.setAccessible(true);
             Object field = searchField.get(this);
             if (field != null) {
@@ -180,36 +190,41 @@ public class ExtendedPatternGuiContainer extends GuiMEMonitorable {
         } catch (Exception e) {
             // Ignore - search field won't render but rest of GUI will work
         }
+    }
 
-        // Handle view cell repository updates via reflection
+    protected void updateViewCells() {
+        // Handle view cell repository updates via reflection using the same logic as
+        // super().drawBG().
         try {
-            java.lang.reflect.Field viewCellField = this.getClass().getSuperclass().getDeclaredField("viewCell");
+            Field viewCellField = this.getClass().getSuperclass().getDeclaredField("viewCell");
             viewCellField.setAccessible(true);
             boolean viewCell = viewCellField.getBoolean(this);
 
-            if (viewCell) {
-                java.lang.reflect.Field myCurrentViewCellsField = this.getClass().getSuperclass()
-                        .getDeclaredField("myCurrentViewCells");
-                myCurrentViewCellsField.setAccessible(true);
-                ItemStack[] myCurrentViewCells = (ItemStack[]) myCurrentViewCellsField.get(this);
+            if (!viewCell)
+                return;
 
-                java.lang.reflect.Field monitorableContainerField = this.getClass().getSuperclass()
-                        .getDeclaredField("monitorableContainer");
-                monitorableContainerField.setAccessible(true);
-                appeng.container.implementations.ContainerMEMonitorable monitorableContainer = (appeng.container.implementations.ContainerMEMonitorable) monitorableContainerField
-                        .get(this);
+            Field myCurrentViewCellsField = this.getClass().getSuperclass()
+                    .getDeclaredField("myCurrentViewCells");
+            myCurrentViewCellsField.setAccessible(true);
+            ItemStack[] myCurrentViewCells = (ItemStack[]) myCurrentViewCellsField.get(this);
 
-                boolean update = false;
-                for (int i = 0; i < 5; i++) {
-                    if (myCurrentViewCells[i] != monitorableContainer.getCellViewSlot(i).getStack()) {
-                        update = true;
-                        myCurrentViewCells[i] = monitorableContainer.getCellViewSlot(i).getStack();
-                    }
-                }
+            Field monitorableContainerField = this.getClass().getSuperclass()
+                    .getDeclaredField("monitorableContainer");
+            monitorableContainerField.setAccessible(true);
+            ContainerMEMonitorable monitorableContainer = (ContainerMEMonitorable) monitorableContainerField
+                    .get(this);
 
-                if (update) {
-                    this.repo.setViewCell(myCurrentViewCells);
-                }
+            boolean update = false;
+            for (int i = 0; i < 5; i++) {
+                if (myCurrentViewCells[i] == monitorableContainer.getCellViewSlot(i).getStack())
+                    continue;
+
+                update = true;
+                myCurrentViewCells[i] = monitorableContainer.getCellViewSlot(i).getStack();
+            }
+
+            if (update) {
+                this.repo.setViewCell(myCurrentViewCells);
             }
         } catch (Exception e) {
             // Ignore - view cells won't update but rest of GUI will work

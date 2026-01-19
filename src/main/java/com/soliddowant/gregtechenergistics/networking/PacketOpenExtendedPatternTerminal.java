@@ -63,7 +63,7 @@ public class PacketOpenExtendedPatternTerminal implements IMessage {
                         // Open the GUI on the server side
                         player.openGui(
                                 GregTechEnergisticsMod.instance,
-                                GuiProxy.getOrdinalFromGuiId(1) | side.ordinal(),
+                                GuiProxy.getOrdinalFromGuiId(GuiProxy.GUI_EXTENDED_PATTERN_TERMINAL) | side.ordinal(),
                                 player.getServerWorld(),
                                 message.pos.getX(),
                                 message.pos.getY(),

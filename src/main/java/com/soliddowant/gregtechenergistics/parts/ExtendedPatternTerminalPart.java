@@ -57,10 +57,10 @@ public class ExtendedPatternTerminalPart extends AbstractPartTerminal implements
     public boolean onPartActivate(final EntityPlayer player, final EnumHand hand, final Vec3d pos) {
         // Don't call super - AbstractPartTerminal.onPartActivate() opens the wrong GUI
         // (GUI_ME)
-        // We need to open our custom ExtendedPattern GUI instead
+        // Open the custom ExtendedPattern GUI instead
         if (Platform.isServer()) {
             player.openGui(GregTechEnergisticsMod.instance,
-                    GuiProxy.getOrdinalFromGuiId(1) | this.getSide().ordinal(),
+                    GuiProxy.getOrdinalFromGuiId(GuiProxy.GUI_EXTENDED_PATTERN_TERMINAL) | this.getSide().ordinal(),
                     player.getEntityWorld(),
                     this.getTile().getPos().getX(),
                     this.getTile().getPos().getY(),

@@ -1164,10 +1164,12 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
 
         // If crafting items is not supported, just check availability
         // without tracking missing items
-        if (!upgradeSlotWidget.hasStack())
+        if (!upgradeSlotWidget.hasStack()) {
             for (IAEItemStack inputItem : remainingItems)
                 if (!isItemAvailableForExtraction(inputItem))
                     return false;
+            return true;
+        }
 
         // Crafting items is supported, track missing items if any
         // are not available

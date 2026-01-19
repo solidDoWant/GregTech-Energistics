@@ -1,20 +1,21 @@
 package com.soliddowant.gregtechenergistics.gui.widgets;
 
+import java.util.ArrayList;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import com.soliddowant.gregtechenergistics.render.Textures;
+
 import appeng.api.AEApi;
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.api.storage.channels.IItemStorageChannel;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.items.misc.ItemEncodedPattern;
-import com.soliddowant.gregtechenergistics.render.Textures;
-import gregtech.api.gui.widgets.SlotWidget;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.ArrayList;
 
 public class AE2PatternSlotWidget extends CallbackSlotWidget {
 	protected ICraftingPatternDetails craftingDetails;
@@ -77,7 +78,7 @@ public class AE2PatternSlotWidget extends CallbackSlotWidget {
 
 	@Nullable
 	public ItemEncodedPattern getPattern() {
-		if(!hasStack())
+		if (!hasStack())
 			return null;
 
 		ItemStack patternStack = getSlotStack();
@@ -106,7 +107,7 @@ public class AE2PatternSlotWidget extends CallbackSlotWidget {
 	@Nullable
 	protected IAEItemStack[] parseItemsFromNBT(@Nonnull NBTTagList tagList) {
 		if (tagList.tagCount() == 0) {
-			return new IAEItemStack[0];
+			return null;
 		}
 
 		ArrayList<IAEItemStack> items = new ArrayList<>();

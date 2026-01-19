@@ -19,8 +19,7 @@ import net.minecraftforge.fluids.FluidStack;
  * texture missing, gray if empty
  * - Layer 1: Base frame - always white (no tint)
  * For other items:
- * - Uses AE2's transparent color with proper tint index (for terminal
- * bright/medium/dark layers)
+ * - Uses AE2's transparent color with proper tint index for all other items
  */
 public class FluidEncoderItemColor implements IItemColor {
 
