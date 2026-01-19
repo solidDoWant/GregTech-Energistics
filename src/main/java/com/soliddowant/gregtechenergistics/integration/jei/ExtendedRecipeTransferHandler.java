@@ -1,5 +1,7 @@
 package com.soliddowant.gregtechenergistics.integration.jei;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 
 import javax.annotation.Nonnull;
