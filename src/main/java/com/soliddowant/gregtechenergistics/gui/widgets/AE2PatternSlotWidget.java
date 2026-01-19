@@ -117,12 +117,12 @@ public class AE2PatternSlotWidget extends CallbackSlotWidget {
 			NBTTagCompound itemTag = tagList.getCompoundTagAt(i);
 			ItemStack stack = new ItemStack(itemTag);
 
-			if (!stack.isEmpty()) {
-				IAEItemStack aeStack = itemChannel.createStack(stack);
-				if (aeStack != null) {
-					items.add(aeStack);
-				}
-			}
+			if (stack.isEmpty())
+				continue;
+
+			IAEItemStack aeStack = itemChannel.createStack(stack);
+			if (aeStack != null)
+				items.add(aeStack);
 		}
 
 		return items.isEmpty() ? null : items.toArray(new IAEItemStack[0]);

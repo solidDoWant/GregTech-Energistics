@@ -37,6 +37,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.wrapper.PlayerInvWrapper;
 
 public class ExtendedPatternContainer extends ContainerMEMonitorable
         implements IContainerCraftingPacket, IOptionalSlotHost {
@@ -130,25 +131,25 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable
     public void onSlotChange(final Slot s) {
         // When an encoded pattern is placed in the output slot, sync all
         // crafting/output slots to client
-        if (s == this.patternSlotOUT && Platform.isServer()) {
-            for (final IContainerListener listener : this.listeners) {
-                for (final Slot slot : this.inventorySlots) {
-                    if (slot instanceof OptionalSlotFake || slot instanceof SlotFakeCraftingMatrix) {
-                        listener.sendSlotContents(this, slot.slotNumber, slot.getStack());
-                    }
-                }
-                if (listener instanceof EntityPlayerMP) {
-                    ((EntityPlayerMP) listener).isChangingQuantityOnly = false;
-                }
-            }
-            this.detectAndSendChanges();
+        if (s != this.patternSlotOUT || !Platform.isServer())
+            return;
+
+        for (final IContainerListener listener : this.listeners) {
+            for (final Slot slot : this.inventorySlots)
+                if (slot instanceof OptionalSlotFake || slot instanceof SlotFakeCraftingMatrix)
+                    listener.sendSlotContents(this, slot.slotNumber, slot.getStack());
+
+            if (listener instanceof EntityPlayerMP)
+                ((EntityPlayerMP) listener).isChangingQuantityOnly = false;
         }
+
+        this.detectAndSendChanges();
     }
 
     @Override
     public IItemHandler getInventoryByName(String name) {
         if (name.equals("player")) {
-            return new net.minecraftforge.items.wrapper.PlayerInvWrapper(this.getInventoryPlayer());
+            return new PlayerInvWrapper(this.getInventoryPlayer());
         }
         return this.part.getInventoryByName(name);
     }
@@ -249,7 +250,7 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable
 
     protected ItemStack[] getInputs() {
         // For processing mode, only return non-empty inputs (compacted)
-        final java.util.List<ItemStack> inputList = new java.util.ArrayList<>();
+        final List<ItemStack> inputList = new ArrayList<>();
         boolean hasValue = false;
 
         for (int x = 0; x < this.craftingSlots.length; x++) {
@@ -311,11 +312,11 @@ public class ExtendedPatternContainer extends ContainerMEMonitorable
     }
 
     public void clear() {
-        for (final net.minecraft.inventory.Slot s : this.craftingSlots) {
+        for (final Slot s : this.craftingSlots) {
             s.putStack(ItemStack.EMPTY);
         }
 
-        for (final net.minecraft.inventory.Slot s : this.outputSlots) {
+        for (final Slot s : this.outputSlots) {
             s.putStack(ItemStack.EMPTY);
         }
 

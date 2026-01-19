@@ -128,10 +128,10 @@ public class JEIPacket extends PacketCompressedNBT {
             // Check if this is an extended pattern container
             if (context.getServerHandler().player.openContainer instanceof ExtendedPatternContainer) {
                 ExtendedRecipeTransferHandler.transferToExtendedTerminal(message,
-                    context.getServerHandler().player.openContainer);
+                        context.getServerHandler().player.openContainer);
             } else {
                 RecipeTransferHandler.transferToTerminal(message,
-                    context.getServerHandler().player.openContainer);
+                        context.getServerHandler().player.openContainer);
             }
         }
     }

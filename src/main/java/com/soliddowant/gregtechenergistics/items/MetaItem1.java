@@ -104,15 +104,5 @@ public class MetaItem1 extends StandardModMetaItem {
 				.duration(200)
 				.EUt((int) GTValues.V[GTValues.MV])
 				.buildAndRegister();
-
-		RecipeMaps.ASSEMBLER_RECIPES.recipeBuilder()
-				.input("itemIlluminatedPanel", 1)
-				.inputs(
-						Api.INSTANCE.definitions().materials().calcProcessor().maybeStack(1).get(),
-						MetaItems.AE2_STOCKER_HV.getStackForm())
-				.outputs(MetaItems.EXTENDED_PATTERN_TERMINAL.getStackForm())
-				.duration(200)
-				.EUt((int) GTValues.V[GTValues.HV])
-				.buildAndRegister();
 	}
 }

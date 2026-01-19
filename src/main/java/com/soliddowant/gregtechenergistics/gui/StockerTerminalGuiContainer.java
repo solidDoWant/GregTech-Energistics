@@ -187,11 +187,10 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 						if (invData.hasKey(which)) {
 							NBTTagCompound stackNBT = invData.getCompoundTag(which);
 							// If the NBT is empty, it means the slot should be cleared
-							if (stackNBT.isEmpty()) {
+							if (stackNBT.isEmpty())
 								current.patternInventory.getInventory().setStackInSlot(x, ItemStack.EMPTY);
-							} else {
+							else
 								current.patternInventory.getInventory().setStackInSlot(x, new ItemStack(stackNBT));
-							}
 						}
 					}
 

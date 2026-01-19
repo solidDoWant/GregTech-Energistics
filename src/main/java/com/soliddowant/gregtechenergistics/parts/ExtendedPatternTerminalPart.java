@@ -75,11 +75,9 @@ public class ExtendedPatternTerminalPart extends AbstractPartTerminal implements
         super.getDrops(drops, wrenched);
 
         // Drop any patterns stored in the terminal
-        for (final ItemStack is : this.pattern) {
-            if (!is.isEmpty()) {
+        for (final ItemStack is : this.pattern)
+            if (!is.isEmpty())
                 drops.add(is);
-            }
-        }
     }
 
     @Override
