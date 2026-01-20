@@ -11,8 +11,8 @@ import mezz.jei.config.Constants;
  * Registers the Extended Pattern Terminal handler directly.
  *
  * Note: The native AE2 Pattern Terminal (ContainerPatternTerm) handler is
- * replaced
- * at runtime via Mixin (see RecipeRegistryMixin) to support fluid encoding.
+ * replaced at runtime via Mixin (see RecipeRegistryMixin) to support fluid
+ * encoding.
  */
 @SuppressWarnings({ "unused" })
 @JEIPlugin
