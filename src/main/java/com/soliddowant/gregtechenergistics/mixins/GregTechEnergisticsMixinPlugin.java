@@ -3,7 +3,7 @@ package com.soliddowant.gregtechenergistics.mixins;
 import java.util.List;
 import java.util.Set;
 
-import org.spongepowered.asm.lib.tree.ClassNode;
+import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
@@ -13,10 +13,13 @@ import net.minecraftforge.fml.common.Loader;
  * Mixin config plugin that conditionally loads mixins based on mod presence.
  * This prevents crashes when optional dependencies like JEI are not installed.
  * 
- * <p>This plugin assumes that JEI-specific mixins are placed in a ".jei" subpackage
+ * <p>
+ * This plugin assumes that JEI-specific mixins are placed in a ".jei"
+ * subpackage
  * under the main mixin package. For example, if the mixin package is
  * "com.soliddowant.gregtechenergistics.mixins", then JEI mixins should be in
- * "com.soliddowant.gregtechenergistics.mixins.jei".</p>
+ * "com.soliddowant.gregtechenergistics.mixins.jei".
+ * </p>
  */
 public class GregTechEnergisticsMixinPlugin implements IMixinConfigPlugin {
 
@@ -43,7 +46,7 @@ public class GregTechEnergisticsMixinPlugin implements IMixinConfigPlugin {
         if (mixinClassName.startsWith(jeiMixinPackage)) {
             return Loader.isModLoaded(JEI_MOD_ID);
         }
-        
+
         // Apply all other mixins unconditionally
         return true;
     }
