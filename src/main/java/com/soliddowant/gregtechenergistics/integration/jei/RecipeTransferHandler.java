@@ -58,7 +58,8 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
         // Processing recipes: fill sequentially (ignore slot indices)
         performTransferWithSlots(recipeLayout.getItemStacks(), inputItems, outputItems, isCraftingRecipe,
                 this::getFirstItemStack);
-        // For fluids, always use processing mode (sequential fill) to avoid slot conflicts
+        // For fluids, always use processing mode (sequential fill) to avoid slot
+        // conflicts
         performTransferWithSlots(recipeLayout.getFluidStacks(), inputFluids, outputFluids, false,
                 this::getFirstFluidStack);
 
@@ -179,12 +180,12 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
     protected static boolean hasAnyFluids(@Nullable FluidStack[] fluids) {
         if (fluids == null)
             return false;
-        
+
         for (FluidStack fluid : fluids) {
             if (fluid != null && fluid.amount > 0)
                 return true;
         }
-        
+
         return false;
     }
 
@@ -226,11 +227,7 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
         if (message.isCraftingRecipe)
             con.onCraftMatrixChanged(new WrapperInvItemHandler(craftMatrix));
         else {
-            boolean hasOutputFluids = hasAnyFluids(message.outputFluids);
-            boolean preserveOutputSlots = message.isCraftingRecipe && !hasOutputFluids;
-
-            ItemStack[] outputStacks = mergeStacks(message.outputItems, message.outputFluids, outputAreaSize,
-                    preserveOutputSlots);
+            ItemStack[] outputStacks = mergeStacks(message.outputItems, message.outputFluids, outputAreaSize, false);
 
             for (int i = 0; i < outputStacks.length && i < outputAreaSize; i++) {
                 ItemStack stack = outputStacks[i];
