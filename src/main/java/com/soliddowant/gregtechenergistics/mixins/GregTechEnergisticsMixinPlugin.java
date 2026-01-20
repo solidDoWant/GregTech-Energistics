@@ -28,7 +28,8 @@ public class GregTechEnergisticsMixinPlugin implements IMixinConfigPlugin {
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
         // Only gate JEI-related mixins behind JEI presence check
-        if (mixinClassName.contains(".jei.")) {
+        // Check if the mixin is in the jei subpackage
+        if (mixinClassName.startsWith("com.soliddowant.gregtechenergistics.mixins.jei.")) {
             return Loader.isModLoaded("jei");
         }
         
