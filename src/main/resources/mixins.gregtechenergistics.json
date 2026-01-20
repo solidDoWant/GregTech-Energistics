@@ -4,6 +4,7 @@
   "target": "@env(DEFAULT)",
   "minVersion": "0.8",
   "compatibilityLevel": "JAVA_8",
+  "plugin": "com.soliddowant.gregtechenergistics.mixins.GregTechEnergisticsMixinPlugin",
   "mixins": [
     "MetaTileEntityHolderMixin"
   ],
