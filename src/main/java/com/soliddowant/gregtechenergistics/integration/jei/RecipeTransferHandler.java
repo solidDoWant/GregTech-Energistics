@@ -176,6 +176,18 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
         return fluidEncoder;
     }
 
+    protected static boolean hasAnyFluids(@Nullable FluidStack[] fluids) {
+        if (fluids == null)
+            return false;
+        
+        for (FluidStack fluid : fluids) {
+            if (fluid != null && fluid.amount > 0)
+                return true;
+        }
+        
+        return false;
+    }
+
     public static void transferToTerminal(JEIPacket message, Container con) {
         // Get information about the crafting terminal, and do some checks
         if (!(con instanceof IContainerCraftingPacket))
@@ -200,7 +212,7 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
 
         // If there are fluids, always use processing mode to avoid slot conflicts in
         // crafting mode
-        boolean hasInputFluids = message.inputFluids != null && message.inputFluids.length > 0;
+        boolean hasInputFluids = hasAnyFluids(message.inputFluids);
         boolean preserveSlots = message.isCraftingRecipe && !hasInputFluids;
 
         ItemStack[] inputStacks = mergeStacks(message.inputItems, message.inputFluids, inputAreaSize,
@@ -214,7 +226,7 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
         if (message.isCraftingRecipe)
             con.onCraftMatrixChanged(new WrapperInvItemHandler(craftMatrix));
         else {
-            boolean hasOutputFluids = message.outputFluids != null && message.outputFluids.length > 0;
+            boolean hasOutputFluids = hasAnyFluids(message.outputFluids);
             boolean preserveOutputSlots = message.isCraftingRecipe && !hasOutputFluids;
 
             ItemStack[] outputStacks = mergeStacks(message.outputItems, message.outputFluids, outputAreaSize,
