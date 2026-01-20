@@ -55,12 +55,7 @@ public class RecipeRegistryMixin {
         // Replace AE2's handler with ours (lazy initialization)
         if (GT_ENERGISTICS_HANDLER == null) {
             GT_ENERGISTICS_HANDLER = new RecipeTransferHandler();
-            System.out.println("[GTE-JEI-Mixin] Created GregTech Energistics recipe transfer handler for ContainerPatternTerm");
         }
-
-        System.out.println("[GTE-JEI-Mixin] Replacing " + originalHandler.getClass().getName() +
-                " with " + GT_ENERGISTICS_HANDLER.getClass().getName() +
-                " for recipe category: " + recipeCategory.getUid());
 
         cir.setReturnValue(GT_ENERGISTICS_HANDLER);
     }

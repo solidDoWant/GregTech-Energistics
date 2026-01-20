@@ -39,11 +39,9 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
     public IRecipeTransferError transferRecipe(@Nonnull ContainerPatternTerm container,
             @Nonnull IRecipeLayout recipeLayout, @Nonnull EntityPlayer player,
             boolean maxTransfer, boolean doTransfer) {
-        System.out.println("[GTE-JEI] Transferring recipe to pattern terminal...");
         if (doTransfer)
             performTransfer(container, recipeLayout, player, maxTransfer);
 
-        System.out.println("[GTE-JEI] Recipe transfer complete.");
         return null;
     }
 
@@ -56,20 +54,11 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
         FluidStack[] inputFluids = new FluidStack[9];
         FluidStack[] outputFluids = new FluidStack[3];
 
-        IGuiIngredientGroup<FluidStack> fluidGroup = recipeLayout.getFluidStacks();
-        System.out.println("[GTE-JEI] Fluid group: " + (fluidGroup == null ? "NULL" : "present"));
-        if (fluidGroup != null) {
-            System.out.println("[GTE-JEI] Fluid ingredients: " + fluidGroup.getGuiIngredients().size());
-        } else {
-            System.out.println("[GTE-JEI] No fluid ingredients present.");
-        }
-
         // Crafting recipes: preserve slot indices (with JEI's 1-based offset)
         // Processing recipes: fill sequentially (ignore slot indices)
         performTransferWithSlots(recipeLayout.getItemStacks(), inputItems, outputItems, isCraftingRecipe,
                 this::getFirstItemStack);
-        // For fluids, always use processing mode (sequential fill) to avoid slot
-        // conflicts
+        // For fluids, always use processing mode (sequential fill) to avoid slot conflicts
         performTransferWithSlots(recipeLayout.getFluidStacks(), inputFluids, outputFluids, false,
                 this::getFirstFluidStack);
 

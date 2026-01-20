@@ -21,15 +21,10 @@ public class JeiPlugin implements IModPlugin {
 
     @Override
     public void register(IModRegistry registry) {
-        System.out.println("[GTE-JEI] Registering Extended Pattern Terminal handler");
-
         // Register our Extended Pattern Terminal handler
         // This uses the public API and works fine since there's no conflict
         registry.getRecipeTransferRegistry().addRecipeTransferHandler(
                 new ExtendedRecipeTransferHandler(),
                 Constants.UNIVERSAL_RECIPE_TRANSFER_UID);
-
-        System.out.println("[GTE-JEI] Registration complete");
-        System.out.println("[GTE-JEI] Native Pattern Terminal handler will be replaced via Mixin");
     }
 }
