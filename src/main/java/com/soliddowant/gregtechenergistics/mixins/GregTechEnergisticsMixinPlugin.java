@@ -15,6 +15,9 @@ import net.minecraftforge.fml.common.Loader;
  */
 public class GregTechEnergisticsMixinPlugin implements IMixinConfigPlugin {
 
+    private static final String JEI_PACKAGE_SUFFIX = ".jei.";
+    private static final String JEI_MOD_ID = "jei";
+
     private String mixinPackage;
 
     @Override
@@ -31,9 +34,9 @@ public class GregTechEnergisticsMixinPlugin implements IMixinConfigPlugin {
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
         // Only gate JEI-related mixins behind JEI presence check
         // Check if the mixin is in the jei subpackage
-        String jeiMixinPackage = mixinPackage + ".jei.";
+        String jeiMixinPackage = mixinPackage + JEI_PACKAGE_SUFFIX;
         if (mixinClassName.startsWith(jeiMixinPackage)) {
-            return Loader.isModLoaded("jei");
+            return Loader.isModLoaded(JEI_MOD_ID);
         }
         
         // Apply all other mixins unconditionally
