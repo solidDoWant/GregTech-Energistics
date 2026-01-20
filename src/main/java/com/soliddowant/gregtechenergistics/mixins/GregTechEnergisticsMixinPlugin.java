@@ -12,6 +12,11 @@ import net.minecraftforge.fml.common.Loader;
 /**
  * Mixin config plugin that conditionally loads mixins based on mod presence.
  * This prevents crashes when optional dependencies like JEI are not installed.
+ * 
+ * <p>This plugin assumes that JEI-specific mixins are placed in a ".jei" subpackage
+ * under the main mixin package. For example, if the mixin package is
+ * "com.soliddowant.gregtechenergistics.mixins", then JEI mixins should be in
+ * "com.soliddowant.gregtechenergistics.mixins.jei".</p>
  */
 public class GregTechEnergisticsMixinPlugin implements IMixinConfigPlugin {
 
