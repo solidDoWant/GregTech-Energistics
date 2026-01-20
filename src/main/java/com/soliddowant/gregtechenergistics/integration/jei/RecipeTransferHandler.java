@@ -1,6 +1,5 @@
 package com.soliddowant.gregtechenergistics.integration.jei;
 
-import java.util.Map.Entry;
 import java.util.function.Function;
 
 import javax.annotation.Nonnull;
@@ -40,9 +39,11 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
     public IRecipeTransferError transferRecipe(@Nonnull ContainerPatternTerm container,
             @Nonnull IRecipeLayout recipeLayout, @Nonnull EntityPlayer player,
             boolean maxTransfer, boolean doTransfer) {
+        System.out.println("[GTE-JEI] Transferring recipe to pattern terminal...");
         if (doTransfer)
             performTransfer(container, recipeLayout, player, maxTransfer);
 
+        System.out.println("[GTE-JEI] Recipe transfer complete.");
         return null;
     }
 
@@ -55,11 +56,21 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
         FluidStack[] inputFluids = new FluidStack[9];
         FluidStack[] outputFluids = new FluidStack[3];
 
+        IGuiIngredientGroup<FluidStack> fluidGroup = recipeLayout.getFluidStacks();
+        System.out.println("[GTE-JEI] Fluid group: " + (fluidGroup == null ? "NULL" : "present"));
+        if (fluidGroup != null) {
+            System.out.println("[GTE-JEI] Fluid ingredients: " + fluidGroup.getGuiIngredients().size());
+        } else {
+            System.out.println("[GTE-JEI] No fluid ingredients present.");
+        }
+
         // Crafting recipes: preserve slot indices (with JEI's 1-based offset)
         // Processing recipes: fill sequentially (ignore slot indices)
         performTransferWithSlots(recipeLayout.getItemStacks(), inputItems, outputItems, isCraftingRecipe,
                 this::getFirstItemStack);
-        performTransferWithSlots(recipeLayout.getFluidStacks(), inputFluids, outputFluids, isCraftingRecipe,
+        // For fluids, always use processing mode (sequential fill) to avoid slot
+        // conflicts
+        performTransferWithSlots(recipeLayout.getFluidStacks(), inputFluids, outputFluids, false,
                 this::getFirstFluidStack);
 
         NetworkHandler.ServerHandlerChannel.sendToServer(
@@ -73,6 +84,9 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
 
     protected <T> void performTransferWithSlots(IGuiIngredientGroup<T> ingredientGroup,
             T[] inputs, T[] outputs, boolean preserveSlots, Function<Iterable<T>, T> getFirstStack) {
+        if (ingredientGroup == null || ingredientGroup.getGuiIngredients() == null)
+            return;
+
         if (preserveSlots) {
             // Crafting mode: preserve exact slot positions (with JEI 1-based offset
             // correction)
@@ -195,8 +209,13 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
         if (!(con instanceof ContainerPatternTerm))
             return;
 
+        // If there are fluids, always use processing mode to avoid slot conflicts in
+        // crafting mode
+        boolean hasInputFluids = message.inputFluids != null && message.inputFluids.length > 0;
+        boolean preserveSlots = message.isCraftingRecipe && !hasInputFluids;
+
         ItemStack[] inputStacks = mergeStacks(message.inputItems, message.inputFluids, inputAreaSize,
-                message.isCraftingRecipe);
+                preserveSlots);
 
         for (int i = 0; i < inputStacks.length && i < inputAreaSize; i++) {
             ItemStack stack = inputStacks[i];
@@ -206,8 +225,11 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
         if (message.isCraftingRecipe)
             con.onCraftMatrixChanged(new WrapperInvItemHandler(craftMatrix));
         else {
+            boolean hasOutputFluids = message.outputFluids != null && message.outputFluids.length > 0;
+            boolean preserveOutputSlots = message.isCraftingRecipe && !hasOutputFluids;
+
             ItemStack[] outputStacks = mergeStacks(message.outputItems, message.outputFluids, outputAreaSize,
-                    message.isCraftingRecipe);
+                    preserveOutputSlots);
 
             for (int i = 0; i < outputStacks.length && i < outputAreaSize; i++) {
                 ItemStack stack = outputStacks[i];

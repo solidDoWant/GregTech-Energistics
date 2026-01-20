@@ -10,7 +10,8 @@
   "client": [
     "GuiCraftingStatusMixin",
     "ItemEncodedPatternMixin",
-    "RenderItemOverlayMixin"
+    "RenderItemOverlayMixin",
+    "jei.RecipeRegistryMixin"
   ],
   "server": []
 }
