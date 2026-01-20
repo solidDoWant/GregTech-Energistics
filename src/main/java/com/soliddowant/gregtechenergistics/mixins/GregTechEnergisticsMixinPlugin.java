@@ -15,9 +15,11 @@ import net.minecraftforge.fml.common.Loader;
  */
 public class GregTechEnergisticsMixinPlugin implements IMixinConfigPlugin {
 
+    private String mixinPackage;
+
     @Override
     public void onLoad(String mixinPackage) {
-        // No initialization needed
+        this.mixinPackage = mixinPackage;
     }
 
     @Override
@@ -29,7 +31,8 @@ public class GregTechEnergisticsMixinPlugin implements IMixinConfigPlugin {
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
         // Only gate JEI-related mixins behind JEI presence check
         // Check if the mixin is in the jei subpackage
-        if (mixinClassName.startsWith("com.soliddowant.gregtechenergistics.mixins.jei.")) {
+        String jeiMixinPackage = mixinPackage + ".jei.";
+        if (mixinClassName.startsWith(jeiMixinPackage)) {
             return Loader.isModLoaded("jei");
         }
         
