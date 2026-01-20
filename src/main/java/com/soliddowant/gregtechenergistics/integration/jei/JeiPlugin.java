@@ -1,7 +1,5 @@
 package com.soliddowant.gregtechenergistics.integration.jei;
 
-import com.soliddowant.gregtechenergistics.gui.ExtendedPatternContainer;
-
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.IModRegistry;
 import mezz.jei.api.JEIPlugin;
@@ -12,10 +10,11 @@ import mezz.jei.config.Constants;
  *
  * Registers the Extended Pattern Terminal handler directly.
  *
- * Note: The native AE2 Pattern Terminal (ContainerPatternTerm) handler is replaced
+ * Note: The native AE2 Pattern Terminal (ContainerPatternTerm) handler is
+ * replaced
  * at runtime via Mixin (see RecipeRegistryMixin) to support fluid encoding.
  */
-@SuppressWarnings({ "unused", "rawtypes" })
+@SuppressWarnings({ "unused" })
 @JEIPlugin
 public class JeiPlugin implements IModPlugin {
 
