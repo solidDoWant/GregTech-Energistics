@@ -1,6 +1,5 @@
 package com.soliddowant.gregtechenergistics.integration.jei;
 
-import java.util.Map.Entry;
 import java.util.function.Function;
 
 import javax.annotation.Nonnull;
@@ -59,7 +58,9 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
         // Processing recipes: fill sequentially (ignore slot indices)
         performTransferWithSlots(recipeLayout.getItemStacks(), inputItems, outputItems, isCraftingRecipe,
                 this::getFirstItemStack);
-        performTransferWithSlots(recipeLayout.getFluidStacks(), inputFluids, outputFluids, isCraftingRecipe,
+        // For fluids, always use processing mode (sequential fill) to avoid slot
+        // conflicts
+        performTransferWithSlots(recipeLayout.getFluidStacks(), inputFluids, outputFluids, false,
                 this::getFirstFluidStack);
 
         NetworkHandler.ServerHandlerChannel.sendToServer(
@@ -73,6 +74,9 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
 
     protected <T> void performTransferWithSlots(IGuiIngredientGroup<T> ingredientGroup,
             T[] inputs, T[] outputs, boolean preserveSlots, Function<Iterable<T>, T> getFirstStack) {
+        if (ingredientGroup == null || ingredientGroup.getGuiIngredients() == null)
+            return;
+
         if (preserveSlots) {
             // Crafting mode: preserve exact slot positions (with JEI 1-based offset
             // correction)
@@ -173,6 +177,18 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
         return fluidEncoder;
     }
 
+    protected static boolean hasAnyFluids(@Nullable FluidStack[] fluids) {
+        if (fluids == null)
+            return false;
+
+        for (FluidStack fluid : fluids) {
+            if (fluid != null && fluid.amount > 0)
+                return true;
+        }
+
+        return false;
+    }
+
     public static void transferToTerminal(JEIPacket message, Container con) {
         // Get information about the crafting terminal, and do some checks
         if (!(con instanceof IContainerCraftingPacket))
@@ -195,8 +211,13 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
         if (!(con instanceof ContainerPatternTerm))
             return;
 
+        // If there are fluids, always use processing mode to avoid slot conflicts in
+        // crafting mode
+        boolean hasInputFluids = hasAnyFluids(message.inputFluids);
+        boolean preserveSlots = message.isCraftingRecipe && !hasInputFluids;
+
         ItemStack[] inputStacks = mergeStacks(message.inputItems, message.inputFluids, inputAreaSize,
-                message.isCraftingRecipe);
+                preserveSlots);
 
         for (int i = 0; i < inputStacks.length && i < inputAreaSize; i++) {
             ItemStack stack = inputStacks[i];
@@ -206,8 +227,7 @@ public class RecipeTransferHandler implements IRecipeTransferHandler<ContainerPa
         if (message.isCraftingRecipe)
             con.onCraftMatrixChanged(new WrapperInvItemHandler(craftMatrix));
         else {
-            ItemStack[] outputStacks = mergeStacks(message.outputItems, message.outputFluids, outputAreaSize,
-                    message.isCraftingRecipe);
+            ItemStack[] outputStacks = mergeStacks(message.outputItems, message.outputFluids, outputAreaSize, false);
 
             for (int i = 0; i < outputStacks.length && i < outputAreaSize; i++) {
                 ItemStack stack = outputStacks[i];
