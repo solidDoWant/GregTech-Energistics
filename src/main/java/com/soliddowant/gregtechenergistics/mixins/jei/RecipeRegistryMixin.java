@@ -29,7 +29,7 @@ import net.minecraft.inventory.Container;
 public abstract class RecipeRegistryMixin {
 
     @Unique
-    private static RecipeTransferHandler GT_ENERGISTICS_HANDLER = null;
+    private static final RecipeTransferHandler GT_ENERGISTICS_HANDLER = new RecipeTransferHandler();
 
     @Inject(method = "getRecipeTransferHandler", at = @At("RETURN"), cancellable = true, remap = false)
     private void injectPatternTermHandler(
@@ -53,11 +53,7 @@ public abstract class RecipeRegistryMixin {
             return;
         }
 
-        // Replace AE2's handler with ours (lazy initialization)
-        if (GT_ENERGISTICS_HANDLER == null) {
-            GT_ENERGISTICS_HANDLER = new RecipeTransferHandler();
-        }
-
+        // Replace AE2's handler with this mod's handler
         cir.setReturnValue(GT_ENERGISTICS_HANDLER);
     }
 }
