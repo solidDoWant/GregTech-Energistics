@@ -135,7 +135,12 @@ public class FluidEncoderBehaviour implements IItemBehaviour, ItemUIFactory {
 
         NBTTagCompound tag = stack.hasTagCompound() ? stack.getTagCompound() : new NBTTagCompound();
         NBTTagCompound fluidTag = new NBTTagCompound();
-        fluid.writeToNBT(fluidTag);
+
+        // Create a copy with normalized amount to avoid race conditions with shared FluidStack objects
+        // The actual amount is stored separately in the "Amount" tag
+        FluidStack normalizedFluid = new FluidStack(fluid, 1000);
+        normalizedFluid.writeToNBT(fluidTag);
+
         tag.setTag("FluidStack", fluidTag);
         stack.setTagCompound(tag);
     }
