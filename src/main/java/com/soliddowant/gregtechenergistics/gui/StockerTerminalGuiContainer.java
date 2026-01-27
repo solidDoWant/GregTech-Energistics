@@ -15,15 +15,22 @@ import com.soliddowant.gregtechenergistics.covers.CoverStatus;
 import com.soliddowant.gregtechenergistics.parts.StockerTerminalPart;
 
 import appeng.api.AEApi;
+import appeng.api.config.ActionItems;
+import appeng.api.config.Settings;
 import appeng.api.storage.channels.IItemStorageChannel;
 import appeng.api.util.AEPartLocation;
 import appeng.client.gui.AEBaseGui;
+import appeng.client.gui.widgets.GuiImgButton;
 import appeng.client.gui.widgets.GuiScrollbar;
 import appeng.client.gui.widgets.MEGuiTextField;
 import appeng.client.me.ClientDCInternalInv;
 import appeng.client.me.SlotDisconnected;
+import appeng.client.render.BlockPosHighlighter;
+import appeng.core.localization.PlayerMessages;
+import appeng.util.BlockPosUtils;
 import appeng.util.Platform;
 import appeng.util.ReadableNumberConverter;
+import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.EntityPlayer;
@@ -31,8 +38,11 @@ import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.NBTUtil;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraftforge.common.DimensionManager;
 
 public class StockerTerminalGuiContainer extends AEBaseGui {
 	protected final int offsetX = 9;
@@ -43,6 +53,11 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 	protected final ArrayList<Object> lines = new ArrayList<>();
 	protected final HashMultimap<String, StockerInformation> byName = HashMultimap.create();
 	protected final ArrayList<String> names = new ArrayList<>();
+
+	// Position tracking for highlighting
+	protected final HashMap<StockerInformation, BlockPos> blockPosHashMap = new HashMap<>();
+	protected final HashMap<StockerInformation, Integer> dimHashMap = new HashMap<>();
+	protected final HashMap<GuiButton, StockerInformation> guiButtonHashMap = new HashMap<>();
 
 	protected boolean refreshList = false;
 	protected final Map<String, Set<Object>> cachedSearches = new WeakHashMap<>();
@@ -75,6 +90,10 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 
 	@Override
 	public void drawFG(final int offsetX, final int offsetY, final int mouseX, final int mouseY) {
+		// Clear old buttons
+		this.buttonList.removeIf(button -> guiButtonHashMap.containsKey(button));
+		this.guiButtonHashMap.clear();
+
 		this.fontRenderer.drawString(I18n.format("gui.gregtechenergistics.terminal.stocker"),
 				8, 6, 4210752);
 		this.fontRenderer.drawString(I18n.format("gui.gregtechenergistics.terminal.inventory"),
@@ -89,6 +108,16 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 			final Object lineObj = this.lines.get(ex + x);
 			if (lineObj instanceof StockerInformation) {
 				final StockerInformation stockerInformation = (StockerInformation) lineObj;
+
+				// Create highlight button
+				GuiButton highlightButton = new GuiImgButton(
+						this.guiLeft + 4,
+						this.guiTop + offset + 1,
+						Settings.ACTIONS,
+						ActionItems.HIGHLIGHT_INTERFACE);
+				guiButtonHashMap.put(highlightButton, stockerInformation);
+				this.buttonList.add(highlightButton);
+
 				this.inventorySlots.inventorySlots
 						.add(new SlotDisconnected(stockerInformation.patternInventory, 0, 10, 1 + offset));
 
@@ -123,6 +152,59 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 		}
 
 		super.mouseClicked(xCoord, yCoord, btn);
+	}
+
+	@Override
+	protected void actionPerformed(final GuiButton btn) throws IOException {
+		// Not a highlight button - delegate to parent
+		if (!guiButtonHashMap.containsKey(btn)) {
+			super.actionPerformed(btn);
+			return;
+		}
+
+		StockerInformation stockerInfo = guiButtonHashMap.get(btn);
+		BlockPos blockPos = blockPosHashMap.get(stockerInfo);
+
+		// Missing position data - do nothing
+		if (blockPos == null)
+			return;
+
+		Integer stockerDim = dimHashMap.get(stockerInfo);
+
+		// Missing dimension data - do nothing
+		if (stockerDim == null)
+			return;
+
+		BlockPos playerPos = this.mc.player.getPosition();
+		int playerDim = this.mc.world.provider.getDimension();
+
+		// Check if different dimension
+		if (playerDim != stockerDim) {
+			// Show error message
+			try {
+				this.mc.player.sendMessage(
+						PlayerMessages.InterfaceInOtherDimParam.get(
+								stockerDim,
+								DimensionManager.getWorld(stockerDim).provider.getDimensionType().getName()));
+			} catch (Exception e) {
+				this.mc.player.sendMessage(
+						PlayerMessages.InterfaceInOtherDim.get());
+			}
+			this.mc.player.closeScreen();
+			return;
+		}
+
+		// Same dimension - highlight the block
+		long timeout = System.currentTimeMillis() + 500 * BlockPosUtils.getDistance(blockPos, playerPos);
+		BlockPosHighlighter.hilightBlock(blockPos, timeout, playerDim);
+
+		this.mc.player.sendMessage(
+				PlayerMessages.InterfaceHighlighted.get(
+						blockPos.getX(),
+						blockPos.getY(),
+						blockPos.getZ()));
+
+		this.mc.player.closeScreen();
 	}
 
 	@Override
@@ -197,6 +279,12 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 					current.availableCount = invData.getLong("availableCount");
 					current.stockCount = invData.getLong("stockCount");
 					current.status = CoverStatus.values()[invData.getInteger("status")];
+
+					// Extract position and dimension data
+					if (invData.hasKey("pos"))
+						blockPosHashMap.put(current, NBTUtil.getPosFromTag(invData.getCompoundTag("pos")));
+					if (invData.hasKey("dim"))
+						dimHashMap.put(current, invData.getInteger("dim"));
 				} catch (final NumberFormatException ignored) {
 				}
 			}
