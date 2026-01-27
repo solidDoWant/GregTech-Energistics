@@ -110,15 +110,8 @@ public class ExtendedRecipeTransferHandler implements IRecipeTransferHandler<Ext
 
         // First consolidate identical stacks
         ItemStack[] allStacks = stacks.toArray(new ItemStack[0]);
-        ItemStack[] consolidated = consolidateStacks(allStacks, Integer.MAX_VALUE);
-
-        // Then limit to maxSize
-        ItemStack[] result = new ItemStack[maxSize];
-        for (int i = 0; i < maxSize && i < consolidated.length; i++)
-            if (consolidated[i] != null && !consolidated[i].isEmpty())
-                result[i] = consolidated[i];
-
-        return result;
+        // consolidateStacks already limits the output array to maxSize
+        return consolidateStacks(allStacks, maxSize);
     }
 
     protected FluidStack[] fluidListToArray(List<FluidStack> stacks, int maxSize, boolean consolidate) {
