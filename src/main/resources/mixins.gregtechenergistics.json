@@ -9,6 +9,7 @@
     "MetaTileEntityHolderMixin"
   ],
   "client": [
+    "GuiCraftConfirmMixin",
     "GuiCraftingStatusMixin",
     "ItemEncodedPatternMixin",
     "RenderItemOverlayMixin",
