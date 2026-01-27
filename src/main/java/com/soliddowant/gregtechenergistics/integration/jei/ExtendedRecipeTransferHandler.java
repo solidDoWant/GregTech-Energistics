@@ -50,14 +50,24 @@ public class ExtendedRecipeTransferHandler implements IRecipeTransferHandler<Ext
         // Extended pattern terminal only supports processing mode
         boolean isCraftingRecipe = false;
 
-        ItemStack[] inputItems = new ItemStack[20]; // 5x4 grid
-        ItemStack[] outputItems = new ItemStack[12]; // 12 output slots
-        FluidStack[] inputFluids = new FluidStack[20];
-        FluidStack[] outputFluids = new FluidStack[12];
+        // Collect all inputs and outputs (unlimited size for outputs to allow
+        // consolidation)
+        List<ItemStack> inputItemsList = new ArrayList<>();
+        List<ItemStack> outputItemsList = new ArrayList<>();
+        List<FluidStack> inputFluidsList = new ArrayList<>();
+        List<FluidStack> outputFluidsList = new ArrayList<>();
 
         // Fill sequentially for processing mode
-        performTransferWithSlots(recipeLayout.getItemStacks(), inputItems, outputItems, this::getFirstItemStack);
-        performTransferWithSlots(recipeLayout.getFluidStacks(), inputFluids, outputFluids, this::getFirstFluidStack);
+        collectIngredientsFromJEI(recipeLayout.getItemStacks(), inputItemsList, outputItemsList,
+                this::getFirstItemStack);
+        collectIngredientsFromJEI(recipeLayout.getFluidStacks(), inputFluidsList, outputFluidsList,
+                this::getFirstFluidStack);
+
+        // Convert to arrays with size limits, consolidating outputs first
+        ItemStack[] inputItems = itemListToArray(inputItemsList, 20, false);
+        ItemStack[] outputItems = itemListToArray(outputItemsList, 12, true); // Consolidate outputs
+        FluidStack[] inputFluids = fluidListToArray(inputFluidsList, 20, false);
+        FluidStack[] outputFluids = fluidListToArray(outputFluidsList, 12, false);
 
         NetworkHandler.ServerHandlerChannel.sendToServer(
                 new JEIPacket(
@@ -68,12 +78,10 @@ public class ExtendedRecipeTransferHandler implements IRecipeTransferHandler<Ext
                         isCraftingRecipe));
     }
 
-    protected <T> void performTransferWithSlots(IGuiIngredientGroup<T> ingredientGroup,
-            T[] inputs, T[] outputs, Function<Iterable<T>, T> getFirstStack) {
-        // Processing mode only: fill sequentially
-        int inputIndex = 0;
-        int outputIndex = 0;
-
+    protected <T> void collectIngredientsFromJEI(IGuiIngredientGroup<T> ingredientGroup,
+            List<T> inputs, List<T> outputs, Function<Iterable<T>, T> getFirstStack) {
+        // Processing mode only: fill sequentially, collecting ALL outputs without size
+        // limit
         for (final var entry : ingredientGroup.getGuiIngredients().entrySet()) {
             IGuiIngredient<T> ingredientEntry = entry.getValue();
 
@@ -85,14 +93,33 @@ public class ExtendedRecipeTransferHandler implements IRecipeTransferHandler<Ext
             if (currentStack == null)
                 continue;
 
-            if (ingredientEntry.isInput()) {
-                if (inputIndex < inputs.length)
-                    inputs[inputIndex++] = currentStack;
-            } else {
-                if (outputIndex < outputs.length)
-                    outputs[outputIndex++] = currentStack;
-            }
+            List<T> targetList = ingredientEntry.isInput() ? inputs : outputs;
+            targetList.add(currentStack);
         }
+    }
+
+    protected ItemStack[] itemListToArray(List<ItemStack> stacks, int maxSize, boolean consolidate) {
+        if (!consolidate) {
+            // Just convert to array with size limit
+            ItemStack[] result = new ItemStack[maxSize];
+            for (int i = 0; i < maxSize && i < stacks.size(); i++)
+                result[i] = stacks.get(i);
+
+            return result;
+        }
+
+        // First consolidate identical stacks
+        ItemStack[] allStacks = stacks.toArray(new ItemStack[0]);
+        // consolidateStacks already limits the output array to maxSize
+        return consolidateStacks(allStacks, maxSize);
+    }
+
+    protected FluidStack[] fluidListToArray(List<FluidStack> stacks, int maxSize, boolean consolidate) {
+        FluidStack[] result = new FluidStack[maxSize];
+        for (int i = 0; i < maxSize && i < stacks.size(); i++)
+            result[i] = stacks.get(i);
+
+        return result;
     }
 
     @Nullable
