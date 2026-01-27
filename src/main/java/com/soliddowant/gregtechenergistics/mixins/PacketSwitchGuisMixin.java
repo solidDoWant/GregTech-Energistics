@@ -45,8 +45,15 @@ public abstract class PacketSwitchGuisMixin {
 
         final Object target = bc.getTarget();
 
-        // Check if this is from an Extended Pattern Terminal
+        // Only intercept if this is from an Extended Pattern Terminal
+        // AND the GUI being requested is the AE2 pattern terminal
+        // (which is the dummy value we set in GuiCraftConfirmMixin)
         if (!(target instanceof ExtendedPatternTerminalPart))
+            return;
+
+        // Only intercept GUI_PATTERN_TERMINAL transitions
+        // This allows other legitimate GUI switches (e.g., to Crafting Status) to work normally
+        if (this.newGui != GuiBridge.GUI_PATTERN_TERMINAL)
             return;
 
         // Redirect to our custom GUI instead of AE2's pattern terminal
