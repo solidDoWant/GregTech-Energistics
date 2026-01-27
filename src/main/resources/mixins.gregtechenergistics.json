@@ -6,7 +6,9 @@
   "compatibilityLevel": "JAVA_8",
   "plugin": "com.soliddowant.gregtechenergistics.mixins.GregTechEnergisticsMixinPlugin",
   "mixins": [
-    "MetaTileEntityHolderMixin"
+    "ContainerCraftConfirmMixin",
+    "MetaTileEntityHolderMixin",
+    "PacketSwitchGuisMixin"
   ],
   "client": [
     "GuiCraftConfirmMixin",
