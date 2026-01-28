@@ -1,5 +1,6 @@
 package com.soliddowant.gregtechenergistics.gui;
 
+import java.awt.Rectangle;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,9 +43,9 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTUtil;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraft.world.World;
 import net.minecraftforge.common.DimensionManager;
-import java.awt.Rectangle;
 
 public class StockerTerminalGuiContainer extends AEBaseGui {
 	protected final int offsetX = 9;
@@ -150,8 +151,7 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 
 		// Create exclusion areas for all potential highlight button positions
 		// Buttons are positioned at guiLeft - 18, with Y positions starting at guiTop +
-		// 18
-		// and incrementing by 18 for each of the 6 visible lines
+		// 18 and incrementing by 18 for each of the 6 visible lines
 		int offset = 17;
 		for (int x = 0; x < LINES_ON_PAGE; x++) {
 			// Each button is 16x16 pixels, positioned at (guiLeft - 18, guiTop + offset +
@@ -208,16 +208,20 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 		// Check if different dimension
 		if (playerDim != stockerDim) {
 			// Show error message
-			try {
-				this.mc.player.sendMessage(
-						PlayerMessages.InterfaceInOtherDimParam.get(
-								stockerDim,
-								DimensionManager.getWorld(stockerDim).provider.getDimensionType().getName()));
-			} catch (Exception e) {
-				this.mc.player.sendMessage(
-						PlayerMessages.InterfaceInOtherDim.get());
+			ITextComponent message = PlayerMessages.InterfaceInOtherDim.get();
+
+			// Show the dimension name if possible
+			World stockerWorld = DimensionManager.getWorld(stockerDim);
+			if (stockerWorld != null
+					&& stockerWorld.provider != null
+					&& stockerWorld.provider.getDimensionType() != null) {
+				String dimensionName = stockerWorld.provider.getDimensionType().getName();
+				message = PlayerMessages.InterfaceInOtherDimParam.get(stockerDim, dimensionName);
 			}
+
+			this.mc.player.sendMessage(message);
 			this.mc.player.closeScreen();
+
 			return;
 		}
 
