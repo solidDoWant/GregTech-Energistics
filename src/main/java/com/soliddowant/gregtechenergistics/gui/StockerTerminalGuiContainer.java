@@ -289,44 +289,47 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 
 		for (final Object oKey : in.getKeySet()) {
 			final String key = (String) oKey;
-			if (key.startsWith("=")) {
-				try {
-					final long id = Long.parseLong(key.substring(1), Character.MAX_RADIX);
-					final NBTTagCompound invData = in.getCompoundTag(key);
-					final StockerInformation current = this.getById(id, invData);
+			if (!key.startsWith("="))
+				continue;
 
-					for (int x = 0; x < current.patternInventory.getInventory().getSlots(); x++) {
-						final String which = Integer.toString(x);
-						if (invData.hasKey(which)) {
-							NBTTagCompound stackNBT = invData.getCompoundTag(which);
-							// If the NBT is empty, it means the slot should be cleared
-							if (stackNBT.isEmpty())
-								current.patternInventory.getInventory().setStackInSlot(x, ItemStack.EMPTY);
-							else
-								current.patternInventory.getInventory().setStackInSlot(x, new ItemStack(stackNBT));
-						}
-					}
+			try {
+				final long id = Long.parseLong(key.substring(1), Character.MAX_RADIX);
+				final NBTTagCompound invData = in.getCompoundTag(key);
+				final StockerInformation current = this.getById(id, invData);
 
-					current.availableCount = invData.getLong("availableCount");
-					current.stockCount = invData.getLong("stockCount");
-					current.status = CoverStatus.values()[invData.getInteger("status")];
+				for (int x = 0; x < current.patternInventory.getInventory().getSlots(); x++) {
+					final String which = Integer.toString(x);
+					if (!invData.hasKey(which))
+						continue;
 
-					// Extract position and dimension data
-					if (invData.hasKey("pos"))
-						blockPosHashMap.put(current, NBTUtil.getPosFromTag(invData.getCompoundTag("pos")));
-					if (invData.hasKey("dim"))
-						dimHashMap.put(current, invData.getInteger("dim"));
-				} catch (final NumberFormatException ignored) {
+					NBTTagCompound stackNBT = invData.getCompoundTag(which);
+					// If the NBT is empty, it means the slot should be cleared
+					if (stackNBT.isEmpty())
+						current.patternInventory.getInventory().setStackInSlot(x, ItemStack.EMPTY);
+					else
+						current.patternInventory.getInventory().setStackInSlot(x, new ItemStack(stackNBT));
 				}
+
+				current.availableCount = invData.getLong("availableCount");
+				current.stockCount = invData.getLong("stockCount");
+				current.status = CoverStatus.values()[invData.getInteger("status")];
+
+				// Extract position and dimension data
+				if (invData.hasKey("pos"))
+					blockPosHashMap.put(current, NBTUtil.getPosFromTag(invData.getCompoundTag("pos")));
+				if (invData.hasKey("dim"))
+					dimHashMap.put(current, invData.getInteger("dim"));
+			} catch (final NumberFormatException ignored) {
 			}
 		}
 
-		if (this.refreshList) {
-			this.refreshList = false;
-			// invalid caches on refresh
-			this.cachedSearches.clear();
-			this.refreshList();
-		}
+		if (!this.refreshList)
+			return;
+
+		this.refreshList = false;
+		// invalid caches on refresh
+		this.cachedSearches.clear();
+		this.refreshList();
 	}
 
 	/**
