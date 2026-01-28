@@ -34,6 +34,7 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTUtil;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.items.IItemHandler;
@@ -294,12 +295,30 @@ public class StockerTerminalContainer extends AEBaseContainer {
         setItemTag(data, tag, inv);
     }
 
+    protected void updateTagCoverPosition(NBTTagCompound data, InvTracker inv) {
+        final NBTTagCompound tag = getItemTag(data, inv);
+
+        // Safety check: only add position if coverHolder and world are valid
+        if (inv.cover != null && inv.cover.coverHolder != null) {
+            BlockPos pos = inv.cover.coverHolder.getPos();
+            if (pos != null)
+                tag.setTag("pos", NBTUtil.createPosTag(pos));
+
+            World world = inv.cover.coverHolder.getWorld();
+            if (world != null && world.provider != null)
+                tag.setInteger("dim", world.provider.getDimension());
+        }
+
+        setItemTag(data, tag, inv);
+    }
+
     protected void buildStockerTag(final NBTTagCompound data, final Entry<CoverAE2Stocker, InvTracker> en,
             @SuppressWarnings("SameParameterValue") final int offset, final int length) {
         InvTracker invTracker = en.getValue();
 
         updateTagChildItems(data, invTracker, offset, length);
         updateTagCoverStatus(data, invTracker);
+        updateTagCoverPosition(data, invTracker);
     }
 
     protected static class InvTracker {

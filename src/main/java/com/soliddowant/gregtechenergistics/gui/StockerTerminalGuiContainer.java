@@ -1,10 +1,12 @@
 package com.soliddowant.gregtechenergistics.gui;
 
+import java.awt.Rectangle;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -15,15 +17,22 @@ import com.soliddowant.gregtechenergistics.covers.CoverStatus;
 import com.soliddowant.gregtechenergistics.parts.StockerTerminalPart;
 
 import appeng.api.AEApi;
+import appeng.api.config.ActionItems;
+import appeng.api.config.Settings;
 import appeng.api.storage.channels.IItemStorageChannel;
 import appeng.api.util.AEPartLocation;
 import appeng.client.gui.AEBaseGui;
+import appeng.client.gui.widgets.GuiImgButton;
 import appeng.client.gui.widgets.GuiScrollbar;
 import appeng.client.gui.widgets.MEGuiTextField;
 import appeng.client.me.ClientDCInternalInv;
 import appeng.client.me.SlotDisconnected;
+import appeng.client.render.BlockPosHighlighter;
+import appeng.core.localization.PlayerMessages;
+import appeng.util.BlockPosUtils;
 import appeng.util.Platform;
 import appeng.util.ReadableNumberConverter;
+import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.EntityPlayer;
@@ -31,8 +40,12 @@ import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.NBTUtil;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraft.world.World;
+import net.minecraftforge.common.DimensionManager;
 
 public class StockerTerminalGuiContainer extends AEBaseGui {
 	protected final int offsetX = 9;
@@ -43,6 +56,11 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 	protected final ArrayList<Object> lines = new ArrayList<>();
 	protected final HashMultimap<String, StockerInformation> byName = HashMultimap.create();
 	protected final ArrayList<String> names = new ArrayList<>();
+
+	// Position tracking for highlighting
+	protected final HashMap<StockerInformation, BlockPos> blockPosHashMap = new HashMap<>();
+	protected final HashMap<StockerInformation, Integer> dimHashMap = new HashMap<>();
+	protected final HashMap<GuiButton, StockerInformation> guiButtonHashMap = new HashMap<>();
 
 	protected boolean refreshList = false;
 	protected final Map<String, Set<Object>> cachedSearches = new WeakHashMap<>();
@@ -75,6 +93,10 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 
 	@Override
 	public void drawFG(final int offsetX, final int offsetY, final int mouseX, final int mouseY) {
+		// Clear old buttons
+		this.buttonList.removeIf(button -> guiButtonHashMap.containsKey(button));
+		this.guiButtonHashMap.clear();
+
 		this.fontRenderer.drawString(I18n.format("gui.gregtechenergistics.terminal.stocker"),
 				8, 6, 4210752);
 		this.fontRenderer.drawString(I18n.format("gui.gregtechenergistics.terminal.inventory"),
@@ -89,6 +111,16 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 			final Object lineObj = this.lines.get(ex + x);
 			if (lineObj instanceof StockerInformation) {
 				final StockerInformation stockerInformation = (StockerInformation) lineObj;
+
+				// Create highlight button
+				GuiButton highlightButton = new GuiImgButton(
+						this.guiLeft - 18,
+						this.guiTop + offset + 1,
+						Settings.ACTIONS,
+						ActionItems.HIGHLIGHT_INTERFACE);
+				guiButtonHashMap.put(highlightButton, stockerInformation);
+				this.buttonList.add(highlightButton);
+
 				this.inventorySlots.inventorySlots
 						.add(new SlotDisconnected(stockerInformation.patternInventory, 0, 10, 1 + offset));
 
@@ -114,6 +146,30 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 	}
 
 	@Override
+	public List<Rectangle> getJEIExclusionArea() {
+		List<Rectangle> exclusionAreas = new ArrayList<>();
+
+		// Create exclusion areas for all potential highlight button positions
+		// Buttons are positioned at guiLeft - 18, with Y positions starting at guiTop +
+		// 18 and incrementing by 18 for each of the 6 visible lines
+		int offset = 17;
+		for (int x = 0; x < LINES_ON_PAGE; x++) {
+			// Each button is 16x16 pixels, positioned at (guiLeft - 18, guiTop + offset +
+			// 1)
+			// Add 2 pixels padding to ensure JEI doesn't overlap
+			Rectangle buttonArea = new Rectangle(
+					this.guiLeft - 18,
+					this.guiTop + offset + 1,
+					18,
+					18);
+			exclusionAreas.add(buttonArea);
+			offset += 18;
+		}
+
+		return exclusionAreas;
+	}
+
+	@Override
 	protected void mouseClicked(final int xCoord, final int yCoord, final int btn) throws IOException {
 		this.searchField.mouseClicked(xCoord, yCoord, btn);
 
@@ -123,6 +179,63 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 		}
 
 		super.mouseClicked(xCoord, yCoord, btn);
+	}
+
+	@Override
+	protected void actionPerformed(final GuiButton btn) throws IOException {
+		// Not a highlight button - delegate to parent
+		if (!guiButtonHashMap.containsKey(btn)) {
+			super.actionPerformed(btn);
+			return;
+		}
+
+		StockerInformation stockerInfo = guiButtonHashMap.get(btn);
+		BlockPos blockPos = blockPosHashMap.get(stockerInfo);
+
+		// Missing position data - do nothing
+		if (blockPos == null)
+			return;
+
+		Integer stockerDim = dimHashMap.get(stockerInfo);
+
+		// Missing dimension data - do nothing
+		if (stockerDim == null)
+			return;
+
+		BlockPos playerPos = this.mc.player.getPosition();
+		int playerDim = this.mc.world.provider.getDimension();
+
+		// Check if different dimension
+		if (playerDim != stockerDim) {
+			// Show error message
+			ITextComponent message = PlayerMessages.InterfaceInOtherDim.get();
+
+			// Show the dimension name if possible
+			World stockerWorld = DimensionManager.getWorld(stockerDim);
+			if (stockerWorld != null
+					&& stockerWorld.provider != null
+					&& stockerWorld.provider.getDimensionType() != null) {
+				String dimensionName = stockerWorld.provider.getDimensionType().getName();
+				message = PlayerMessages.InterfaceInOtherDimParam.get(stockerDim, dimensionName);
+			}
+
+			this.mc.player.sendMessage(message);
+			this.mc.player.closeScreen();
+
+			return;
+		}
+
+		// Same dimension - highlight the block
+		long timeout = System.currentTimeMillis() + 500 * BlockPosUtils.getDistance(blockPos, playerPos);
+		BlockPosHighlighter.hilightBlock(blockPos, timeout, playerDim);
+
+		this.mc.player.sendMessage(
+				PlayerMessages.InterfaceHighlighted.get(
+						blockPos.getX(),
+						blockPos.getY(),
+						blockPos.getZ()));
+
+		this.mc.player.closeScreen();
 	}
 
 	@Override
@@ -176,38 +289,47 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 
 		for (final Object oKey : in.getKeySet()) {
 			final String key = (String) oKey;
-			if (key.startsWith("=")) {
-				try {
-					final long id = Long.parseLong(key.substring(1), Character.MAX_RADIX);
-					final NBTTagCompound invData = in.getCompoundTag(key);
-					final StockerInformation current = this.getById(id, invData);
+			if (!key.startsWith("="))
+				continue;
 
-					for (int x = 0; x < current.patternInventory.getInventory().getSlots(); x++) {
-						final String which = Integer.toString(x);
-						if (invData.hasKey(which)) {
-							NBTTagCompound stackNBT = invData.getCompoundTag(which);
-							// If the NBT is empty, it means the slot should be cleared
-							if (stackNBT.isEmpty())
-								current.patternInventory.getInventory().setStackInSlot(x, ItemStack.EMPTY);
-							else
-								current.patternInventory.getInventory().setStackInSlot(x, new ItemStack(stackNBT));
-						}
-					}
+			try {
+				final long id = Long.parseLong(key.substring(1), Character.MAX_RADIX);
+				final NBTTagCompound invData = in.getCompoundTag(key);
+				final StockerInformation current = this.getById(id, invData);
 
-					current.availableCount = invData.getLong("availableCount");
-					current.stockCount = invData.getLong("stockCount");
-					current.status = CoverStatus.values()[invData.getInteger("status")];
-				} catch (final NumberFormatException ignored) {
+				for (int x = 0; x < current.patternInventory.getInventory().getSlots(); x++) {
+					final String which = Integer.toString(x);
+					if (!invData.hasKey(which))
+						continue;
+
+					NBTTagCompound stackNBT = invData.getCompoundTag(which);
+					// If the NBT is empty, it means the slot should be cleared
+					if (stackNBT.isEmpty())
+						current.patternInventory.getInventory().setStackInSlot(x, ItemStack.EMPTY);
+					else
+						current.patternInventory.getInventory().setStackInSlot(x, new ItemStack(stackNBT));
 				}
+
+				current.availableCount = invData.getLong("availableCount");
+				current.stockCount = invData.getLong("stockCount");
+				current.status = CoverStatus.values()[invData.getInteger("status")];
+
+				// Extract position and dimension data
+				if (invData.hasKey("pos"))
+					blockPosHashMap.put(current, NBTUtil.getPosFromTag(invData.getCompoundTag("pos")));
+				if (invData.hasKey("dim"))
+					dimHashMap.put(current, invData.getInteger("dim"));
+			} catch (final NumberFormatException ignored) {
 			}
 		}
 
-		if (this.refreshList) {
-			this.refreshList = false;
-			// invalid caches on refresh
-			this.cachedSearches.clear();
-			this.refreshList();
-		}
+		if (!this.refreshList)
+			return;
+
+		this.refreshList = false;
+		// invalid caches on refresh
+		this.cachedSearches.clear();
+		this.refreshList();
 	}
 
 	/**

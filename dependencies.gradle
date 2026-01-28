@@ -41,10 +41,10 @@ dependencies {
     // Core API dependencies - required at compile and runtime, published as Maven dependencies
     api(rfg.deobf("curse.maven:codechickenlib-242818:2779848-deobf-sources"))
     api(rfg.deobf("curse.maven:gregtech-nomifactory-edition-1019238:7064114-deobf-sources"))
-    api(rfg.deobf("curse.maven:ae2-extended-life-570458:5035908-deobf-sources-api"))
+    api(rfg.deobf("curse.maven:ae2-extended-life-570458:6302098-deobf-sources-api"))
 
     // Compile-only API dependencies - available at compiletime for depending mods, optional at runtime
-    compileOnlyApi(rfg.deobf("curse.maven:mousetweaks-60089:2671937-sources-2671939-api-3359845"))
+    // compileOnlyApi(rfg.deobf("curse.maven:mousetweaks-60089:2671937-sources-2671939-api-3359845"))
 
     // // Compile-only dependencies - optional integrations, not available to depending mods
     // compileOnly(rfg.deobf("curse.maven:groovyscript-687577:4431117-deobf-sources"))
