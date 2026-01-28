@@ -297,9 +297,18 @@ public class StockerTerminalContainer extends AEBaseContainer {
 
     protected void updateTagCoverPosition(NBTTagCompound data, InvTracker inv) {
         final NBTTagCompound tag = getItemTag(data, inv);
-        BlockPos pos = inv.cover.coverHolder.getPos();
-        tag.setTag("pos", NBTUtil.createPosTag(pos));
-        tag.setInteger("dim", inv.cover.coverHolder.getWorld().provider.getDimension());
+
+        // Safety check: only add position if coverHolder and world are valid
+        if (inv.cover != null && inv.cover.coverHolder != null) {
+            BlockPos pos = inv.cover.coverHolder.getPos();
+            if (pos != null)
+                tag.setTag("pos", NBTUtil.createPosTag(pos));
+
+            World world = inv.cover.coverHolder.getWorld();
+            if (world != null && world.provider != null)
+                tag.setInteger("dim", world.provider.getDimension());
+        }
+
         setItemTag(data, tag, inv);
     }
 
