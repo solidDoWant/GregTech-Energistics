@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -43,6 +44,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.DimensionManager;
+import java.awt.Rectangle;
 
 public class StockerTerminalGuiContainer extends AEBaseGui {
 	protected final int offsetX = 9;
@@ -140,6 +142,31 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 			}
 			offset += 18;
 		}
+	}
+
+	@Override
+	public List<Rectangle> getJEIExclusionArea() {
+		List<Rectangle> exclusionAreas = new ArrayList<>();
+
+		// Create exclusion areas for all potential highlight button positions
+		// Buttons are positioned at guiLeft - 18, with Y positions starting at guiTop +
+		// 18
+		// and incrementing by 18 for each of the 6 visible lines
+		int offset = 17;
+		for (int x = 0; x < LINES_ON_PAGE; x++) {
+			// Each button is 16x16 pixels, positioned at (guiLeft - 18, guiTop + offset +
+			// 1)
+			// Add 2 pixels padding to ensure JEI doesn't overlap
+			Rectangle buttonArea = new Rectangle(
+					this.guiLeft - 18,
+					this.guiTop + offset + 1,
+					18,
+					18);
+			exclusionAreas.add(buttonArea);
+			offset += 18;
+		}
+
+		return exclusionAreas;
 	}
 
 	@Override
