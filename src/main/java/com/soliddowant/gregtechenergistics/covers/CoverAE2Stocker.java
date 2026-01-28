@@ -304,8 +304,11 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
     public void onRemoved() {
         node.destroy();
 
-        if (doesOtherAllowsWorking)
-            getControllable().setWorkingEnabled(true);
+        if (doesOtherAllowsWorking) {
+            IControllable controllable = getControllable();
+            if (controllable != null)
+                controllable.setWorkingEnabled(true);
+        }
 
         NonNullList<ItemStack> drops = NonNullList.create();
         MetaTileEntity.clearInventory(drops, patternSlotWidget.getSlotHandler());
