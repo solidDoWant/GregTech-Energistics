@@ -111,7 +111,7 @@ public class StockerTerminalGuiContainer extends AEBaseGui {
 
 				// Create highlight button
 				GuiButton highlightButton = new GuiImgButton(
-						this.guiLeft + 4,
+						this.guiLeft - 18,
 						this.guiTop + offset + 1,
 						Settings.ACTIONS,
 						ActionItems.HIGHLIGHT_INTERFACE);
