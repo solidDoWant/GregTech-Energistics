@@ -947,8 +947,12 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
 
     public void setWorkingStatus(boolean shouldWork) {
         IControllable machine = getControllable();
-        if (machine != null)
-            machine.setWorkingEnabled(shouldWork);
+        // Only call setWorkingEnabled if the state actually needs to change
+        // This prevents excessive writeCustomData calls that cause memory leaks
+        if (machine == null || machine.isWorkingEnabled() == shouldWork)
+            return;
+
+        machine.setWorkingEnabled(shouldWork);
     }
 
     @MENetworkEventSubscribe
