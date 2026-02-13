@@ -752,11 +752,22 @@ public class CoverAE2Stocker extends PlayerPlacedCoverBehavior
             return;
 
         // Do the insert/extract operations.
-        if (shouldInsert)
+        if (shouldInsert) {
             shouldInsert = !doInsert();
+            // Machine processing happens before cover processing. If insertion is
+            // needed at this point, then the machine is idle, and there is nothing to
+            // extract.
+            return;
+        }
 
-        if (!shouldInsert)
-            shouldInsert = doExtract();
+        // Extract outputs, then insert next batch if extraction succeeded. This
+        // prevents the machine for being idle for the following tick after crafting is
+        // done, waiting for the cover to insert the outputs before it can start
+        // crafting again. Without this, there is a (worst case) 50% loss in crafting
+        // throughput.
+        boolean extracted = doExtract();
+        if (extracted)
+            shouldInsert = !doInsert();
     }
 
     // Returns true if at least one item or fluid was extracted, and there was no
